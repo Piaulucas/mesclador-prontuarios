@@ -1,6 +1,6 @@
 # Mesclador de Prontuários
 
-Ferramenta local para montar, um a um, os prontuários que acompanham o faturamento de remoções em UTI móvel: junta as folhas escaneadas (PDF/JPEG/PNG) na ordem certa, busca o nome do paciente na planilha de faturamento pelo Nº da remoção e salva o PDF com o nome e na pasta corretos.
+Ferramenta local para montar, um a um, os prontuários que acompanham o faturamento de remoções em UTI móvel: junta as folhas escaneadas (PDF/JPEG/PNG) na ordem certa, busca o nome do paciente na planilha de faturamento pelo Nº da remoção e salva o PDF com o nome e na pasta corretos. O app tem duas telas, acessadas pela barra superior: **Mesclar prontuário** e **Converter em JPG**.
 
 ![Tela do Mesclador](docs/tela.png)
 _Dados fictícios._
@@ -20,7 +20,20 @@ O fluxo manual era: baixar as folhas em `.zip`, extrair, enviar para um site de 
 - Você escolhe a pasta principal no seletor nativo do macOS; o app usa a subpasta do tipo (`ADULTO…` / `NEO…`) e a cria se não existir
 - Nº com 2 dígitos (`04`, `05`, `10`) para a ordenação ficar certa
 - Mostra o caminho final antes de salvar e não sobrescreve sem confirmação
+- Confere o nome: quando o zip ou a pasta vem com o nome do paciente, o app compara com o nome da planilha; se não bater, mostra um aviso e pede confirmação ao salvar (zips genéricos `drive-download-…` não são conferidos)
 - Roda **só no computador** (`127.0.0.1`): nenhum arquivo sai da máquina, sem dependência de internet
+
+## Converter em JPG
+
+![Tela Converter em JPG](docs/conversor.png)
+_Dados fictícios._
+
+Quando a folha escaneada está escura ou difícil de ler, a tela **Converter em JPG** transforma as páginas em imagens ajustáveis. O uso típico: converter, ajustar a legibilidade e voltar pela tela de mesclar para montar o PDF.
+
+- Aceita **PDF**, **.zip**, **pasta** ou imagens; cada página vira um cartão
+- Ajustes **por página** (brilho, contraste e realçar escrita), com prévia no cartão; **Aplicar a todas** copia os ajustes da página selecionada para as demais e **Restaurar esta página** desfaz os ajustes dela
+- Ampliar a página com 🔍, girar e remover
+- Exporta para `Downloads/<nome>/<nome> - 01.jpg…` em 200 DPI, sem sobrescrever (se a pasta já existir, cria `<nome> (2)`), com o botão **Mostrar no Finder**
 
 ## Decisões de projeto
 
@@ -30,6 +43,8 @@ O fluxo manual era: baixar as folhas em `.zip`, extrair, enviar para um site de 
 | App web local (Flask) em vez de interface desktop | Arrastar e soltar e miniaturas saem prontos no navegador; nenhuma biblioteca externa de front-end, então funciona offline |
 | `.gitignore` bloqueia PDF, imagens e planilhas    | Evita que um prontuário real seja versionado por engano                                                                   |
 | Não sobrescreve e mostra a prévia do caminho      | Um arquivo com nome errado vira glosa                                                                                     |
+| Ajustes só na página inteira                      | Melhora a legibilidade sem alterar o conteúdo registrado no prontuário; não há ferramenta para apagar ou editar trechos   |
+| Conferência de nome avisa, não bloqueia           | O nome da pasta no Drive pode estar abreviado ou escrito diferente; a decisão final é de quem audita                      |
 
 ## Instalação
 
@@ -49,7 +64,7 @@ cp config.example.toml config.toml   # edite caminhos, empresas e colunas da pla
 python3 -m mesclador
 ```
 
-O navegador abre em `http://127.0.0.1:5050`. Para encerrar, `Ctrl+C` no terminal.
+O navegador abre em `http://127.0.0.1:5050`. Para encerrar, use o botão **Encerrar o app** na barra superior (`Ctrl+C` continua valendo quando aberto pelo terminal).
 
 1. Escolha empresa e mês (a planilha do mês é selecionada sozinha)
 2. Escolha a pasta principal do mês (fica lembrada por empresa e mês)
@@ -83,10 +98,18 @@ mesclador/
   config.py     leitura do config.toml
   planilha.py   listar, ler e buscar na planilha de faturamento
   pdfs.py       miniaturas, conversão de imagem e mesclagem
+  conversor.py  tela Converter em JPG
+  imagens.py    renderização de páginas e ajustes de imagem
+  navegador.py  focar/fechar a aba no Chrome/Safari
   seletor.py    seletor de pastas nativo do macOS
   web.py        rotas Flask
   templates/    interface (HTML/CSS/JS sem dependências externas)
+    base.html       barra superior e JS comum
+    index.html      tela de mesclar
+    converter.html  tela Converter em JPG
+macos/          ícone e scripts do Mesclador.app
 tests/          testes com dados fictícios
+CLAUDE.md       regras para agentes
 ```
 
 ## Testes
