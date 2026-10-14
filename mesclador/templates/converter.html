@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block titulo %}Converter em JPG · Mesclador{% endblock %}
+
+{% block estilos %}
+  .ajuste { display: grid; grid-template-columns: 1fr 44px; gap: 8px; align-items: center; }
+  .ajuste input[type=range] { padding: 0; accent-color: var(--acento); }
+  .ajuste output { font-size: 12px; text-align: right; color: var(--texto); font-variant-numeric: tabular-nums; }
+  .check { flex-direction: row; align-items: center; gap: 8px; color: var(--texto); font-size: 13px; }
+  .nota { font-size: 11px; color: var(--suave); line-height: 1.5; }
+  .cartao { cursor: pointer; }
+  .cartao.selecionada { border-color: var(--acento); box-shadow: 0 0 0 1px var(--acento); }
+  .selo { position: absolute; top: 6px; right: 6px; z-index: 1; display: none; background: var(--acento);
+          color: var(--acento-txt); border-radius: 10px; font-size: 11px; font-weight: 600; padding: 2px 8px; }
+  .cartao.ajustada .selo { display: block; }
+  .acoes button.ampliar { flex: 0 0 auto; }
+  .ajustes-pagina { display: flex; flex-direction: column; gap: 12px; }
+  .ajustes-pagina.desabilitado { opacity: .5; pointer-events: none; }
+  .ampliada { position: fixed; inset: 0; background: rgba(0,0,0,.75); display: none; z-index: 20;
+              align-items: center; justify-content: center; padding: 24px; cursor: zoom-out; }
+  .ampliada.aberta { display: flex; }
+  .ampliada img { max-width: 100%; max-height: 100%; border-radius: 4px; background: #fff; }
+  #mostrar { display: none; }
+{% endblock %}
+
+{% block conteudo %}
+<div class="app">
+  <aside>
+    <label>Nome da pasta em Downloads
+      <input id="nome" autocomplete="off" spellcheck="false" placeholder="ex.: MARIA SOUZA">
+    </label>
+
+    <hr>
+    <div class="ajustes-pagina" id="ajustesPagina">
+    <label>Brilho
+      <div class="ajuste"><input type="range" id="brilho" min="-100" max="100" value="0"><output id="vBrilho">0</output></div>
+    </label>
+    <label>Contraste
+      <div class="ajuste"><input type="range" id="contraste" min="-100" max="100" value="0"><output id="vContraste">0</output></div>
+    </label>
+    <label class="check"><input type="checkbox" id="realce"> Realçar escrita (tons de cinza)</label>
+    <button id="aplicarTodas" type="button">Aplicar a todas</button>
+    <button id="restaurar" type="button">Restaurar esta página</button>
+    <p class="nota">Clique numa página para ajustá-la.</p>
+    </div>
+
+    <hr>
+    <button id="exportar" class="principal" disabled>Exportar JPG</button>
+    <div id="msgExportar" class="msg"></div>
+    <button id="mostrar" type="button">Mostrar no Finder</button>
+  </aside>
+
+  <main>
+    <div class="zona" id="zona">
+      Arraste aqui o <b>PDF</b>, o <b>.zip</b>, a <b>pasta</b> ou imagens — cada página vira um JPG —
+      ou escolha <a id="escolher">arquivos / .zip</a> · <a id="escolherDir">uma pasta</a>
+      <input type="file" id="seletor" multiple accept=".pdf,.jpg,.jpeg,.png,.tif,.tiff,.heic,.zip" hidden>
+      <input type="file" id="seletorDir" webkitdirectory hidden>
+    </div>
+    <div class="barra">
+      <span id="resumo">Nenhuma página</span>
+      <button id="limpar">Limpar tudo</button>
+    </div>
+    <div class="grade" id="grade"></div>
+  </main>
+</div>
+<div class="ampliada" id="ampliada"><img id="imgAmpliada" alt="Página ampliada"></div>
+{% endblock %}
+
+{% block script %}
+<script>
+let paginas = [];       // [{id, nome, giro, brilho, contraste, realce}] na ordem da exportação
+let selecionadaId = null;
+let pastaExportada = "";
+
+// ---------- ajustes (por página) ----------
+const selecionada = () => paginas.find(p => p.id === selecionadaId);
+const ajustada = p => p.brilho !== 0 || p.contraste !== 0 || p.realce;
+function urlPrevia(p, tam) {
+  return `/converter/previa/${p.id}?` + new URLSearchParams({ tam, brilho: p.brilho, contraste: p.contraste, realce: p.realce ? 1 : 0 });
+}
+function carregarControles() {   // mostra na lateral os valores da página selecionada
+  const p = selecionada();
+  $("ajustesPagina").classList.toggle("desabilitado", !p);
+  ["brilho", "contraste", "realce", "aplicarTodas", "restaurar"].forEach(id => { $(id).disabled = !p; });
+  $("brilho").value = p ? p.brilho : 0;
+  $("contraste").value = p ? p.contraste : 0;
+  $("realce").checked = p ? p.realce : false;
+  $("vBrilho").textContent = $("brilho").value;
+  $("vContraste").textContent = $("contraste").value;
+}
+function selecionar(id) {
+  selecionadaId = id;
+  document.querySelectorAll(".cartao").forEach(c => c.classList.toggle("selecionada", c.dataset.id === id));
+  carregarControles();
+}
+function atualizarCartao(p) {   // só o selo e a miniatura desta página
+  const c = document.querySelector(`.cartao[data-id="${p.id}"]`);
+  if (!c) return;
+  c.classList.toggle("ajustada", ajustada(p));
+  c.querySelector(".mini img").src = urlPrevia(p, 400);
+}
+let timerAjuste;
+function aoAjustar() {
+  const p = selecionada();
+  if (!p) return;
+  p.brilho = +$("brilho").value;
+  p.contraste = +$("contraste").value;
+  p.realce = $("realce").checked;
+  $("vBrilho").textContent = p.brilho;
+  $("vContraste").textContent = p.contraste;
+  clearTimeout(timerAjuste);
+  timerAjuste = setTimeout(() => atualizarCartao(p), 200);   // espera parar de arrastar para não pedir prévia a cada pixel
+}
+["brilho", "contraste"].forEach(id => $(id).addEventListener("input", aoAjustar));
+$("realce").addEventListener("change", aoAjustar);
+$("restaurar").onclick = () => {
+  const p = selecionada();
+  if (!p) return;
+  Object.assign(p, { brilho: 0, contraste: 0, realce: false });
+  carregarControles(); atualizarCartao(p);
+};
+$("aplicarTodas").onclick = () => {
+  const o = selecionada();
+  if (!o) return;
+  paginas.forEach(p => { if (p !== o) { Object.assign(p, { brilho: o.brilho, contraste: o.contraste, realce: o.realce }); atualizarCartao(p); } });
+};
+
+// ---------- envio ----------
+async function enviar(lista, origem = "") {
+  const { arquivos } = filtrarArquivos(lista);
+  if (!arquivos.length) { alert("Nenhum PDF, imagem ou .zip encontrado."); return; }
+  const fd = new FormData();
+  arquivos.forEach(f => fd.append("arquivos", f, f.name));
+  $("resumo").textContent = "Convertendo páginas…";
+  const r = await (await fetch("/converter/enviar", { method: "POST", body: fd })).json();
+  r.paginas.filter(p => p.id).forEach(p => paginas.push({ ...p, giro: 0, brilho: 0, contraste: 0, realce: false }));
+  // sugestão de nome da pasta: nome do paciente (zip/pasta) ou do primeiro arquivo
+  if (!$("nome").value.trim()) {
+    const daPasta = origem && !/\.zip$/i.test(origem) && !origem.includes(",") ? origem : "";
+    $("nome").value = r.sugestao_nome || daPasta;
+  }
+  if (!selecionada() && paginas.length) selecionadaId = paginas[0].id;
+  desenhar();
+  const erros = r.paginas.filter(p => p.erro).map(p => p.erro);
+  if (erros.length) alert(erros.join("\n"));
+}
+ativarEntrada(enviar);
+temTrabalhoPendente = () => paginas.length > 0 && !pastaExportada;
+
+// ---------- páginas ----------
+function desenhar() {
+  const grade = $("grade");
+  grade.innerHTML = "";
+  if (!paginas.length) grade.innerHTML = '<div class="vazio">As páginas aparecem aqui, na ordem dos arquivos JPG.</div>';
+  paginas.forEach((p, i) => {
+    const c = document.createElement("div");
+    c.className = "cartao" + (ajustada(p) ? " ajustada" : "") + (p.id === selecionadaId ? " selecionada" : "");
+    c.dataset.id = p.id;
+    const deitada = p.giro % 180 !== 0 ? " deitada" : "";
+    c.innerHTML = `
+      <div class="ordem">${i + 1}</div>
+      <div class="selo">ajustada</div>
+      <div class="mini${deitada}"><img data-id="${p.id}" src="${urlPrevia(p, 400)}"
+           style="transform: translate(-50%, -50%) rotate(${p.giro}deg)" alt="Página ${i + 1}"></div>
+      <div class="nome" title="${esc(p.nome)}">${esc(p.nome)}</div>
+      <div class="acoes">
+        <button data-acao="ampliar" class="ampliar" title="Ampliar">🔍</button>
+        <button data-acao="girar" title="Girar 90°">↻ Girar</button>
+        <button data-acao="remover" title="Remover">✕</button>
+      </div>`;
+    c.onclick = e => { if (!e.target.closest("button")) selecionar(p.id); };   // botões não selecionam
+    c.querySelector('[data-acao="ampliar"]').onclick = () => {
+      $("imgAmpliada").src = urlPrevia(p, 1400);
+      $("imgAmpliada").style.transform = `rotate(${p.giro}deg)`;
+      $("ampliada").classList.add("aberta");
+    };
+    c.querySelector('[data-acao="girar"]').onclick = () => { p.giro = (p.giro + 90) % 360; desenhar(); };
+    c.querySelector('[data-acao="remover"]').onclick = () => {
+      fetch(`/converter/remover/${p.id}`, { method: "POST" });
+      paginas = paginas.filter(x => x.id !== p.id);
+      if (selecionadaId === p.id) selecionadaId = paginas.length ? paginas[Math.min(i, paginas.length - 1)].id : null;
+      desenhar();
+    };
+    grade.appendChild(c);
+  });
+  carregarControles();
+  $("resumo").textContent = paginas.length ? `${paginas.length} página(s)` : "Nenhuma página";
+  $("exportar").disabled = !paginas.length;
+}
+$("ampliada").onclick = () => $("ampliada").classList.remove("aberta");
+document.addEventListener("keydown", e => { if (e.key === "Escape") $("ampliada").classList.remove("aberta"); });
+$("limpar").onclick = () => {
+  paginas.forEach(p => fetch(`/converter/remover/${p.id}`, { method: "POST" }));
+  paginas = []; selecionadaId = null; pastaExportada = ""; $("nome").value = "";
+  $("msgExportar").textContent = ""; $("mostrar").style.display = "none";
+  desenhar();
+};
+
+// ---------- exportar ----------
+$("exportar").onclick = async () => {
+  const nome = $("nome").value.trim();
+  if (!nome) { $("msgExportar").textContent = "Dê um nome para a pasta."; $("msgExportar").className = "msg erro"; $("nome").focus(); return; }
+  $("exportar").disabled = true;
+  $("msgExportar").textContent = "Exportando…"; $("msgExportar").className = "msg";
+  const r = await fetch("/converter/exportar", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ nome, paginas: paginas.map(p => ({ id: p.id, giro: p.giro, brilho: p.brilho, contraste: p.contraste, realce: p.realce })) }) });
+  const resp = await r.json();
+  $("exportar").disabled = false;
+  if (!r.ok) { $("msgExportar").textContent = resp.erro; $("msgExportar").className = "msg erro"; return; }
+  pastaExportada = resp.pasta;
+  $("msgExportar").textContent = `${resp.quantidade} JPG(s) em Downloads/${resp.nome_pasta}`;
+  $("msgExportar").className = "msg ok";
+  $("mostrar").style.display = "block";
+};
+$("mostrar").onclick = async () => {
+  const r = await fetch("/converter/mostrar", { method: "POST", headers: { "Content-Type": "application/json" },
+                                                body: JSON.stringify({ pasta: pastaExportada }) });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); alert(e.erro || "Não consegui abrir a pasta."); }
+};
+
+desenhar();
+</script>
+{% endblock %}
