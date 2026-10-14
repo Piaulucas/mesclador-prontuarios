@@ -57,6 +57,16 @@ O navegador abre em `http://127.0.0.1:5050`. Para encerrar, `Ctrl+C` no terminal
 4. Escolha o tipo, digite o Nº da remoção e pressione Enter
 5. `⌘ Enter` (ou o botão) para mesclar e salvar
 
+### Abrir com um ícone (macOS)
+
+Para não precisar do Terminal no dia a dia, crie o ícone uma vez:
+
+```bash
+bash macos/criar_app.sh
+```
+
+Isso gera `~/Applications/Mesclador.app`; arraste-o para o Dock. O ícone abre o app em segundo plano e, se ele já estiver aberto, só mostra a janela de novo. Para fechar, use o botão **Encerrar o app** na tela. O registro de execução fica em `~/Library/Logs/mesclador.log`. Se a pasta do projeto mudar de lugar, rode o script de novo.
+
 ## Configuração
 
 Tudo fica em `config.toml` (veja os comentários em [`config.example.toml`](config.example.toml)):
