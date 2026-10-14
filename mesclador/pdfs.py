@@ -106,8 +106,10 @@ def ordem_natural(texto):
 
 
 def arquivos_do_zip(origem):
-    """Lê um .zip e devolve [(nome_do_arquivo, bytes)] só com PDFs/imagens, em ordem natural
-    pelo caminho dentro do zip. Ignora lixo do macOS (__MACOSX, ._*, .DS_Store).
+    """Lê um .zip e devolve ([(nome_do_arquivo, bytes)], pasta_raiz).
+    Só PDFs/imagens, em ordem natural pelo caminho dentro do zip; ignora lixo do macOS
+    (__MACOSX, ._*, .DS_Store). pasta_raiz é a pasta única que contém tudo (ex.: o nome
+    do paciente quando a pasta foi baixada inteira do Drive), ou None.
     Nada é extraído para o disco com o nome original (evita caminhos maliciosos no zip)."""
     itens = []
     with zipfile.ZipFile(origem) as z:
@@ -120,4 +122,7 @@ def arquivos_do_zip(origem):
             if tipo_do_arquivo(nome):
                 itens.append((caminho, nome))
         itens.sort(key=lambda x: ordem_natural(x[0]))
-        return [(nome, z.read(caminho)) for caminho, nome in itens]
+        raizes = {c.replace("\\", "/").split("/")[0] if "/" in c.replace("\\", "/") else None
+                  for c, _ in itens}
+        pasta_raiz = raizes.pop() if len(raizes) == 1 else None
+        return [(nome, z.read(caminho)) for caminho, nome in itens], pasta_raiz

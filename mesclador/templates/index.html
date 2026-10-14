@@ -100,6 +100,7 @@
     </div>
     <label>Nome do paciente <input id="nome" autocomplete="off"></label>
     <div id="msgBusca" class="msg"></div>
+    <div id="msgConferencia" class="msg"></div>
     <div id="escolhas" class="escolhas"></div>
 
     <label>Pasta principal
@@ -138,6 +139,9 @@ const esc = t => String(t).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":
 let itens = [];          // [{id, nome, paginas, giro}] na ordem da tela
 let arrastandoId = null; // cartão sendo reordenado
 let origemAtual = "";    // de onde vieram os arquivos (zip/pasta), mostrado no resumo
+let origemNome = "";     // nome do zip/pasta usado para conferir com a planilha
+let conferencia = null;  // true/false/null — resposta do servidor
+let nomeOrigemLimpo = ""; // nome da origem já normalizado pelo servidor
 
 // ---------- memória leve no navegador (empresa/planilha escolhidas) ----------
 const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
@@ -164,6 +168,12 @@ async function enviar(lista, origem = "") {
   resp.filter(x => x.id).forEach(x => itens.push({ ...x, giro: 0 }));
   desenhar();
   if (origem) origemAtual = `de ${origem}` + (ignorados ? ` (${ignorados} ignorado(s))` : "");
+  // nome para conferência: o servidor já extrai do zip; para pasta, usa o nome da pasta
+  // (um lote novo de zip/pasta substitui o anterior; arquivos soltos mantêm o que havia)
+  const doZip = resp.find(x => x.origem);
+  if (doZip) origemNome = doZip.origem;
+  else if (origem) origemNome = (!/\.zip$/i.test(origem) && !origem.includes(",")) ? origem : "";
+  previa();
   desenhar();
   if (erros.length) alert(erros.join("\n"));
 }
@@ -262,7 +272,7 @@ function desenhar() {
     grade.appendChild(c);
   });
   const pags = itens.reduce((s, x) => s + x.paginas, 0);
-  if (!itens.length) origemAtual = "";
+  if (!itens.length) { origemAtual = ""; origemNome = ""; }
   $("resumo").textContent = itens.length
     ? `${itens.length} arquivo(s) · ${pags} página(s)` + (origemAtual ? ` · ${origemAtual}` : "")
     : "Nenhum arquivo";
@@ -330,10 +340,17 @@ function previa() {
   clearTimeout(timerPrevia);
   timerPrevia = setTimeout(async () => {
     const q = new URLSearchParams({ pasta: $("pasta").value.trim(), tipo: $("tipo").value,
-                                    numero: $("numero").value, nome: $("nome").value });
+                                    numero: $("numero").value, nome: $("nome").value, origem: origemNome });
     const r = await (await fetch(`/previa?${q}`)).json();
     $("previa").textContent = r.caminho;
     $("msgPrevia").textContent = r.aviso || "";
+    conferencia = r.confere; nomeOrigemLimpo = r.nome_origem || "";
+    const c = $("msgConferencia");
+    if (r.confere === true) { c.textContent = `✓ Confere com "${r.nome_origem}"`; c.className = "msg ok"; }
+    else if (r.confere === false) {
+      c.textContent = `⚠ Os arquivos vieram de "${r.nome_origem}", que não bate com o nome da planilha. Confira o Nº.`;
+      c.className = "msg erro";
+    } else { c.textContent = ""; c.className = "msg"; }
   }, 150);
   validar();
 }
@@ -357,6 +374,8 @@ $("escolherPasta").onclick = async () => {
 // ---------- salvar ----------
 async function salvar(sobrescrever = false) {
   if ($("salvar").disabled) return;
+  if (!sobrescrever && conferencia === false &&
+      !confirm(`Os arquivos vieram de "${nomeOrigemLimpo}", mas o nome da planilha é "${$("nome").value}".\n\nSalvar mesmo assim?`)) return;
   $("salvar").disabled = true;
   const corpo = {
     itens: itens.map(x => ({ id: x.id, giro: x.giro })),

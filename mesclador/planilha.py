@@ -1,5 +1,6 @@
 """Tudo que envolve a planilha de faturamento: listar, ler e buscar o Nº da remoção."""
 
+import difflib
 import re
 import unicodedata
 from pathlib import Path
@@ -118,3 +119,42 @@ def buscar(remocoes, numero, tipo=None):
     if not numero_para_texto(numero):
         return []
     return [r for r in remocoes if mesmo_numero(r["numero"], numero) and (not tipo or r["tipo"] == tipo)]
+
+
+# ---------------------------------------------------------------- conferência de nomes
+
+_SUFIXO_DRIVE = re.compile(r"-\d{8}T\d{6}Z(-\d+)*$")   # "-20261014T190644Z-1-001"
+_PARTICULAS = {"DE", "DA", "DO", "DAS", "DOS", "E"}
+
+
+def nome_da_origem(texto):
+    """Nome do paciente a partir do nome do zip/pasta, ou None se for genérico.
+    'MARIA SOUZA-20261014T190644Z-001.zip' -> 'MARIA SOUZA'
+    'drive-download-20261014T190644Z-1-001.zip' -> None"""
+    if not texto:
+        return None
+    nome = re.sub(r"\.zip$", "", str(texto).strip(), flags=re.I)
+    nome = _SUFIXO_DRIVE.sub("", nome)
+    nome = normalizar(nome.replace("_", " "))
+    if not nome or nome.startswith("DRIVE-DOWNLOAD") or not re.search(r"[A-Z]{2}", nome):
+        return None
+    return nome
+
+
+def _tokens(nome):
+    return [t for t in re.split(r"[^A-Z0-9]+", normalizar(nome)) if t and t not in _PARTICULAS]
+
+
+def nomes_conferem(nome_origem, nome_planilha):
+    """True se os nomes parecem ser da mesma pessoa. Aceita nome abreviado
+    ('MARIA SOUZA' x 'MARIA FICTICIA DE SOUZA') e pequenas diferenças de digitação."""
+    a, b = _tokens(nome_origem), _tokens(nome_planilha)
+    if not a or not b:
+        return False
+    if a == b:
+        return True
+    curto, longo = (a, b) if len(a) <= len(b) else (b, a)
+    # todas as palavras do nome curto aparecem no longo, e o primeiro nome coincide
+    if curto[0] == longo[0] and all(t in longo for t in curto):
+        return True
+    return difflib.SequenceMatcher(None, " ".join(a), " ".join(b)).ratio() >= 0.88

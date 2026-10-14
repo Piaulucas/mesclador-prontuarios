@@ -179,3 +179,38 @@ def test_zip_corrompido_avisa(cliente):
 def test_arquivo_vindo_de_pasta_usa_so_o_nome(cliente):
     [r] = enviar(cliente, (jpeg(), "FULANO/folha1.jpg"))
     assert r["nome"] == "folha1.jpg"
+
+
+def zip_com(nomes):
+    import io, zipfile
+    b = io.BytesIO()
+    with zipfile.ZipFile(b, "w") as z:
+        for n in nomes:
+            z.writestr(n, jpeg().getvalue())
+    b.seek(0)
+    return b
+
+
+def test_zip_com_nome_do_paciente_informa_origem(cliente):
+    resp = enviar(cliente, (zip_com(["MARIA SOUZA/a.jpg"]), "MARIA SOUZA-20261014T190644Z-001.zip"))
+    assert resp[0]["origem"] == "MARIA SOUZA"
+
+
+def test_drive_download_usa_pasta_interna(cliente):
+    resp = enviar(cliente, (zip_com(["JOSE SILVA/a.jpg", "JOSE SILVA/b.jpg"]), "drive-download-20261014T1-001.zip"))
+    assert resp[0]["origem"] == "JOSE SILVA"
+
+
+def test_drive_download_sem_pasta_nao_confere(cliente):
+    resp = enviar(cliente, (zip_com(["a.jpg", "b.jpg"]), "drive-download-20261014T190644Z-1-001.zip"))
+    assert all("origem" not in r for r in resp)
+
+
+def test_previa_informa_conferencia(cliente):
+    def conf(origem, nome):
+        return cliente.get("/previa", query_string={"pasta": PASTA["p"], "tipo": "ADULTO-PED", "numero": "4",
+                                                    "nome": nome, "origem": origem}).get_json()["confere"]
+    assert conf("MARIA SOUZA", "MARIA FICTICIA DE SOUZA") is True
+    assert conf("MARIA SOUZA", "ANA PEREIRA") is False
+    assert conf("drive-download-20261014T190644Z-1-001", "ANA PEREIRA") is None
+    assert conf("", "ANA PEREIRA") is None

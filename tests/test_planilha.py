@@ -62,3 +62,19 @@ def test_buscar_numero_inexistente(pasta_planilhas):
 def test_resolver_caminho_nao_sai_da_pasta(pasta_planilhas):
     assert planilha.resolver_caminho(pasta_planilhas, "2026/10_Planilha_de_Faturamento_Exemplo_Outubro_26.xlsx") is not None
     assert planilha.resolver_caminho(pasta_planilhas, "../../etc/passwd") is None
+
+
+def test_nome_da_origem():
+    assert planilha.nome_da_origem("Maria Souza-20261014T190644Z-001.zip") == "MARIA SOUZA"
+    assert planilha.nome_da_origem("JOSÉ DA SILVA-20261014T190644Z-1-001") == "JOSE DA SILVA"
+    assert planilha.nome_da_origem("drive-download-20261014T190644Z-1-001.zip") is None
+    assert planilha.nome_da_origem("drive-download-20261014T181216Z-1-001") is None
+    assert planilha.nome_da_origem("") is None and planilha.nome_da_origem(None) is None
+
+
+def test_nomes_conferem():
+    assert planilha.nomes_conferem("MARIA SOUZA", "Maria Fictícia de Souza")       # abreviado
+    assert planilha.nomes_conferem("JOSE DA SILVA", "José Silva")                  # partícula
+    assert planilha.nomes_conferem("JOAO PEREIRA SANTOS", "JOAO PERERIA SANTOS")   # digitação
+    assert not planilha.nomes_conferem("MARIA SOUZA", "ANA SOUZA")                 # outra pessoa
+    assert not planilha.nomes_conferem("SOUZA", "MARIA SOUZA")                     # primeiro nome difere

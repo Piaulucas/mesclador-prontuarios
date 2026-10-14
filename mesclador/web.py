@@ -96,14 +96,19 @@ def create_app(config, pasta_temp=None):
             nome = Path(f.filename).name          # o navegador pode mandar "pasta/arquivo.jpg"
             if nome.lower().endswith(".zip"):
                 try:
-                    conteudo = pdfs.arquivos_do_zip(f.stream)
+                    conteudo, pasta_raiz = pdfs.arquivos_do_zip(f.stream)
                 except Exception as e:
                     resposta.append({"erro": f"{nome}: zip inválido ({e})"})
                     continue
                 if not conteudo:
                     resposta.append({"erro": f"{nome}: nenhum PDF ou imagem dentro do zip"})
+                # nome do paciente: do nome do zip ou, se for genérico, da pasta dentro dele
+                origem = planilha.nome_da_origem(nome) or planilha.nome_da_origem(pasta_raiz)
                 for nome_interno, dados in conteudo:
-                    resposta.append(registrar(nome_interno, lambda c, d=dados: c.write_bytes(d)))
+                    item = registrar(nome_interno, lambda c, d=dados: c.write_bytes(d))
+                    if origem and "id" in item:
+                        item["origem"] = origem
+                    resposta.append(item)
             else:
                 resposta.append(registrar(nome, f.save))
         return jsonify(resposta)
@@ -149,13 +154,24 @@ def create_app(config, pasta_temp=None):
     def previa():
         a = request.args
         tipo = a.get("tipo", "")
+        if not pasta_valida(a.get("pasta", "")) or tipo not in config.tipos:
+            arquivo = nome_arquivo(a.get("numero", "") or "?", a.get("nome", "") or "NOME")
+            return jsonify(caminho=f"(escolha a pasta)/{tipo}/{arquivo}", aviso="Escolha a pasta principal.",
+                           **conferencia(a.get("origem", ""), a.get("nome", "")))
         arquivo = nome_arquivo(a.get("numero", "") or "?", a.get("nome", "") or "NOME")
         pasta = pasta_valida(a.get("pasta", ""))
-        if not pasta or tipo not in config.tipos:
-            return jsonify(caminho=f"(escolha a pasta)/{tipo}/{arquivo}", aviso="Escolha a pasta principal.")
         destino, existe = montar_destino(pasta, tipo, a.get("numero", "") or "?", a.get("nome", "") or "NOME")
         aviso = "" if existe else f"A subpasta {destino.parent.name} não existe e será criada."
-        return jsonify(caminho=f"{pasta.name}/{destino.parent.name}/{arquivo}", aviso=aviso)
+        return jsonify(caminho=f"{pasta.name}/{destino.parent.name}/{arquivo}", aviso=aviso,
+                       **conferencia(a.get("origem", ""), a.get("nome", "")))
+
+    def conferencia(origem, nome):
+        """Compara o nome do zip/pasta com o nome da planilha.
+        confere = True/False, ou None quando não há nome de origem para comparar."""
+        nome_origem = planilha.nome_da_origem(origem)
+        if not nome_origem or not str(nome).strip():
+            return {"confere": None, "nome_origem": nome_origem}
+        return {"confere": planilha.nomes_conferem(nome_origem, nome), "nome_origem": nome_origem}
 
     @app.post("/escolher-pasta")
     def escolher_pasta():
