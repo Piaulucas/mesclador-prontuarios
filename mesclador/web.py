@@ -10,7 +10,7 @@ from pathlib import Path
 
 from flask import Flask, abort, jsonify, render_template, request, send_file
 
-from . import navegador, pdfs, planilha, seletor
+from . import conversor, navegador, pdfs, planilha, seletor
 
 IDENTIDADE = "mesclador"   # resposta do /ping, para saber se a porta é deste app
 
@@ -78,8 +78,14 @@ def create_app(config, pasta_temp=None):
     def index():
         hoje = date.today()
         mes_padrao = max(f"{hoje.year}-{hoje.month:02d}", config.mes_inicial or "")
-        return render_template("index.html", empresas=list(config.empresas), tipos=config.tipos,
-                               mes_padrao=mes_padrao, mes_minimo=config.mes_inicial)
+        return render_template("index.html", pagina="mesclar", empresas=list(config.empresas),
+                               tipos=config.tipos, mes_padrao=mes_padrao, mes_minimo=config.mes_inicial)
+
+    @app.get("/converter")
+    def converter():
+        return render_template("converter.html", pagina="converter")
+
+    app.register_blueprint(conversor.criar_blueprint(temp))
 
     # ---------------------------------------------------------- arquivos
 
