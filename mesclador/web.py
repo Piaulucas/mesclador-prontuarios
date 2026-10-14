@@ -1,13 +1,18 @@
 """Aplicação Flask: a interface local e as rotas que ela usa."""
 
+import os
+import shutil
 import tempfile
+import threading
 import uuid
 from datetime import date
 from pathlib import Path
 
 from flask import Flask, abort, jsonify, render_template, request, send_file
 
-from . import pdfs, planilha, seletor
+from . import navegador, pdfs, planilha, seletor
+
+IDENTIDADE = "mesclador"   # resposta do /ping, para saber se a porta é deste app
 
 
 def _ano_mes(texto):
@@ -33,6 +38,12 @@ def create_app(config, pasta_temp=None):
     arquivos = {}   # id -> {"caminho", "nome", "tipo", "paginas"}  (só em memória)
     salvos = set()  # PDFs gerados nesta sessão (os únicos que /abrir aceita)
     app.config["PASTA_TEMP"] = temp
+
+    def encerrar_processo(url):
+        navegador.fechar_aba(url)   # fecha a aba do app (macOS, Chrome/Safari)
+        shutil.rmtree(temp, ignore_errors=True)
+        os._exit(0)          # encerra o servidor (o app roda em segundo plano, sem Terminal)
+    app.config["AO_ENCERRAR"] = encerrar_processo   # os testes trocam por uma função inofensiva
 
     def descartar(id_):
         a = arquivos.pop(id_, None)
@@ -232,5 +243,16 @@ def create_app(config, pasta_temp=None):
         if caminho not in salvos or not caminho.is_file():
             abort(404)
         return send_file(caminho, mimetype="application/pdf")
+
+    @app.get("/ping")
+    def ping():
+        return IDENTIDADE
+
+    @app.post("/encerrar")
+    def encerrar():
+        # espera um pouco para a resposta chegar ao navegador antes de encerrar
+        url = request.host_url.rstrip("/")   # ex.: http://127.0.0.1:5050
+        threading.Timer(0.3, app.config["AO_ENCERRAR"], args=[url]).start()
+        return jsonify(ok=True)
 
     return app

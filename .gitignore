@@ -16,6 +16,7 @@ config.toml
 *.zip
 # Exceção: imagens da documentação (só capturas com dados fictícios)
 !docs/*.png
+!macos/icone.png
 
 # ---- Python ----
 __pycache__/

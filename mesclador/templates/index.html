@@ -69,6 +69,7 @@
   .vazio { color: var(--suave); text-align: center; padding: 40px; }
   .historico { font-size: 12px; display: flex; flex-direction: column; gap: 4px; }
   .historico a { color: var(--acento); }
+  .encerrar { margin-top: auto; color: var(--suave); font-size: 12px; }
   @media (max-width: 760px) { .app { grid-template-columns: 1fr; } aside { border-right: 0; } }
 </style>
 </head>
@@ -116,6 +117,7 @@
 
     <hr>
     <div class="historico" id="historico"></div>
+    <button id="encerrar" class="encerrar" type="button" title="Fecha o app (os arquivos já salvos não são afetados)">Encerrar o app</button>
   </aside>
 
   <main>
@@ -402,6 +404,19 @@ async function salvar(sobrescrever = false) {
   $("escolhas").innerHTML = ""; $("msgBusca").textContent = "";
   desenhar(); previa(); $("numero").focus();
 }
+
+// ---------- encerrar ----------
+$("encerrar").onclick = async () => {
+  if (itens.length && !confirm("Há arquivos carregados que não foram salvos. Encerrar mesmo assim?")) return;
+  try { await fetch("/encerrar", { method: "POST" }); } catch (e) {}
+  // Tenta fechar a aba. O navegador só permite quando a aba não tem histórico
+  // (caso normal ao abrir pelo ícone); se não fechar, mostra a mensagem.
+  window.close();
+  setTimeout(() => {
+    document.body.innerHTML = '<div style="padding:40px;font:16px -apple-system,sans-serif">' +
+      "Mesclador encerrado. Pode fechar esta aba.<br><br>Para abrir de novo, use o ícone.</div>";
+  }, 300);
+};
 
 // ---------- eventos ----------
 $("empresa").onchange = async () => { guardar("empresa", $("empresa").value); carregarPasta(); await carregarPlanilhas(); buscar(); };

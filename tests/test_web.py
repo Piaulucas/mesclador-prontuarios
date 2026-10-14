@@ -214,3 +214,18 @@ def test_previa_informa_conferencia(cliente):
     assert conf("MARIA SOUZA", "ANA PEREIRA") is False
     assert conf("drive-download-20261014T190644Z-1-001", "ANA PEREIRA") is None
     assert conf("", "ANA PEREIRA") is None
+
+
+def test_ping_identifica_o_app(cliente):
+    assert cliente.get("/ping").get_data(as_text=True) == "mesclador"
+
+
+def test_encerrar_chama_a_rotina_de_saida(config, tmp_path):
+    import time
+    from mesclador.web import create_app
+    app = create_app(config, pasta_temp=tmp_path / "t3")
+    chamado = []
+    app.config["AO_ENCERRAR"] = lambda url: chamado.append(url)   # não mata o processo do teste
+    assert app.test_client().post("/encerrar").get_json() == {"ok": True}
+    time.sleep(0.5)
+    assert chamado == ["http://localhost"]   # endereço usado para achar e fechar a aba
