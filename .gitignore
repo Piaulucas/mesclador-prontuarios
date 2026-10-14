@@ -1,0 +1,28 @@
+# ---- Dados sensíveis: NUNCA versionar ----
+# Configuração local (caminhos do seu computador e nomes de clientes)
+config.toml
+# Qualquer documento ou planilha real que caia por engano na pasta do projeto
+*.pdf
+*.jpg
+*.jpeg
+*.png
+*.tif
+*.tiff
+*.heic
+*.xlsx
+*.xlsm
+*.xls
+*.csv
+*.zip
+# Exceção: imagens da documentação (só capturas com dados fictícios)
+!docs/*.png
+
+# ---- Python ----
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# ---- Sistema ----
+.DS_Store

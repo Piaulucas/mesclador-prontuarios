@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mesclador de Prontuários</title>
+<style>
+  :root {
+    --fundo: #f4f5f7; --painel: #ffffff; --borda: #d9dce1; --texto: #1d2129;
+    --suave: #6b7280; --acento: #1f6feb; --acento-txt: #ffffff;
+    --ok: #1a7f37; --erro: #cf222e; --alvo: #e8f0fe;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fundo: #16181c; --painel: #1f2228; --borda: #353a42; --texto: #e6e8eb;
+      --suave: #9aa1ab; --acento: #4c8dff; --acento-txt: #0b0d10;
+      --ok: #3fb950; --erro: #f85149; --alvo: #1d2a40;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+         background: var(--fundo); color: var(--texto); }
+  .app { display: grid; grid-template-columns: 300px 1fr; min-height: 100vh; }
+  aside { background: var(--painel); border-right: 1px solid var(--borda); padding: 20px;
+          display: flex; flex-direction: column; gap: 14px; }
+  h1 { font-size: 16px; margin: 0 0 4px; }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--suave); }
+  input, select { font: inherit; color: var(--texto); background: var(--fundo);
+                  border: 1px solid var(--borda); border-radius: 6px; padding: 7px 9px; }
+  input:focus, select:focus { outline: 2px solid var(--acento); outline-offset: -1px; }
+  .pasta { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+  .pasta input { min-width: 0; font-size: 12px; }
+  .linha { display: grid; grid-template-columns: 1fr 100px; gap: 8px; }
+  .msg { font-size: 12px; min-height: 16px; }
+  .msg.erro { color: var(--erro); } .msg.ok { color: var(--ok); }
+  .escolhas button { margin: 4px 4px 0 0; }
+  hr { border: 0; border-top: 1px solid var(--borda); margin: 4px 0; width: 100%; }
+  .previa { font-family: ui-monospace, Menlo, monospace; font-size: 12px; word-break: break-all;
+            background: var(--fundo); border: 1px dashed var(--borda); border-radius: 6px; padding: 8px; }
+  button { font: inherit; cursor: pointer; border-radius: 6px; border: 1px solid var(--borda);
+           background: var(--painel); color: var(--texto); padding: 7px 12px; }
+  button.principal { background: var(--acento); color: var(--acento-txt); border-color: var(--acento);
+                     font-weight: 600; padding: 10px; }
+  button:disabled { opacity: .5; cursor: default; }
+  main { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .zona { border: 2px dashed var(--borda); border-radius: 10px; padding: 18px; text-align: center;
+          color: var(--suave); background: var(--painel); }
+  .zona.ativa { border-color: var(--acento); background: var(--alvo); color: var(--texto); }
+  .zona a { color: var(--acento); cursor: pointer; text-decoration: underline; }
+  .barra { display: flex; justify-content: space-between; align-items: center; color: var(--suave); }
+  .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; }
+  .cartao { background: var(--painel); border: 1px solid var(--borda); border-radius: 8px; padding: 8px;
+            cursor: grab; position: relative; user-select: none; }
+  .cartao.arrastando { opacity: .35; }
+  .cartao.alvo-antes { box-shadow: -4px 0 0 var(--acento); }
+  .cartao.alvo-depois { box-shadow: 4px 0 0 var(--acento); }
+  .ordem { position: absolute; top: 6px; left: 6px; background: var(--acento); color: var(--acento-txt);
+           border-radius: 10px; min-width: 22px; height: 22px; font-size: 12px; font-weight: 700;
+           display: grid; place-items: center; padding: 0 6px; z-index: 1; }
+  .mini { height: 200px; position: relative; overflow: hidden; border-radius: 4px; background: var(--fundo); }
+  .mini img { position: absolute; top: 50%; left: 50%; max-width: 100%; max-height: 100%;
+              transition: transform .15s; pointer-events: none; }
+  /* girada 90°/270°: limita pelo lado oposto, porque largura e altura se invertem */
+  .mini.deitada img { max-width: 200px; max-height: 150px; }
+  .nome { font-size: 12px; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .info { font-size: 11px; color: var(--suave); }
+  .acoes { display: flex; gap: 6px; margin-top: 6px; }
+  .acoes button { flex: 1; padding: 4px; font-size: 12px; }
+  .vazio { color: var(--suave); text-align: center; padding: 40px; }
+  .historico { font-size: 12px; display: flex; flex-direction: column; gap: 4px; }
+  .historico a { color: var(--acento); }
+  @media (max-width: 760px) { .app { grid-template-columns: 1fr; } aside { border-right: 0; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <h1>Mesclador de Prontuários</h1>
+
+    <label>Empresa
+      <select id="empresa">
+        {% for e in empresas %}<option>{{ e }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Mês de faturamento
+      <input type="month" id="mes" value="{{ mes_padrao }}"{% if mes_minimo %} min="{{ mes_minimo }}"{% endif %}>
+    </label>
+    <label>Planilha de faturamento
+      <select id="planilha"><option value="">— sem planilha (digitar nome) —</option></select>
+    </label>
+    <div id="msgPlanilha" class="msg"></div>
+
+    <hr>
+
+    <div class="linha">
+      <label>Tipo
+        <select id="tipo">{% for t in tipos %}<option>{{ t }}</option>{% endfor %}</select>
+      </label>
+      <label>Nº remoção <input id="numero" inputmode="numeric" autocomplete="off"></label>
+    </div>
+    <label>Nome do paciente <input id="nome" autocomplete="off"></label>
+    <div id="msgBusca" class="msg"></div>
+    <div id="escolhas" class="escolhas"></div>
+
+    <label>Pasta principal
+      <div class="pasta">
+        <input id="pasta" placeholder="/Users/…/OUTUBRO" autocomplete="off" spellcheck="false">
+        <button id="escolherPasta" type="button">Escolher…</button>
+      </div>
+    </label>
+    <label>Será salvo como <div id="previa" class="previa"></div></label>
+    <div id="msgPrevia" class="msg"></div>
+    <button id="salvar" class="principal" disabled>Mesclar e salvar  (⌘ Enter)</button>
+    <div id="msgSalvar" class="msg"></div>
+
+    <hr>
+    <div class="historico" id="historico"></div>
+  </aside>
+
+  <main>
+    <div class="zona" id="zona">
+      Arraste aqui o <b>.zip</b>, a <b>pasta</b> ou os arquivos do prontuário (PDF, JPEG, PNG) —
+      ou escolha <a id="escolher">arquivos / .zip</a> · <a id="escolherDir">uma pasta</a>
+      <input type="file" id="seletor" multiple accept=".pdf,.jpg,.jpeg,.png,.tif,.tiff,.heic,.zip" hidden>
+      <input type="file" id="seletorDir" webkitdirectory hidden>
+    </div>
+    <div class="barra">
+      <span id="resumo">Nenhum arquivo</span>
+      <button id="limpar">Limpar tudo</button>
+    </div>
+    <div class="grade" id="grade"></div>
+  </main>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = t => String(t).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let itens = [];          // [{id, nome, paginas, giro}] na ordem da tela
+let arrastandoId = null; // cartão sendo reordenado
+let origemAtual = "";    // de onde vieram os arquivos (zip/pasta), mostrado no resumo
+
+// ---------- memória leve no navegador (empresa/planilha escolhidas) ----------
+const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+const lembrar = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+
+// ---------- envio de arquivos ----------
+// ordem natural pelo caminho completo: "pasta/pag2" antes de "pasta/pag10"
+const caminhoDe = f => f.caminhoRelativo || f.webkitRelativePath || f.name;
+const ordemNatural = (a, b) => caminhoDe(a).localeCompare(caminhoDe(b), "pt-BR", { numeric: true });
+const EXT_OK = /\.(pdf|jpe?g|png|tiff?|heic|zip)$/i;
+
+async function enviar(lista, origem = "") {
+  // ignora arquivos ocultos e de formato não suportado vindos de pastas (.DS_Store etc.)
+  const todos = [...lista];
+  const arquivos = todos.filter(f => !f.name.startsWith(".") && EXT_OK.test(f.name)).sort(ordemNatural);
+  const ignorados = todos.length - arquivos.length;
+  if (!arquivos.length) { if (todos.length) alert("Nenhum PDF, imagem ou .zip encontrado."); return; }
+  const fd = new FormData();
+  arquivos.forEach(f => fd.append("arquivos", f, f.name));
+  $("resumo").textContent = "Carregando…";
+  const r = await fetch("/enviar", { method: "POST", body: fd });
+  const resp = await r.json();
+  const erros = resp.filter(x => x.erro).map(x => x.erro);
+  resp.filter(x => x.id).forEach(x => itens.push({ ...x, giro: 0 }));
+  desenhar();
+  if (origem) origemAtual = `de ${origem}` + (ignorados ? ` (${ignorados} ignorado(s))` : "");
+  desenhar();
+  if (erros.length) alert(erros.join("\n"));
+}
+
+// lê uma pasta arrastada (e subpastas), guardando o caminho relativo para ordenar
+function lerEntrada(entrada, prefixo = "") {
+  return new Promise(resolve => {
+    if (entrada.isFile) {
+      entrada.file(f => { f.caminhoRelativo = prefixo + f.name; resolve([f]); }, () => resolve([]));
+    } else if (entrada.isDirectory) {
+      const leitor = entrada.createReader(), filhos = [];
+      const lerLote = () => leitor.readEntries(async lote => {
+        if (!lote.length) {   // readEntries devolve em lotes; vazio = terminou
+          const listas = await Promise.all(filhos.map(e => lerEntrada(e, prefixo + entrada.name + "/")));
+          resolve(listas.flat());
+        } else { filhos.push(...lote); lerLote(); }
+      }, () => resolve([]));
+      lerLote();
+    } else resolve([]);
+  });
+}
+
+const zona = $("zona");
+$("escolher").onclick = () => $("seletor").click();
+$("escolherDir").onclick = () => $("seletorDir").click();
+$("seletor").onchange = e => {
+  const zip = [...e.target.files].find(f => /\.zip$/i.test(f.name));
+  enviar(e.target.files, zip ? zip.name : ""); e.target.value = "";
+};
+$("seletorDir").onchange = e => {
+  const pasta = e.target.files[0] ? e.target.files[0].webkitRelativePath.split("/")[0] : "";
+  enviar(e.target.files, pasta); e.target.value = "";
+};
+
+// arrastar do Finder para qualquer lugar da página: arquivos, pastas ou .zip
+const ehArquivo = e => [...e.dataTransfer.types].includes("Files");
+document.addEventListener("dragover", e => { if (ehArquivo(e)) { e.preventDefault(); zona.classList.add("ativa"); } });
+document.addEventListener("dragleave", e => { if (!e.relatedTarget) zona.classList.remove("ativa"); });
+document.addEventListener("drop", async e => {
+  if (!ehArquivo(e)) return;
+  e.preventDefault(); zona.classList.remove("ativa");
+  // as entradas precisam ser lidas AGORA: o navegador apaga a lista depois do evento
+  const entradas = [...e.dataTransfer.items].map(i => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
+  if (!entradas.length) { enviar(e.dataTransfer.files); return; }
+  const pastas = entradas.filter(x => x.isDirectory).map(x => x.name);
+  const zips = entradas.filter(x => x.isFile && /\.zip$/i.test(x.name)).map(x => x.name);
+  const arquivos = (await Promise.all(entradas.map(x => lerEntrada(x)))).flat();
+  enviar(arquivos, [...pastas, ...zips].join(", "));
+});
+
+// ---------- grade de cartões ----------
+function desenhar() {
+  const grade = $("grade");
+  grade.innerHTML = "";
+  if (!itens.length) grade.innerHTML = '<div class="vazio">Os arquivos aparecem aqui, na ordem em que serão mesclados.</div>';
+  itens.forEach((it, i) => {
+    const c = document.createElement("div");
+    c.className = "cartao"; c.draggable = true; c.dataset.id = it.id;
+    const deitada = it.giro % 180 !== 0 ? " deitada" : "";
+    c.innerHTML = `
+      <div class="ordem">${i + 1}</div>
+      <div class="mini${deitada}"><img src="/miniatura/${it.id}" style="transform: translate(-50%, -50%) rotate(${it.giro}deg)"></div>
+      <div class="nome" title="${esc(it.nome)}">${esc(it.nome)}</div>
+      <div class="info">${it.paginas} página${it.paginas > 1 ? "s" : ""}</div>
+      <div class="acoes">
+        <button data-acao="girar" title="Girar 90°">↻ Girar</button>
+        <button data-acao="remover" title="Remover">✕</button>
+      </div>`;
+    c.querySelector('[data-acao="girar"]').onclick = () => { it.giro = (it.giro + 90) % 360; desenhar(); };
+    c.querySelector('[data-acao="remover"]').onclick = () => {
+      fetch(`/remover/${it.id}`, { method: "POST" });
+      itens = itens.filter(x => x.id !== it.id); desenhar();
+    };
+    // reordenar arrastando
+    c.addEventListener("dragstart", e => { arrastandoId = it.id; c.classList.add("arrastando"); e.dataTransfer.effectAllowed = "move"; });
+    c.addEventListener("dragend", () => { arrastandoId = null; desenhar(); });
+    c.addEventListener("dragover", e => {
+      if (!arrastandoId || arrastandoId === it.id) return;
+      e.preventDefault();
+      const r = c.getBoundingClientRect();
+      const depois = e.clientX > r.left + r.width / 2;
+      c.classList.toggle("alvo-depois", depois); c.classList.toggle("alvo-antes", !depois);
+    });
+    c.addEventListener("dragleave", () => c.classList.remove("alvo-antes", "alvo-depois"));
+    c.addEventListener("drop", e => {
+      if (!arrastandoId) return;
+      e.preventDefault(); e.stopPropagation();
+      const r = c.getBoundingClientRect();
+      const depois = e.clientX > r.left + r.width / 2;
+      const movido = itens.find(x => x.id === arrastandoId);
+      itens = itens.filter(x => x.id !== arrastandoId);
+      let pos = itens.findIndex(x => x.id === it.id) + (depois ? 1 : 0);
+      itens.splice(pos, 0, movido);
+      arrastandoId = null; desenhar();
+    });
+    grade.appendChild(c);
+  });
+  const pags = itens.reduce((s, x) => s + x.paginas, 0);
+  if (!itens.length) origemAtual = "";
+  $("resumo").textContent = itens.length
+    ? `${itens.length} arquivo(s) · ${pags} página(s)` + (origemAtual ? ` · ${origemAtual}` : "")
+    : "Nenhum arquivo";
+  validar();
+}
+$("limpar").onclick = () => {
+  itens.forEach(it => fetch(`/remover/${it.id}`, { method: "POST" }));
+  itens = []; desenhar();
+};
+
+// ---------- planilha e busca do Nº ----------
+async function carregarPlanilhas() {
+  const q = new URLSearchParams({ empresa: $("empresa").value, mes: $("mes").value });
+  const lista = await (await fetch(`/planilhas?${q}`)).json();
+  const sel = $("planilha");
+  sel.innerHTML = '<option value="">— sem planilha (digitar nome) —</option>' +
+    lista.map(p => `<option value="${esc(p.caminho)}">${esc(p.caminho)}</option>`).join("");
+  // só aparecem as planilhas do mês escolhido; a primeira já vem selecionada
+  sel.value = lista.length ? lista[0].caminho : "";
+  const aviso = $("msgPlanilha");
+  if (!lista.length) {
+    const [a, m] = $("mes").value.split("-");
+    aviso.textContent = `Nenhuma planilha de ${m}/${a} encontrada — digite o nome à mão.`;
+    aviso.className = "msg erro";
+  } else if (lista.length > 1) {
+    aviso.textContent = `${lista.length} planilhas deste mês — confira se a escolhida é a certa.`;
+    aviso.className = "msg erro";
+  } else { aviso.textContent = ""; }
+}
+
+async function buscar() {
+  const numero = $("numero").value.trim();
+  $("escolhas").innerHTML = ""; $("msgBusca").textContent = ""; $("msgBusca").className = "msg";
+  if (!numero || !$("planilha").value) { previa(); return; }
+  const q = new URLSearchParams({ empresa: $("empresa").value, planilha: $("planilha").value,
+                                  numero, tipo: $("tipo").value });
+  const r = await fetch(`/buscar?${q}`);
+  const achados = await r.json();
+  if (!r.ok) { $("msgBusca").textContent = achados.erro; $("msgBusca").className = "msg erro"; return; }
+  if (achados.length === 0) {
+    $("msgBusca").textContent = `Nº ${numero} não está na aba ${$("tipo").value} — confira ou digite o nome.`;
+    $("msgBusca").className = "msg erro";
+  } else if (achados.length === 1) {
+    preencher(achados[0]);
+  } else {
+    $("msgBusca").textContent = "Esse Nº aparece mais de uma vez. Escolha:";
+    achados.forEach(a => {
+      const b = document.createElement("button");
+      b.textContent = `${a.tipo}: ${a.nome}`;
+      b.onclick = () => { preencher(a); $("escolhas").innerHTML = ""; $("msgBusca").textContent = ""; };
+      $("escolhas").appendChild(b);
+    });
+  }
+  previa();
+}
+function preencher(a) {
+  $("nome").value = a.nome; $("numero").value = a.numero;
+  $("msgBusca").textContent = `Linha ${a.linha} da aba ${a.aba}`; $("msgBusca").className = "msg ok";
+  previa(); validar();
+}
+
+// ---------- prévia do caminho e validação ----------
+let timerPrevia;
+function previa() {
+  clearTimeout(timerPrevia);
+  timerPrevia = setTimeout(async () => {
+    const q = new URLSearchParams({ pasta: $("pasta").value.trim(), tipo: $("tipo").value,
+                                    numero: $("numero").value, nome: $("nome").value });
+    const r = await (await fetch(`/previa?${q}`)).json();
+    $("previa").textContent = r.caminho;
+    $("msgPrevia").textContent = r.aviso || "";
+  }, 150);
+  validar();
+}
+function validar() {
+  $("salvar").disabled = !(itens.length && $("numero").value.trim() && $("nome").value.trim() && $("pasta").value.trim());
+}
+
+// ---------- pasta principal (lembrada por empresa + mês) ----------
+const chavePasta = () => `pasta:${$("empresa").value}:${$("mes").value}`;
+function carregarPasta() { $("pasta").value = lembrar(chavePasta()) || ""; previa(); }
+$("pasta").addEventListener("change", () => { guardar(chavePasta(), $("pasta").value.trim()); previa(); });
+$("pasta").addEventListener("input", previa);
+$("escolherPasta").onclick = async () => {
+  const r = await fetch("/escolher-pasta", { method: "POST", headers: { "Content-Type": "application/json" },
+                                              body: JSON.stringify({ atual: $("pasta").value.trim() }) });
+  const resp = await r.json();
+  if (!r.ok) { $("msgPrevia").textContent = resp.erro; $("msgPrevia").className = "msg erro"; return; }
+  if (resp.caminho) { $("pasta").value = resp.caminho; guardar(chavePasta(), resp.caminho); previa(); }
+};
+
+// ---------- salvar ----------
+async function salvar(sobrescrever = false) {
+  if ($("salvar").disabled) return;
+  $("salvar").disabled = true;
+  const corpo = {
+    itens: itens.map(x => ({ id: x.id, giro: x.giro })),
+    empresa: $("empresa").value, mes: $("mes").value, tipo: $("tipo").value,
+    numero: $("numero").value, nome: $("nome").value, pasta: $("pasta").value.trim(), sobrescrever
+  };
+  const r = await fetch("/salvar", { method: "POST", headers: { "Content-Type": "application/json" },
+                                     body: JSON.stringify(corpo) });
+  const resp = await r.json();
+  if (r.status === 409 && resp.existe) {
+    if (confirm(`Já existe:\n${resp.caminho}\n\nSubstituir?`)) return salvar(true);
+    validar(); return;
+  }
+  if (!r.ok) { $("msgSalvar").textContent = resp.erro; $("msgSalvar").className = "msg erro"; validar(); return; }
+
+  $("msgSalvar").textContent = `Salvo: ${resp.paginas} página(s).`; $("msgSalvar").className = "msg ok";
+  const link = document.createElement("a");
+  link.href = `/abrir?caminho=${encodeURIComponent(resp.caminho)}`; link.target = "_blank";
+  link.textContent = resp.relativo;
+  $("historico").prepend(link);
+
+  // pronto para o próximo prontuário
+  itens = []; $("numero").value = ""; $("nome").value = "";
+  $("escolhas").innerHTML = ""; $("msgBusca").textContent = "";
+  desenhar(); previa(); $("numero").focus();
+}
+
+// ---------- eventos ----------
+$("empresa").onchange = async () => { guardar("empresa", $("empresa").value); carregarPasta(); await carregarPlanilhas(); buscar(); };
+$("planilha").onchange = () => { $("msgPlanilha").textContent = ""; buscar(); };
+$("numero").addEventListener("change", buscar);
+$("numero").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); buscar(); } });
+$("nome").addEventListener("input", previa);
+$("tipo").addEventListener("change", () => { $("nome").value = ""; buscar(); });
+$("mes").addEventListener("change", async () => { carregarPasta(); await carregarPlanilhas(); buscar(); });
+$("salvar").onclick = () => salvar();
+document.addEventListener("keydown", e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) salvar(); });
+
+(async () => {
+  const emp = lembrar("empresa");
+  if (emp && [...$("empresa").options].some(o => o.value === emp)) $("empresa").value = emp;
+  carregarPasta();
+  await carregarPlanilhas();
+  desenhar(); previa();
+})();
+</script>
+</body>
+</html>

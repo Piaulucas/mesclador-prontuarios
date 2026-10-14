@@ -1,0 +1,41 @@
+# Copie este arquivo para config.toml e ajuste para o seu computador.
+# O config.toml NÃO vai para o git (veja .gitignore).
+
+# Onde o seletor de pasta abre na primeira vez. A pasta principal de cada mês
+# é escolhida na tela; dentro dela o app usa a subpasta do tipo (ADULTO.../NEO...).
+pasta_inicial = "~/Documents"
+
+porta = 5050
+
+# Primeiro mês de uso (AAAA-MM). Meses anteriores não aparecem nem podem ser salvos.
+mes_inicial = "2026-10"
+
+# Empresa = pasta onde ficam as planilhas de faturamento dela (.xlsx/.xlsm).
+# O app pré-seleciona a planilha cujo caminho contém o mês e o ano escolhidos
+# (ex.: ".../2026/OUTUBRO.xlsx" ou ".../faturamento_2026-10.xlsx").
+# Deixe "" para uma empresa sem planilha (o nome é digitado à mão).
+[empresas]
+"EMPRESA EXEMPLO A" = "~/Documents/faturamento/empresa-a"
+"EMPRESA EXEMPLO B" = ""
+
+# Tipos de remoção (cada um é uma aba da planilha e uma subpasta de destino).
+# nomes_aba      = nomes que a aba pode ter (varia entre empresas); o primeiro que existir é usado
+# col_numero     = letra da coluna com o Nº da remoção
+# col_nome       = letra da coluna com o nome do paciente
+# primeira_linha = primeira linha com dados (abaixo do cabeçalho)
+# palavra_subpasta = dentro da pasta principal, usa a subpasta cujo nome começa com esta palavra;
+#                    se não existir, cria uma com o nome do tipo
+# Atenção: a numeração recomeça em cada aba, por isso a busca é feita só na aba do tipo escolhido.
+[abas."ADULTO-PED"]
+nomes_aba = ["ADULTO-PED", "Remoção ADULTO-PED"]
+col_numero = "B"
+col_nome = "D"
+primeira_linha = 16
+palavra_subpasta = "ADULTO"
+
+[abas."NEONATAL"]
+nomes_aba = ["NEONATAL", "Remoção NEONATAL"]
+col_numero = "B"
+col_nome = "D"
+primeira_linha = 16
+palavra_subpasta = "NEO"
