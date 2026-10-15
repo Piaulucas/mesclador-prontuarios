@@ -91,11 +91,8 @@ def create_app(config, pasta_temp=None):
 
     # ---------------------------------------------------------- arquivos
 
-    def registrar(nome, salvar_em):
-        """Guarda um arquivo enviado e gera a miniatura. `salvar_em(caminho)` grava o conteúdo."""
-        tipo = pdfs.tipo_do_arquivo(nome)
-        if not tipo:
-            return {"erro": f"{nome}: formato não suportado"}
+    def registrar_um(nome, tipo, salvar_em):
+        """Guarda um arquivo (1 página, ou imagem) e gera a miniatura."""
         id_ = uuid.uuid4().hex[:12]
         caminho = temp / f"{id_}{Path(nome).suffix.lower()}"
         salvar_em(caminho)
@@ -106,6 +103,25 @@ def create_app(config, pasta_temp=None):
             return {"erro": f"{nome}: não consegui abrir ({e})"}
         arquivos[id_] = {"caminho": caminho, "nome": nome, "tipo": tipo, "paginas": paginas}
         return {"id": id_, "nome": nome, "paginas": paginas}
+
+    def registrar(nome, salvar_em):
+        """Guarda um arquivo enviado. Devolve uma lista de itens: PDF de várias páginas
+        vira um item por página ('<arquivo>.pdf · p<n>'), para ajustar/girar/remover/ordenar cada uma."""
+        tipo = pdfs.tipo_do_arquivo(nome)
+        if not tipo:
+            return [{"erro": f"{nome}: formato não suportado"}]
+        if tipo != "pdf":
+            return [registrar_um(nome, tipo, salvar_em)]
+        original = temp / f"{uuid.uuid4().hex[:12]}_orig.pdf"
+        salvar_em(original)
+        try:
+            partes = pdfs.dividir_pdf(original)
+            if not partes:
+                return [registrar_um(nome, tipo, lambda c: shutil.copyfile(original, c))]
+            return [registrar_um(f"{nome} · p{n}", tipo, lambda c, d=dados: c.write_bytes(d))
+                    for n, dados in enumerate(partes, start=1)]
+        finally:
+            original.unlink(missing_ok=True)
 
     @app.post("/enviar")
     def enviar():
@@ -124,12 +140,12 @@ def create_app(config, pasta_temp=None):
                 # nome do paciente: do nome do zip ou, se for genérico, da pasta dentro dele
                 origem = planilha.nome_da_origem(nome) or planilha.nome_da_origem(pasta_raiz)
                 for nome_interno, dados in conteudo:
-                    item = registrar(nome_interno, lambda c, d=dados: c.write_bytes(d))
-                    if origem and "id" in item:
-                        item["origem"] = origem
-                    resposta.append(item)
+                    for item in registrar(nome_interno, lambda c, d=dados: c.write_bytes(d)):
+                        if origem and "id" in item:
+                            item["origem"] = origem
+                        resposta.append(item)
             else:
-                resposta.append(registrar(nome, f.save))
+                resposta.extend(registrar(nome, f.save))
         return jsonify(resposta)
 
     @app.get("/miniatura/<id_>")

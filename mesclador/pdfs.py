@@ -61,6 +61,25 @@ def gerar_miniatura(caminho, tipo, destino, tamanho=(360, 480)):
     return paginas
 
 
+def dividir_pdf(caminho):
+    """Se o PDF tem mais de 1 página, devolve uma lista com o conteúdo (bytes) de um PDF por página,
+    copiando as páginas sem renderizar. PDF de 1 página (ou ilegível para o pypdf): None."""
+    try:
+        leitor = PdfReader(caminho)
+        if len(leitor.pages) < 2:
+            return None
+        partes = []
+        for pagina in leitor.pages:
+            writer = PdfWriter()
+            writer.add_page(pagina)
+            buffer = io.BytesIO()
+            writer.write(buffer)
+            partes.append(buffer.getvalue())
+        return partes
+    except Exception:
+        return None
+
+
 def primeira_pagina(caminho, tipo, lado):
     """1ª página do arquivo como imagem PIL RGB, com o lado maior em ~`lado` px (prévia ampliada)."""
     if tipo == "pdf":
