@@ -66,6 +66,7 @@ python3 -m mesclador
 ```
 
 O navegador abre em `http://127.0.0.1:5050`. Para encerrar, use o botão **Encerrar o app** na barra superior (`Ctrl+C` continua valendo quando aberto pelo terminal).
+Se o app já estiver aberto e o código da pasta tiver mudado (ex.: depois de atualizar o projeto), abrir de novo pelo ícone ou pelo comando encerra o app antigo e abre o novo; se o código for o mesmo, só mostra a janela que já existe.
 
 1. Escolha empresa e mês (a planilha do mês é selecionada sozinha)
 2. Escolha a pasta principal do mês (fica lembrada por empresa e mês)
