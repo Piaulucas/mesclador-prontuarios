@@ -1,5 +1,6 @@
 """Aplicação Flask: a interface local e as rotas que ela usa."""
 
+import io
 import os
 import shutil
 import tempfile
@@ -9,8 +10,9 @@ from datetime import date
 from pathlib import Path
 
 from flask import Flask, abort, jsonify, render_template, request, send_file
+from PIL import Image
 
-from . import conversor, navegador, pdfs, planilha, seletor
+from . import conversor, imagens, navegador, pdfs, planilha, seletor
 
 IDENTIDADE = "mesclador"   # resposta do /ping, para saber se a porta é deste app
 
@@ -89,11 +91,8 @@ def create_app(config, pasta_temp=None):
 
     # ---------------------------------------------------------- arquivos
 
-    def registrar(nome, salvar_em):
-        """Guarda um arquivo enviado e gera a miniatura. `salvar_em(caminho)` grava o conteúdo."""
-        tipo = pdfs.tipo_do_arquivo(nome)
-        if not tipo:
-            return {"erro": f"{nome}: formato não suportado"}
+    def registrar_um(nome, tipo, salvar_em):
+        """Guarda um arquivo (1 página, ou imagem) e gera a miniatura."""
         id_ = uuid.uuid4().hex[:12]
         caminho = temp / f"{id_}{Path(nome).suffix.lower()}"
         salvar_em(caminho)
@@ -104,6 +103,25 @@ def create_app(config, pasta_temp=None):
             return {"erro": f"{nome}: não consegui abrir ({e})"}
         arquivos[id_] = {"caminho": caminho, "nome": nome, "tipo": tipo, "paginas": paginas}
         return {"id": id_, "nome": nome, "paginas": paginas}
+
+    def registrar(nome, salvar_em):
+        """Guarda um arquivo enviado. Devolve uma lista de itens: PDF de várias páginas
+        vira um item por página ('<arquivo>.pdf · p<n>'), para ajustar/girar/remover/ordenar cada uma."""
+        tipo = pdfs.tipo_do_arquivo(nome)
+        if not tipo:
+            return [{"erro": f"{nome}: formato não suportado"}]
+        if tipo != "pdf":
+            return [registrar_um(nome, tipo, salvar_em)]
+        original = temp / f"{uuid.uuid4().hex[:12]}_orig.pdf"
+        salvar_em(original)
+        try:
+            partes = pdfs.dividir_pdf(original)
+            if not partes:
+                return [registrar_um(nome, tipo, lambda c: shutil.copyfile(original, c))]
+            return [registrar_um(f"{nome} · p{n}", tipo, lambda c, d=dados: c.write_bytes(d))
+                    for n, dados in enumerate(partes, start=1)]
+        finally:
+            original.unlink(missing_ok=True)
 
     @app.post("/enviar")
     def enviar():
@@ -122,19 +140,36 @@ def create_app(config, pasta_temp=None):
                 # nome do paciente: do nome do zip ou, se for genérico, da pasta dentro dele
                 origem = planilha.nome_da_origem(nome) or planilha.nome_da_origem(pasta_raiz)
                 for nome_interno, dados in conteudo:
-                    item = registrar(nome_interno, lambda c, d=dados: c.write_bytes(d))
-                    if origem and "id" in item:
-                        item["origem"] = origem
-                    resposta.append(item)
+                    for item in registrar(nome_interno, lambda c, d=dados: c.write_bytes(d)):
+                        if origem and "id" in item:
+                            item["origem"] = origem
+                        resposta.append(item)
             else:
-                resposta.append(registrar(nome, f.save))
+                resposta.extend(registrar(nome, f.save))
         return jsonify(resposta)
 
     @app.get("/miniatura/<id_>")
     def miniatura(id_):
         if id_ not in arquivos:
             abort(404)
-        return send_file(temp / f"{id_}_mini.jpg", mimetype="image/jpeg")
+        a = request.args
+        try:
+            ajustes = {"brilho": int(a.get("brilho", 0) or 0), "contraste": int(a.get("contraste", 0) or 0),
+                       "realce": a.get("realce") in ("1", "true")}
+            tam = int(a["tam"]) if a.get("tam") else None
+        except ValueError:
+            abort(400)
+        if tam is None and pdfs.ajuste_neutro(ajustes):
+            return send_file(temp / f"{id_}_mini.jpg", mimetype="image/jpeg")
+        if tam is None:
+            img = Image.open(temp / f"{id_}_mini.jpg")
+        else:   # prévia maior (ver ampliada): renderiza de novo a 1ª página
+            img = pdfs.primeira_pagina(arquivos[id_]["caminho"], arquivos[id_]["tipo"], max(100, min(tam, 2000)))
+        img = imagens.ajustar(img, **ajustes)
+        buf = io.BytesIO()
+        img.save(buf, "JPEG", quality=85)
+        buf.seek(0)
+        return send_file(buf, mimetype="image/jpeg", max_age=0)
 
     @app.post("/remover/<id_>")
     def remover(id_):
@@ -230,8 +265,14 @@ def create_app(config, pasta_temp=None):
         if destino.exists() and not d.get("sobrescrever"):
             return jsonify(existe=True, caminho=str(destino)), 409
 
-        writer = pdfs.mesclar([(arquivos[i["id"]]["caminho"], arquivos[i["id"]]["tipo"], i.get("giro", 0))
-                               for i in itens])
+        try:
+            ajustes = [{"brilho": int(i.get("brilho", 0) or 0), "contraste": int(i.get("contraste", 0) or 0),
+                        "realce": i.get("realce") in (True, "1", "true")} for i in itens]
+        except (TypeError, ValueError):
+            return jsonify(erro="Ajuste de imagem inválido."), 400
+
+        writer = pdfs.mesclar([(arquivos[i["id"]]["caminho"], arquivos[i["id"]]["tipo"], i.get("giro", 0), aj)
+                               for i, aj in zip(itens, ajustes)])
         destino.parent.mkdir(parents=True, exist_ok=True)
         with open(destino, "wb") as f:
             writer.write(f)

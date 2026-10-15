@@ -28,8 +28,8 @@ def corpo(ids, **extra):
 
 
 def test_enviar_recusa_formato_nao_suportado(cliente):
-    resp = enviar(cliente, (jpeg(), "f1.jpg"), (pdf(), "f2.pdf"), (jpeg(), "nota.docx"))
-    assert [r.get("paginas") for r in resp[:2]] == [1, 2]
+    resp = enviar(cliente, (jpeg(), "f1.jpg"), (pdf(1), "f2.pdf"), (jpeg(), "nota.docx"))
+    assert [r.get("paginas") for r in resp[:2]] == [1, 1]
     assert "formato não suportado" in resp[2]["erro"]
 
 
@@ -150,8 +150,8 @@ def zip_do_drive():
 
 def test_enviar_zip_extrai_em_ordem_natural_e_ignora_lixo(cliente):
     resp = enviar(cliente, (zip_do_drive(), "FULANO DE TAL-20261014.zip"))
-    assert [r["nome"] for r in resp] == ["folha1.pdf", "folha2.jpg", "folha10.jpg"]
-    assert [r["paginas"] for r in resp] == [2, 1, 1]
+    assert [r["nome"] for r in resp] == ["folha1.pdf · p1", "folha1.pdf · p2", "folha2.jpg", "folha10.jpg"]
+    assert [r["paginas"] for r in resp] == [1, 1, 1, 1]
 
 
 def test_zip_mesclado_e_salvo(cliente, pasta_principal):
@@ -229,3 +229,97 @@ def test_encerrar_chama_a_rotina_de_saida(config, tmp_path):
     assert app.test_client().post("/encerrar").get_json() == {"ok": True}
     time.sleep(0.5)
     assert chamado == ["http://localhost"]   # endereço usado para achar e fechar a aba
+
+
+# ---------- ajustes de legibilidade por item (tela de mesclar) ----------
+
+def _cinza(valor=100, largura=300, altura=400):
+    import io
+    from PIL import Image
+    b = io.BytesIO()
+    Image.new("RGB", (largura, altura), (valor, valor, valor)).save(b, "JPEG")
+    b.seek(0)
+    return b
+
+
+def _media_da_pagina(caminho, indice):
+    import pypdfium2 as pdfium
+    from PIL import ImageStat
+    doc = pdfium.PdfDocument(str(caminho))
+    try:
+        img = doc[indice].render(scale=1).to_pil().convert("L")
+    finally:
+        doc.close()
+    return ImageStat.Stat(img).mean[0]
+
+
+def test_mesclar_com_ajuste_clareia_so_o_item_ajustado(cliente, pasta_principal):
+    ids = [r["id"] for r in enviar(cliente, (_cinza(100), "a.jpg"), (pdf(1), "b.pdf"))]
+    itens = [{"id": ids[0], "giro": 0, "brilho": 60, "contraste": 0, "realce": False},
+             {"id": ids[1], "giro": 0, "brilho": 0, "contraste": 0, "realce": False}]
+    r = cliente.post("/salvar", json=corpo(ids, itens=itens))
+    assert r.status_code == 200
+    saida = Path(r.get_json()["caminho"])
+    assert _media_da_pagina(saida, 0) > 100 + 20          # imagem ficou mais clara que o original
+    pagina_pdf = PdfReader(saida).pages[1]
+    assert (float(pagina_pdf.mediabox.width), float(pagina_pdf.mediabox.height)) == (595, 842)   # PDF sem ajuste não virou imagem
+
+
+def test_mesclar_pdf_com_realce_mantem_as_paginas(cliente):
+    ids = [r["id"] for r in enviar(cliente, (pdf(2), "a.pdf"))]
+    assert len(ids) == 2   # uma folha por página
+    itens = [{"id": i, "giro": 0, "brilho": 0, "contraste": 0, "realce": True} for i in ids]
+    r = cliente.post("/salvar", json=corpo(ids, itens=itens))
+    assert r.status_code == 200
+    assert len(PdfReader(r.get_json()["caminho"]).pages) == 2
+
+
+def test_salvar_recusa_ajuste_invalido(cliente):
+    ids = [r["id"] for r in enviar(cliente, (jpeg(), "a.jpg"))]
+    itens = [{"id": ids[0], "giro": 0, "brilho": "muito"}]
+    assert cliente.post("/salvar", json=corpo(ids, itens=itens)).status_code == 400
+
+
+def test_miniatura_com_ajuste_responde_jpeg(cliente):
+    id_ = enviar(cliente, (jpeg(), "a.jpg"))[0]["id"]
+    r = cliente.get(f"/miniatura/{id_}?brilho=50&contraste=-20&realce=1")
+    assert r.status_code == 200 and r.mimetype == "image/jpeg"
+    assert cliente.get(f"/miniatura/{id_}?brilho=abc").status_code == 400
+
+
+def test_miniatura_ampliada_renderiza_a_primeira_pagina(cliente):
+    from io import BytesIO
+    from PIL import Image
+    id_ = enviar(cliente, (pdf(2), "a.pdf"))[0]["id"]
+    r = cliente.get(f"/miniatura/{id_}?tam=1400&brilho=10")
+    assert r.mimetype == "image/jpeg"
+    assert max(Image.open(BytesIO(r.data)).size) > 1000
+
+
+# ---------- PDF de várias páginas vira um cartão por página ----------
+
+def test_pdf_de_varias_paginas_vira_um_item_por_pagina(cliente):
+    resp = enviar(cliente, (pdf(3), "x.pdf"))
+    assert [r["nome"] for r in resp] == ["x.pdf · p1", "x.pdf · p2", "x.pdf · p3"]
+    assert [r["paginas"] for r in resp] == [1, 1, 1]
+
+
+def test_zip_com_pdf_de_duas_paginas_e_imagem_mantem_ordem_e_origem(cliente):
+    import io, zipfile
+    b = io.BytesIO()
+    with zipfile.ZipFile(b, "w") as z:
+        z.writestr("MARIA SOUZA/a.pdf", pdf(2).getvalue())
+        z.writestr("MARIA SOUZA/b.jpg", jpeg().getvalue())
+    b.seek(0)
+    resp = enviar(cliente, (b, "MARIA SOUZA-20261014T190644Z-001.zip"))
+    assert [r["nome"] for r in resp] == ["a.pdf · p1", "a.pdf · p2", "b.jpg"]
+    assert all(r["origem"] == "MARIA SOUZA" for r in resp)
+
+
+def test_mesclar_paginas_separadas_na_ordem_nova_sem_virar_imagem(cliente):
+    p1, p2, p3 = (r["id"] for r in enviar(cliente, (pdf(3), "x.pdf")))
+    r = cliente.post("/salvar", json=corpo([p3, p1, p2], itens=[{"id": i, "giro": 0} for i in (p3, p1)]))
+    assert r.status_code == 200
+    paginas = PdfReader(r.get_json()["caminho"]).pages
+    assert len(paginas) == 2
+    assert all((float(p.mediabox.width), float(p.mediabox.height)) == (595, 842) for p in paginas)

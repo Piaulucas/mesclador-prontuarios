@@ -14,7 +14,8 @@ O fluxo manual era: baixar as folhas em `.zip`, extrair, enviar para um site de 
 ## O que a ferramenta faz
 
 - Arrastar o **.zip baixado**, a **pasta** extraída ou os arquivos soltos; as folhas entram em ordem natural (`pag2` antes de `pag10`) e o lixo do macOS (`__MACOSX`, `.DS_Store`) é ignorado
-- Reordenar arrastando os cartões, girar folhas escaneadas de lado, remover folhas
+- Reordenar arrastando os cartões, girar folhas escaneadas de lado, remover folhas; PDFs com várias páginas são separados em um cartão por página
+- Ajustar brilho, contraste e realce por folha na própria tela de mesclar; só as folhas ajustadas viram imagem no PDF final, as demais entram sem alteração
 - Escolher o tipo (ADULTO-PED / NEONATAL) e digitar o Nº da remoção → o nome vem da aba certa da planilha `.xlsx` (a numeração recomeça em cada aba)
 - Pré-seleciona a planilha do mês escolhido (pelo mês/ano no caminho do arquivo) e ignora versões antigas/backups
 - Você escolhe a pasta principal no seletor nativo do macOS; o app usa a subpasta do tipo (`ADULTO…` / `NEO…`) e a cria se não existir
