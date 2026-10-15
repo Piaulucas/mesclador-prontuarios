@@ -8,6 +8,7 @@ import pytest
 from openpyxl import Workbook
 from PIL import Image
 from pypdf import PdfWriter
+from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 
 from mesclador.config import Aba, Config
 from mesclador.web import create_app
@@ -75,6 +76,37 @@ def pdf(paginas=2):
     for _ in range(paginas):
         w.add_blank_page(595, 842)
     w.write(b)
+    b.seek(0)
+    return b
+
+
+def pdf_com_textos(textos):
+    """PDF com uma página por texto (texto de verdade, extraível), para distinguir as páginas pelo conteúdo."""
+    w = PdfWriter()
+    for texto in textos:
+        pagina = w.add_blank_page(595, 842)
+        fonte = DictionaryObject({NameObject("/Type"): NameObject("/Font"), NameObject("/Subtype"): NameObject("/Type1"),
+                                  NameObject("/BaseFont"): NameObject("/Helvetica")})
+        pagina[NameObject("/Resources")] = DictionaryObject(
+            {NameObject("/Font"): DictionaryObject({NameObject("/F1"): fonte})})
+        conteudo = DecodedStreamObject()
+        conteudo.set_data(f"BT /F1 48 Tf 100 700 Td ({texto}) Tj ET".encode("latin-1"))
+        pagina[NameObject("/Contents")] = w._add_object(conteudo)
+    b = io.BytesIO()
+    w.write(b)
+    b.seek(0)
+    return b
+
+
+def jpeg_colorido(cor, largura=600, altura=800, marca=None):
+    """JPEG de uma cor só; `marca` pinta um quadrado (cor, tamanho) no canto superior esquerdo,
+    para dar para saber se a imagem foi girada."""
+    img = Image.new("RGB", (largura, altura), cor)
+    if marca:
+        quadrado = Image.new("RGB", (marca[1], marca[1]), marca[0])
+        img.paste(quadrado, (0, 0))
+    b = io.BytesIO()
+    img.save(b, "JPEG", quality=95)
     b.seek(0)
     return b
 
