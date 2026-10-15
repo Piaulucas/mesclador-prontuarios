@@ -1,7 +1,8 @@
 """Controle das abas do navegador no macOS (Chrome e Safari), via AppleScript.
 
 Usado para: (1) ao clicar no ícone com o app já aberto, mostrar a aba existente
-em vez de abrir outra; (2) ao encerrar o app, fechar a aba dele.
+em vez de abrir outra; (2) ao encerrar o app, fechar a aba dele; (3) mostrar um aviso
+na tela quando o app não consegue abrir (o app roda sem Terminal, então o log não é visto).
 Na primeira vez o macOS pede permissão para controlar o navegador.
 Fora do macOS, ou sem permissão, as funções só devolvem False.
 """
@@ -77,3 +78,24 @@ def focar_aba(url):
 def fechar_aba(url):
     """Fecha a aba do app. True se encontrou."""
     return _executar(url, "fechar")
+
+
+def avisar(mensagem):
+    """Mostra um diálogo do macOS com a mensagem. True se foi mostrado; fora do macOS
+    ou se o osascript falhar, devolve False (quem chama já registrou a mensagem no log)."""
+    if platform.system() != "Darwin":
+        return False
+    try:
+        # a mensagem vai como argumento (não dentro do script) para não precisar escapar aspas;
+        # "giving up after" fecha o diálogo sozinho se ninguém clicar, para o app não ficar preso
+        r = subprocess.run(
+            ["osascript",
+             "-e", "on run argv",
+             "-e", 'display dialog (item 1 of argv) with title "Mesclador" buttons {"OK"} '
+                   'default button "OK" with icon caution giving up after 120',
+             "-e", "end run",
+             mensagem],
+            capture_output=True, text=True, timeout=130)
+        return r.returncode == 0
+    except Exception:
+        return False

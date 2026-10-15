@@ -14,6 +14,8 @@ from . import navegador, versao
 from .web import IDENTIDADE, create_app
 
 ESPERA_PORTA_LIVRE = 10   # segundos esperando a instância antiga encerrar
+AVISO_VERSAO_ANTIGA = ("Uma versão antiga do Mesclador ainda está aberta. "
+                       "Clique em 'Encerrar o app' na tela e abra de novo.")
 
 
 def ja_esta_rodando(porta):
@@ -85,6 +87,7 @@ def main():
         pedir_encerramento(config.porta)
         if not esperar_porta_livre(config.porta):
             mostrar(url)   # deixa a janela antiga à vista, com o botão Encerrar o app
+            navegador.avisar(AVISO_VERSAO_ANTIGA)   # o app roda sem Terminal: o log ninguém vê
             raise SystemExit(f"O Mesclador aberto em {url} está desatualizado e não encerrou sozinho. "
                              "Clique em 'Encerrar o app' na janela dele e abra de novo.")
     elif porta_ocupada(config.porta):

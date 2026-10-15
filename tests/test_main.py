@@ -130,6 +130,7 @@ def partida(monkeypatch):
     monkeypatch.setattr(principal, "pedir_encerramento", lambda p: chamadas.append(("encerrar", p)))
     monkeypatch.setattr(principal, "esperar_porta_livre", lambda p: estado.liberou)
     monkeypatch.setattr(principal, "mostrar", lambda url: chamadas.append(("mostrar", url)))
+    monkeypatch.setattr(principal.navegador, "avisar", lambda msg: chamadas.append(("avisar", msg)))
     monkeypatch.setattr(principal, "create_app",
                         lambda c, versao=None: chamadas.append(("create_app", versao)) or AppFalso())
     monkeypatch.setattr(principal.threading, "Timer",
@@ -179,4 +180,68 @@ def test_timeout_ao_liberar_a_porta_nao_sobe_e_avisa(partida):
     with pytest.raises(SystemExit) as e:
         principal.main()
     assert "Encerrar o app" in str(e.value)
-    assert nomes(partida) == ["encerrar", "mostrar"]   # mostra a janela antiga; não cria app novo
+    assert nomes(partida) == ["encerrar", "mostrar", "avisar"]   # janela antiga + diálogo; não cria app novo
+    assert partida.chamadas[-1] == ("avisar", principal.AVISO_VERSAO_ANTIGA)
+
+
+def test_servico_desconhecido_com_404_em_versao_nao_e_tratado_como_mesclador_antigo(monkeypatch):
+    """Só um /ping que responde 'mesclador' (rota que já existia) prova que a porta é do app.
+    Sem isso, um 404 em /versao de qualquer outro serviço não pode levar a pedir /encerrar."""
+    pedidos = []
+
+    def urlopen(req, **k):
+        pedidos.append(getattr(req, "full_url", req))
+        raise erro_http(404)   # o serviço desconhecido responde 404 em tudo
+
+    avisos = []
+    monkeypatch.setattr(principal.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(principal.cfg, "carregar", lambda *a: SimpleNamespace(porta=5050))
+    monkeypatch.setattr(principal, "porta_ocupada", lambda p: True)
+    monkeypatch.setattr(principal.navegador, "avisar", avisos.append)
+    monkeypatch.setattr(principal.sys, "argv", ["mesclador"])
+
+    with pytest.raises(SystemExit) as e:
+        principal.main()
+
+    assert "outro programa" in str(e.value)
+    assert not any(str(u).endswith("/encerrar") for u in pedidos)
+    assert avisos == []
+
+
+def test_ping_de_outro_servico_nao_confirma_o_mesclador(monkeypatch):
+    monkeypatch.setattr(principal.urllib.request, "urlopen", lambda *a, **k: resposta("pong"))
+    assert principal.ja_esta_rodando(5050) is False
+
+
+# ---------- diálogo de aviso (macOS) ----------
+
+def test_avisar_fora_do_mac_nao_faz_nada(monkeypatch):
+    import platform
+    chamou = []
+    monkeypatch.setattr(platform, "system", lambda: "Linux")
+    monkeypatch.setattr(navegador.subprocess, "run", lambda *a, **k: chamou.append(a))
+    assert navegador.avisar("texto") is False
+    assert chamou == []
+
+
+def test_avisar_no_mac_chama_osascript_com_a_mensagem(monkeypatch):
+    import platform
+    comandos = []
+    monkeypatch.setattr(platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(navegador.subprocess, "run",
+                        lambda cmd, **k: comandos.append(cmd) or SimpleNamespace(returncode=0))
+    assert navegador.avisar("Clique em 'Encerrar o app'") is True
+    assert comandos[0][0] == "osascript"
+    assert comandos[0][-1] == "Clique em 'Encerrar o app'"   # texto como argumento, sem escapar aspas
+
+
+def test_falha_do_osascript_nao_quebra(monkeypatch):
+    import platform
+    monkeypatch.setattr(platform, "system", lambda: "Darwin")
+
+    def run(*a, **k):
+        raise OSError("osascript não encontrado")
+    monkeypatch.setattr(navegador.subprocess, "run", run)
+    assert navegador.avisar("texto") is False
+    monkeypatch.setattr(navegador.subprocess, "run", lambda *a, **k: SimpleNamespace(returncode=1))
+    assert navegador.avisar("texto") is False
