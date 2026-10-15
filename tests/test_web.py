@@ -323,3 +323,16 @@ def test_mesclar_paginas_separadas_na_ordem_nova_sem_virar_imagem(cliente):
     paginas = PdfReader(r.get_json()["caminho"]).pages
     assert len(paginas) == 2
     assert all((float(p.mediabox.width), float(p.mediabox.height)) == (595, 842) for p in paginas)
+
+
+def test_versao_devolve_o_hash_do_codigo(config, tmp_path):
+    from mesclador.versao import calcular_versao
+    from mesclador.web import create_app
+    app = create_app(config, pasta_temp=tmp_path / "t4")
+    assert app.test_client().get("/versao").get_data(as_text=True) == calcular_versao()
+
+
+def test_versao_informada_na_criacao_e_a_que_a_rota_devolve(config, tmp_path):
+    from mesclador.web import create_app
+    app = create_app(config, pasta_temp=tmp_path / "t5", versao="abc123")
+    assert app.test_client().get("/versao").get_data(as_text=True) == "abc123"

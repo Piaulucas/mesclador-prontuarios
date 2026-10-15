@@ -12,7 +12,7 @@ from pathlib import Path
 from flask import Flask, abort, jsonify, render_template, request, send_file
 from PIL import Image
 
-from . import conversor, imagens, navegador, pdfs, planilha, seletor
+from . import conversor, imagens, navegador, pdfs, planilha, seletor, versao as codigo
 
 IDENTIDADE = "mesclador"   # resposta do /ping, para saber se a porta é deste app
 
@@ -32,9 +32,11 @@ def _antes_do_inicio(config, ano, mes):
     return (ano, mes) < _ano_mes(config.mes_inicial)
 
 
-def create_app(config, pasta_temp=None):
-    """Cria o app. `pasta_temp` guarda as cópias de trabalho dos arquivos enviados."""
+def create_app(config, pasta_temp=None, versao=None):
+    """Cria o app. `pasta_temp` guarda as cópias de trabalho dos arquivos enviados.
+    `versao` é o hash do código (calculado aqui, ao iniciar, se não for informado)."""
     app = Flask(__name__)
+    app.config["VERSAO"] = versao or codigo.calcular_versao()
     temp = Path(pasta_temp or tempfile.mkdtemp(prefix="mesclador_"))
     temp.mkdir(parents=True, exist_ok=True)
     arquivos = {}   # id -> {"caminho", "nome", "tipo", "paginas"}  (só em memória)
@@ -294,6 +296,11 @@ def create_app(config, pasta_temp=None):
     @app.get("/ping")
     def ping():
         return IDENTIDADE
+
+    @app.get("/versao")
+    def versao_do_codigo():
+        # hash do código com que esta instância foi iniciada (o ícone compara com o da pasta)
+        return app.config["VERSAO"]
 
     @app.post("/encerrar")
     def encerrar():
