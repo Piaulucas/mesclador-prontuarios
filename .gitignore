@@ -25,5 +25,8 @@ __pycache__/
 venv/
 .pytest_cache/
 
+# ---- Gerados ao rodar o app ----
+*.log
+
 # ---- Sistema ----
 .DS_Store

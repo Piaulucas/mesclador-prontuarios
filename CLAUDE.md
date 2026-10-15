@@ -6,7 +6,13 @@ em JPG com ajuste de legibilidade. Leia o `README.md` para o contexto do usuári
 
 ## Regras fixas
 
-- **Não faça commit, push, merge nem troque de branch.** O usuário revisa e commita.
+- **Nunca faça merge, nem commit/push direto na `main`.** Cada tarefa: crie uma branch a
+  partir da `main` atualizada (prefixos `feat/`, `fix/`, `test/`, `docs/`), commite, dê push
+  e abra o PR com `gh`. O usuário revisa e faz o merge.
+- **Antes de criar a branch, confira o ponto de partida.** Se a working tree não estiver
+  limpa ou a branch atual não for a `main` ao começar, pare e avise.
+- **Não deixe no repositório arquivos gerados ao rodar o app** (logs, servidores de teste,
+  saídas). Use pastas temporárias nos testes.
 - **Dados reais nunca.** Prontuários e planilhas têm dados de saúde de pacientes.
   Testes e exemplos usam só dados fictícios gerados em código (veja `tests/conftest.py`).
   Não leia, copie nem cite arquivos fora deste repositório.
@@ -44,4 +50,5 @@ tests/          pytest
 2. Toda mudança de comportamento ganha teste em `tests/`.
 3. Rode `python3 -m pytest -q` e só termine com tudo passando.
 4. Ao final, responda em poucas linhas: o que mudou (arquivos), resultado dos testes
-   e como testar manualmente. Lembre o usuário de encerrar e reabrir o app para ver a mudança.
+   e como testar manualmente. Abrir pelo ícone já reinicia uma instância desatualizada; se a
+   mudança não aparecer, confira com `curl -s http://127.0.0.1:5050/versao`.
