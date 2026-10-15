@@ -1,5 +1,6 @@
 """Aplicação Flask: a interface local e as rotas que ela usa."""
 
+import io
 import os
 import shutil
 import tempfile
@@ -9,8 +10,9 @@ from datetime import date
 from pathlib import Path
 
 from flask import Flask, abort, jsonify, render_template, request, send_file
+from PIL import Image
 
-from . import conversor, navegador, pdfs, planilha, seletor
+from . import conversor, imagens, navegador, pdfs, planilha, seletor
 
 IDENTIDADE = "mesclador"   # resposta do /ping, para saber se a porta é deste app
 
@@ -134,7 +136,24 @@ def create_app(config, pasta_temp=None):
     def miniatura(id_):
         if id_ not in arquivos:
             abort(404)
-        return send_file(temp / f"{id_}_mini.jpg", mimetype="image/jpeg")
+        a = request.args
+        try:
+            ajustes = {"brilho": int(a.get("brilho", 0) or 0), "contraste": int(a.get("contraste", 0) or 0),
+                       "realce": a.get("realce") in ("1", "true")}
+            tam = int(a["tam"]) if a.get("tam") else None
+        except ValueError:
+            abort(400)
+        if tam is None and pdfs.ajuste_neutro(ajustes):
+            return send_file(temp / f"{id_}_mini.jpg", mimetype="image/jpeg")
+        if tam is None:
+            img = Image.open(temp / f"{id_}_mini.jpg")
+        else:   # prévia maior (ver ampliada): renderiza de novo a 1ª página
+            img = pdfs.primeira_pagina(arquivos[id_]["caminho"], arquivos[id_]["tipo"], max(100, min(tam, 2000)))
+        img = imagens.ajustar(img, **ajustes)
+        buf = io.BytesIO()
+        img.save(buf, "JPEG", quality=85)
+        buf.seek(0)
+        return send_file(buf, mimetype="image/jpeg", max_age=0)
 
     @app.post("/remover/<id_>")
     def remover(id_):
@@ -230,8 +249,14 @@ def create_app(config, pasta_temp=None):
         if destino.exists() and not d.get("sobrescrever"):
             return jsonify(existe=True, caminho=str(destino)), 409
 
-        writer = pdfs.mesclar([(arquivos[i["id"]]["caminho"], arquivos[i["id"]]["tipo"], i.get("giro", 0))
-                               for i in itens])
+        try:
+            ajustes = [{"brilho": int(i.get("brilho", 0) or 0), "contraste": int(i.get("contraste", 0) or 0),
+                        "realce": i.get("realce") in (True, "1", "true")} for i in itens]
+        except (TypeError, ValueError):
+            return jsonify(erro="Ajuste de imagem inválido."), 400
+
+        writer = pdfs.mesclar([(arquivos[i["id"]]["caminho"], arquivos[i["id"]]["tipo"], i.get("giro", 0), aj)
+                               for i, aj in zip(itens, ajustes)])
         destino.parent.mkdir(parents=True, exist_ok=True)
         with open(destino, "wb") as f:
             writer.write(f)

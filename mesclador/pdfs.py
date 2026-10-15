@@ -9,6 +9,8 @@ import pypdfium2 as pdfium
 from PIL import Image, ImageOps
 from pypdf import PdfReader, PdfWriter
 
+from . import imagens
+
 EXT_PDF = {".pdf"}
 EXT_IMG = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".heic"}
 DPI_PADRAO = 150   # usado quando a imagem não informa a resolução
@@ -59,31 +61,67 @@ def gerar_miniatura(caminho, tipo, destino, tamanho=(360, 480)):
     return paginas
 
 
-def _imagem_para_pdf(caminho, giro):
-    """Converte uma imagem em PDF de 1 página (em memória), aplicando o giro."""
-    with abrir_imagem(caminho) as img:
-        if giro:
-            img = img.rotate(-giro, expand=True)   # PIL gira no sentido anti-horário
-        img = img.convert("RGB")
-        dpi = (img.info.get("dpi") or (DPI_PADRAO,))[0] or DPI_PADRAO
-        buffer = io.BytesIO()
-        img.save(buffer, format="PDF", resolution=float(dpi), quality=85)
+def primeira_pagina(caminho, tipo, lado):
+    """1ª página do arquivo como imagem PIL RGB, com o lado maior em ~`lado` px (prévia ampliada)."""
+    if tipo == "pdf":
+        pdf = pdfium.PdfDocument(str(caminho))
+        try:
+            largura, altura = pdf[0].get_size()
+            img = pdf[0].render(scale=lado / max(largura, altura)).to_pil()
+        finally:
+            pdf.close()
+    else:
+        img = abrir_imagem(caminho)
+    img = img.convert("RGB")
+    img.thumbnail((lado, lado))
+    return img
+
+
+def ajuste_neutro(ajustes):
+    """True se não há brilho, contraste nem realce (a página não precisa ser reprocessada)."""
+    a = ajustes or {}
+    return not (a.get("brilho") or a.get("contraste") or a.get("realce"))
+
+
+def _imagem_para_pdf(img, dpi):
+    """Converte uma imagem PIL em PDF de 1 página (em memória), já com os ajustes e o giro aplicados."""
+    buffer = io.BytesIO()
+    img.save(buffer, format="PDF", resolution=float(dpi), quality=85)
     buffer.seek(0)
     return PdfReader(buffer)
 
 
+def _paginas_ajustadas(caminho, tipo, giro, ajustes):
+    """Páginas como imagem com os ajustes da página inteira aplicados (PDF a 200 DPI)."""
+    if tipo == "pdf":
+        for _, img in imagens.paginas_do_pdf(caminho, imagens.DPI_EXPORTACAO):
+            yield imagens.ajustar(img, giro=giro, **ajustes), imagens.DPI_EXPORTACAO
+    else:
+        with abrir_imagem(caminho) as img:
+            dpi = (img.info.get("dpi") or (DPI_PADRAO,))[0] or DPI_PADRAO
+            yield imagens.ajustar(img, giro=giro, **ajustes), dpi
+
+
 def mesclar(itens):
     """Junta os arquivos na ordem recebida.
-    itens: lista de (caminho, tipo, giro) — giro em graus, sentido horário (0/90/180/270).
+    itens: lista de (caminho, tipo, giro) ou (caminho, tipo, giro, ajustes) — giro em graus, sentido horário
+    (0/90/180/270); ajustes = {"brilho", "contraste", "realce"}.
+    Sem ajuste, a página do PDF é copiada sem alteração; com ajuste, vira imagem (PDF a 200 DPI).
     Devolve um PdfWriter pronto para ser gravado."""
     writer = PdfWriter()
-    for caminho, tipo, giro in itens:
+    for caminho, tipo, giro, *resto in itens:
         giro = int(giro) % 360
-        leitor = PdfReader(caminho) if tipo == "pdf" else _imagem_para_pdf(caminho, giro)
-        for pagina in leitor.pages:
-            if tipo == "pdf" and giro:
-                pagina.rotate(giro)
-            writer.add_page(pagina)
+        ajustes = resto[0] if resto else None
+        if ajuste_neutro(ajustes) and tipo == "pdf":
+            for pagina in PdfReader(caminho).pages:
+                if giro:
+                    pagina.rotate(giro)
+                writer.add_page(pagina)
+            continue
+        ajustes = {k: (ajustes or {}).get(k, padrao) for k, padrao in (("brilho", 0), ("contraste", 0), ("realce", False))}
+        for img, dpi in _paginas_ajustadas(caminho, tipo, giro, ajustes):
+            for pagina in _imagem_para_pdf(img, dpi).pages:
+                writer.add_page(pagina)
     return writer
 
 

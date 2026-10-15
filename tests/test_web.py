@@ -229,3 +229,67 @@ def test_encerrar_chama_a_rotina_de_saida(config, tmp_path):
     assert app.test_client().post("/encerrar").get_json() == {"ok": True}
     time.sleep(0.5)
     assert chamado == ["http://localhost"]   # endereço usado para achar e fechar a aba
+
+
+# ---------- ajustes de legibilidade por item (tela de mesclar) ----------
+
+def _cinza(valor=100, largura=300, altura=400):
+    import io
+    from PIL import Image
+    b = io.BytesIO()
+    Image.new("RGB", (largura, altura), (valor, valor, valor)).save(b, "JPEG")
+    b.seek(0)
+    return b
+
+
+def _media_da_pagina(caminho, indice):
+    import pypdfium2 as pdfium
+    from PIL import ImageStat
+    doc = pdfium.PdfDocument(str(caminho))
+    try:
+        img = doc[indice].render(scale=1).to_pil().convert("L")
+    finally:
+        doc.close()
+    return ImageStat.Stat(img).mean[0]
+
+
+def test_mesclar_com_ajuste_clareia_so_o_item_ajustado(cliente, pasta_principal):
+    ids = [r["id"] for r in enviar(cliente, (_cinza(100), "a.jpg"), (pdf(1), "b.pdf"))]
+    itens = [{"id": ids[0], "giro": 0, "brilho": 60, "contraste": 0, "realce": False},
+             {"id": ids[1], "giro": 0, "brilho": 0, "contraste": 0, "realce": False}]
+    r = cliente.post("/salvar", json=corpo(ids, itens=itens))
+    assert r.status_code == 200
+    saida = Path(r.get_json()["caminho"])
+    assert _media_da_pagina(saida, 0) > 100 + 20          # imagem ficou mais clara que o original
+    pagina_pdf = PdfReader(saida).pages[1]
+    assert (float(pagina_pdf.mediabox.width), float(pagina_pdf.mediabox.height)) == (595, 842)   # PDF sem ajuste não virou imagem
+
+
+def test_mesclar_pdf_com_realce_mantem_as_paginas(cliente):
+    ids = [r["id"] for r in enviar(cliente, (pdf(2), "a.pdf"))]
+    itens = [{"id": ids[0], "giro": 0, "brilho": 0, "contraste": 0, "realce": True}]
+    r = cliente.post("/salvar", json=corpo(ids, itens=itens))
+    assert r.status_code == 200
+    assert len(PdfReader(r.get_json()["caminho"]).pages) == 2
+
+
+def test_salvar_recusa_ajuste_invalido(cliente):
+    ids = [r["id"] for r in enviar(cliente, (jpeg(), "a.jpg"))]
+    itens = [{"id": ids[0], "giro": 0, "brilho": "muito"}]
+    assert cliente.post("/salvar", json=corpo(ids, itens=itens)).status_code == 400
+
+
+def test_miniatura_com_ajuste_responde_jpeg(cliente):
+    id_ = enviar(cliente, (jpeg(), "a.jpg"))[0]["id"]
+    r = cliente.get(f"/miniatura/{id_}?brilho=50&contraste=-20&realce=1")
+    assert r.status_code == 200 and r.mimetype == "image/jpeg"
+    assert cliente.get(f"/miniatura/{id_}?brilho=abc").status_code == 400
+
+
+def test_miniatura_ampliada_renderiza_a_primeira_pagina(cliente):
+    from io import BytesIO
+    from PIL import Image
+    id_ = enviar(cliente, (pdf(2), "a.pdf"))[0]["id"]
+    r = cliente.get(f"/miniatura/{id_}?tam=1400&brilho=10")
+    assert r.mimetype == "image/jpeg"
+    assert max(Image.open(BytesIO(r.data)).size) > 1000

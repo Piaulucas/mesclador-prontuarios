@@ -7,7 +7,27 @@
   .escolhas button { margin: 4px 4px 0 0; }
   .previa { font-family: ui-monospace, Menlo, monospace; font-size: 12px; word-break: break-all;
             background: var(--fundo); border: 1px dashed var(--borda); border-radius: 6px; padding: 8px; }
-  .cartao { cursor: grab; }
+  .cartao { cursor: pointer; }
+  .cartao.selecionada { border-color: var(--acento); box-shadow: 0 0 0 1px var(--acento); }
+  .selo { position: absolute; top: 6px; right: 6px; z-index: 1; display: none; background: var(--acento);
+          color: var(--acento-txt); border-radius: 10px; font-size: 11px; font-weight: 600; padding: 2px 8px; }
+  .cartao.ajustada .selo { display: block; }
+  .acoes button.ampliar { flex: 0 0 auto; }
+  .ajustes-pagina { display: none; flex-wrap: wrap; align-items: flex-end; gap: 12px 20px; background: var(--painel);
+                    border: 1px solid var(--borda); border-radius: 8px; padding: 10px 12px; }
+  .ajustes-pagina.visivel { display: flex; }
+  .ajustes-pagina.desabilitado .controles { opacity: .5; pointer-events: none; }
+  .ajustes-pagina .controles { display: contents; }
+  .ajustes-pagina label { min-width: 150px; flex: 1 1 150px; max-width: 220px; }
+  .ajuste { display: grid; grid-template-columns: 1fr 44px; gap: 8px; align-items: center; }
+  .ajuste input[type=range] { padding: 0; accent-color: var(--acento); }
+  .ajuste output { font-size: 12px; text-align: right; color: var(--texto); font-variant-numeric: tabular-nums; }
+  .check { flex-direction: row; align-items: center; gap: 8px; color: var(--texto); font-size: 13px; flex: 0 0 auto !important; }
+  .nota { font-size: 11px; color: var(--suave); flex: 1 1 100%; margin: 0; }
+  .ampliada { position: fixed; inset: 0; background: rgba(0,0,0,.75); display: none; z-index: 20;
+              align-items: center; justify-content: center; padding: 24px; cursor: zoom-out; }
+  .ampliada.aberta { display: flex; }
+  .ampliada img { max-width: 100%; max-height: 100%; border-radius: 4px; background: #fff; }
   .cartao.arrastando { opacity: .35; }
   .cartao.alvo-antes { box-shadow: -4px 0 0 var(--acento); }
   .cartao.alvo-depois { box-shadow: 4px 0 0 var(--acento); }
@@ -70,14 +90,28 @@
       <span id="resumo">Nenhum arquivo</span>
       <button id="limpar">Limpar tudo</button>
     </div>
+    <div class="ajustes-pagina" id="ajustesPagina">
+      <label>Brilho
+        <div class="ajuste"><input type="range" id="brilho" min="-100" max="100" value="0"><output id="vBrilho">0</output></div>
+      </label>
+      <label>Contraste
+        <div class="ajuste"><input type="range" id="contraste" min="-100" max="100" value="0"><output id="vContraste">0</output></div>
+      </label>
+      <label class="check"><input type="checkbox" id="realce"> Realçar escrita (tons de cinza)</label>
+      <button id="aplicarTodas" type="button">Aplicar a todas</button>
+      <button id="restaurar" type="button">Restaurar esta página</button>
+      <p class="nota">Clique num arquivo para ajustá-lo (vale para a página inteira; PDFs com ajuste viram imagem).</p>
+    </div>
     <div class="grade" id="grade"></div>
   </main>
 </div>
+<div class="ampliada" id="ampliada"><img id="imgAmpliada" alt="Arquivo ampliado"></div>
 {% endblock %}
 
 {% block script %}
 <script>
-let itens = [];          // [{id, nome, paginas, giro}] na ordem da tela
+let itens = [];          // [{id, nome, paginas, giro, brilho, contraste, realce}] na ordem da tela
+let selecionadaId = null; // cartão cujos ajustes aparecem na barra
 let arrastandoId = null; // cartão sendo reordenado
 let origemAtual = "";    // de onde vieram os arquivos (zip/pasta), mostrado no resumo
 let origemNome = "";     // nome do zip/pasta usado para conferir com a planilha
@@ -93,7 +127,7 @@ async function enviar(lista, origem = "") {
   const r = await fetch("/enviar", { method: "POST", body: fd });
   const resp = await r.json();
   const erros = resp.filter(x => x.erro).map(x => x.erro);
-  resp.filter(x => x.id).forEach(x => itens.push({ ...x, giro: 0 }));
+  resp.filter(x => x.id).forEach(x => itens.push({ ...x, giro: 0, brilho: 0, contraste: 0, realce: false }));
   desenhar();
   if (origem) origemAtual = `de ${origem}` + (ignorados ? ` (${ignorados} ignorado(s))` : "");
   // nome para conferência: o servidor já extrai do zip; para pasta, usa o nome da pasta
@@ -109,6 +143,65 @@ async function enviar(lista, origem = "") {
 ativarEntrada(enviar);
 temTrabalhoPendente = () => itens.length > 0;
 
+// ---------- ajustes (por arquivo) ----------
+const selecionado = () => itens.find(x => x.id === selecionadaId);
+const ajustado = it => it.brilho !== 0 || it.contraste !== 0 || it.realce;
+function urlMiniatura(it, tam) {   // sem ajuste nem tamanho, é a miniatura de sempre
+  if (!ajustado(it) && !tam) return `/miniatura/${it.id}`;
+  const q = { brilho: it.brilho, contraste: it.contraste, realce: it.realce ? 1 : 0 };
+  if (tam) q.tam = tam;
+  return `/miniatura/${it.id}?` + new URLSearchParams(q);
+}
+function carregarControles() {   // mostra na barra os valores do arquivo selecionado
+  const it = selecionado();
+  $("ajustesPagina").classList.toggle("visivel", itens.length > 0);
+  $("ajustesPagina").classList.toggle("desabilitado", !it);
+  ["brilho", "contraste", "realce", "aplicarTodas", "restaurar"].forEach(id => { $(id).disabled = !it; });
+  $("brilho").value = it ? it.brilho : 0;
+  $("contraste").value = it ? it.contraste : 0;
+  $("realce").checked = it ? it.realce : false;
+  $("vBrilho").textContent = $("brilho").value;
+  $("vContraste").textContent = $("contraste").value;
+}
+function selecionar(id) {
+  selecionadaId = id;
+  document.querySelectorAll(".cartao").forEach(c => c.classList.toggle("selecionada", c.dataset.id === id));
+  carregarControles();
+}
+function atualizarCartao(it) {   // só o selo e a miniatura deste cartão
+  const c = document.querySelector(`.cartao[data-id="${it.id}"]`);
+  if (!c) return;
+  c.classList.toggle("ajustada", ajustado(it));
+  c.querySelector(".mini img").src = urlMiniatura(it);
+}
+let timerAjuste;
+function aoAjustar() {
+  const it = selecionado();
+  if (!it) return;
+  it.brilho = +$("brilho").value;
+  it.contraste = +$("contraste").value;
+  it.realce = $("realce").checked;
+  $("vBrilho").textContent = it.brilho;
+  $("vContraste").textContent = it.contraste;
+  clearTimeout(timerAjuste);
+  timerAjuste = setTimeout(() => atualizarCartao(it), 200);   // espera parar de arrastar para não pedir miniatura a cada pixel
+}
+["brilho", "contraste"].forEach(id => $(id).addEventListener("input", aoAjustar));
+$("realce").addEventListener("change", aoAjustar);
+$("restaurar").onclick = () => {
+  const it = selecionado();
+  if (!it) return;
+  Object.assign(it, { brilho: 0, contraste: 0, realce: false });
+  carregarControles(); atualizarCartao(it);
+};
+$("aplicarTodas").onclick = () => {
+  const o = selecionado();
+  if (!o) return;
+  itens.forEach(it => { if (it !== o) { Object.assign(it, { brilho: o.brilho, contraste: o.contraste, realce: o.realce }); atualizarCartao(it); } });
+};
+$("ampliada").onclick = () => $("ampliada").classList.remove("aberta");
+document.addEventListener("keydown", e => { if (e.key === "Escape") $("ampliada").classList.remove("aberta"); });
+
 // ---------- grade de cartões ----------
 function desenhar() {
   const grade = $("grade");
@@ -116,21 +209,32 @@ function desenhar() {
   if (!itens.length) grade.innerHTML = '<div class="vazio">Os arquivos aparecem aqui, na ordem em que serão mesclados.</div>';
   itens.forEach((it, i) => {
     const c = document.createElement("div");
-    c.className = "cartao"; c.draggable = true; c.dataset.id = it.id;
+    c.className = "cartao" + (ajustado(it) ? " ajustada" : "") + (it.id === selecionadaId ? " selecionada" : "");
+    c.draggable = true; c.dataset.id = it.id;
     const deitada = it.giro % 180 !== 0 ? " deitada" : "";
     c.innerHTML = `
       <div class="ordem">${i + 1}</div>
-      <div class="mini${deitada}"><img src="/miniatura/${it.id}" style="transform: translate(-50%, -50%) rotate(${it.giro}deg)"></div>
+      <div class="selo">ajustada</div>
+      <div class="mini${deitada}"><img src="${urlMiniatura(it)}" style="transform: translate(-50%, -50%) rotate(${it.giro}deg)"></div>
       <div class="nome" title="${esc(it.nome)}">${esc(it.nome)}</div>
       <div class="info">${it.paginas} página${it.paginas > 1 ? "s" : ""}</div>
       <div class="acoes">
+        <button data-acao="ampliar" class="ampliar" title="Ampliar com os ajustes">🔍</button>
         <button data-acao="girar" title="Girar 90°">↻ Girar</button>
         <button data-acao="remover" title="Remover">✕</button>
       </div>`;
+    c.onclick = e => { if (!e.target.closest("button")) selecionar(it.id); };   // botões não selecionam; arrastar não dispara clique
+    c.querySelector('[data-acao="ampliar"]').onclick = () => {
+      $("imgAmpliada").src = urlMiniatura(it, 1400);
+      $("imgAmpliada").style.transform = `rotate(${it.giro}deg)`;
+      $("ampliada").classList.add("aberta");
+    };
     c.querySelector('[data-acao="girar"]').onclick = () => { it.giro = (it.giro + 90) % 360; desenhar(); };
     c.querySelector('[data-acao="remover"]').onclick = () => {
       fetch(`/remover/${it.id}`, { method: "POST" });
-      itens = itens.filter(x => x.id !== it.id); desenhar();
+      itens = itens.filter(x => x.id !== it.id);
+      if (selecionadaId === it.id) selecionadaId = null;
+      desenhar();
     };
     // reordenar arrastando
     c.addEventListener("dragstart", e => { arrastandoId = it.id; c.classList.add("arrastando"); e.dataTransfer.effectAllowed = "move"; });
@@ -161,11 +265,12 @@ function desenhar() {
   $("resumo").textContent = itens.length
     ? `${itens.length} arquivo(s) · ${pags} página(s)` + (origemAtual ? ` · ${origemAtual}` : "")
     : "Nenhum arquivo";
+  carregarControles();
   validar();
 }
 $("limpar").onclick = () => {
   itens.forEach(it => fetch(`/remover/${it.id}`, { method: "POST" }));
-  itens = []; desenhar();
+  itens = []; selecionadaId = null; desenhar();
 };
 
 // ---------- planilha e busca do Nº ----------
@@ -263,7 +368,7 @@ async function salvar(sobrescrever = false) {
       !confirm(`Os arquivos vieram de "${nomeOrigemLimpo}", mas o nome da planilha é "${$("nome").value}".\n\nSalvar mesmo assim?`)) return;
   $("salvar").disabled = true;
   const corpo = {
-    itens: itens.map(x => ({ id: x.id, giro: x.giro })),
+    itens: itens.map(x => ({ id: x.id, giro: x.giro, brilho: x.brilho, contraste: x.contraste, realce: x.realce })),
     empresa: $("empresa").value, mes: $("mes").value, tipo: $("tipo").value,
     numero: $("numero").value, nome: $("nome").value, pasta: $("pasta").value.trim(), sobrescrever
   };
@@ -283,7 +388,7 @@ async function salvar(sobrescrever = false) {
   $("historico").prepend(link);
 
   // pronto para o próximo prontuário
-  itens = []; $("numero").value = ""; $("nome").value = "";
+  itens = []; selecionadaId = null; $("numero").value = ""; $("nome").value = "";
   $("escolhas").innerHTML = ""; $("msgBusca").textContent = "";
   desenhar(); previa(); $("numero").focus();
 }
