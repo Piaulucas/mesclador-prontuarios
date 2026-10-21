@@ -158,3 +158,16 @@ def nomes_conferem(nome_origem, nome_planilha):
     if curto[0] == longo[0] and all(t in longo for t in curto):
         return True
     return difflib.SequenceMatcher(None, " ".join(a), " ".join(b)).ratio() >= 0.88
+
+
+def buscar_por_nome(remocoes, nome_origem):
+    """Busca nas abas lidas, priorizando nomes idênticos e depois os mais parecidos."""
+    if not nome_origem or not str(nome_origem).strip():
+        return []
+    tokens_origem = _tokens(nome_origem)
+    nome_comparacao = " ".join(tokens_origem)
+    achados = [r for r in remocoes if nomes_conferem(nome_origem, r["nome"])]
+    return sorted(achados, key=lambda r: (
+        tokens_origem != _tokens(r["nome"]),
+        -difflib.SequenceMatcher(None, nome_comparacao, " ".join(_tokens(r["nome"]))).ratio(),
+    ))

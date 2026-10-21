@@ -204,6 +204,19 @@ def create_app(config, pasta_temp=None, versao=None):
             return jsonify(erro=f"Não consegui ler a planilha: {e}"), 400
         return jsonify(planilha.buscar(remocoes, numero, request.args.get("tipo") or None))
 
+    @app.get("/sugerir")
+    def sugerir():
+        base = config.empresas.get(request.args.get("empresa", ""))
+        caminho = planilha.resolver_caminho(base, request.args.get("planilha", ""))
+        nome_origem = planilha.nome_da_origem(request.args.get("origem", ""))
+        if not caminho or not nome_origem:
+            return jsonify([])
+        try:
+            remocoes = planilha.ler_planilha(caminho, config.abas)
+        except Exception as e:
+            return jsonify(erro=f"Não consegui ler a planilha: {e}"), 400
+        return jsonify(planilha.buscar_por_nome(remocoes, nome_origem))
+
     @app.get("/previa")
     def previa():
         a = request.args
