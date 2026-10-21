@@ -104,6 +104,12 @@ def test_buscar_por_nome_sem_candidato_e_origem_vazia():
     assert planilha.buscar_por_nome(remocoes, None) == []
 
 
+def test_buscar_por_nome_ignora_nome_de_uma_palavra():
+    remocoes = [{"numero": "4", "nome": "MARIA FICTICIA DE SOUZA", "tipo": "ADULTO-PED"}]
+    assert planilha.buscar_por_nome(remocoes, "MARIA") == []
+    assert planilha.buscar_por_nome(remocoes, "MARIA DE") == []   # partículas não contam como palavra
+
+
 def test_buscar_por_nome_prioriza_identico_antes_de_parecido():
     remocoes = [{"numero": "4", "nome": "MARIA FICTICIA DE SOUZA", "tipo": "ADULTO-PED"},
                 {"numero": "5", "nome": "MARIA SOUZA", "tipo": "NEONATAL"}]

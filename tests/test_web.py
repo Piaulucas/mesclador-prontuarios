@@ -96,6 +96,12 @@ def test_sugerir_zip_generico(cliente):
                       "origem": "drive-download-20261014T190644Z-1-001.zip"}).get_json() == []
 
 
+def test_sugerir_nome_de_uma_palavra(cliente):
+    assert cliente.get("/sugerir", query_string={"empresa": "EMPRESA A",
+                      "planilha": "2026/10_Planilha_de_Faturamento_Exemplo_Outubro_26.xlsx",
+                      "origem": "MARIA-20261014T190644Z-001.zip"}).get_json() == []
+
+
 def test_sugerir_planilha_invalida_ou_fora_da_pasta(cliente, pasta_planilhas):
     criar_planilha(pasta_planilhas.parent / "fora.xlsx", [(4, "Maria Teste")], [])
     for caminho in ("inexistente.xlsx", "../fora.xlsx"):

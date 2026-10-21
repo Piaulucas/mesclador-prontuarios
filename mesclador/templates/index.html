@@ -336,8 +336,12 @@ async function sugerir() {
   if (origemNome !== origem || $("empresa").value !== empresa || $("planilha").value !== caminho ||
       !itens.length || $("numero").value.trim()) return;
   if (!r.ok) { $("msgBusca").textContent = achados.erro; $("msgBusca").className = "msg erro"; return; }
-  if (!achados.length) return;
   $("escolhas").innerHTML = "";
+  if (!achados.length) {
+    $("msgBusca").textContent = `Nenhuma remoção com o nome "${origem}" na planilha — digite o Nº.`;
+    $("msgBusca").className = "msg erro";
+    return;
+  }
   if (achados.length === 1) {
     $("tipo").value = achados[0].tipo;
     preencher(achados[0]);
@@ -346,7 +350,7 @@ async function sugerir() {
     $("msgBusca").textContent = "Mais de uma remoção com esse nome. Escolha:";
     $("msgBusca").className = "msg";
     achados.forEach(a => {
-      const b = document.createElement('button');
+      const b = document.createElement("button");
       const numero = /^\d+$/.test(a.numero) ? String(Number(a.numero)).padStart(2, "0") : a.numero;
       b.textContent = `${a.tipo} · Nº ${numero} · ${a.nome}`;
       b.onclick = () => {
@@ -356,7 +360,7 @@ async function sugerir() {
         preencher(a);
         $("escolhas").innerHTML = "";
       };
-      $('escolhas').appendChild(b);
+      $("escolhas").appendChild(b);
     });
   }
 }

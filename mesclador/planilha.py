@@ -161,10 +161,13 @@ def nomes_conferem(nome_origem, nome_planilha):
 
 
 def buscar_por_nome(remocoes, nome_origem):
-    """Busca nas abas lidas, priorizando nomes idênticos e depois os mais parecidos."""
+    """Busca nas abas lidas, priorizando nomes idênticos e depois os mais parecidos.
+    Nome de uma palavra só ('MARIA') não é buscado: bateria com qualquer pessoa de mesmo nome."""
     if not nome_origem or not str(nome_origem).strip():
         return []
     tokens_origem = _tokens(nome_origem)
+    if len(tokens_origem) < 2:
+        return []
     nome_comparacao = " ".join(tokens_origem)
     achados = [r for r in remocoes if nomes_conferem(nome_origem, r["nome"])]
     return sorted(achados, key=lambda r: (
