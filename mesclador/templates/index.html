@@ -138,6 +138,7 @@ async function enviar(lista, origem = "") {
   previa();
   desenhar();
   if (erros.length) alert(erros.join("\n"));
+  if (origemNome && itens.length && !$("numero").value.trim()) sugerir();
 }
 
 ativarEntrada(enviar);
@@ -324,6 +325,46 @@ function preencher(a) {
   previa(); validar();
 }
 
+async function sugerir() {
+  if (!origemNome || !itens.length || !$("planilha").value || $("numero").value.trim()) return;
+  const origem = origemNome;
+  const empresa = $("empresa").value;
+  const caminho = $("planilha").value;
+  const q = new URLSearchParams({ empresa, planilha: caminho, origem });
+  const r = await fetch(`/sugerir?${q}`);
+  const achados = await r.json();
+  if (origemNome !== origem || $("empresa").value !== empresa || $("planilha").value !== caminho ||
+      !itens.length || $("numero").value.trim()) return;
+  if (!r.ok) { $("msgBusca").textContent = achados.erro; $("msgBusca").className = "msg erro"; return; }
+  $("escolhas").innerHTML = "";
+  if (!achados.length) {
+    $("msgBusca").textContent = `Nenhuma remoção com o nome "${origem}" na planilha — digite o Nº.`;
+    $("msgBusca").className = "msg erro";
+    return;
+  }
+  if (achados.length === 1) {
+    $("tipo").value = achados[0].tipo;
+    preencher(achados[0]);
+    $("msgBusca").textContent = `Sugerido pelo nome do zip/pasta — linha ${achados[0].linha} da aba ${achados[0].aba}`;
+  } else {
+    $("msgBusca").textContent = "Mais de uma remoção com esse nome. Escolha:";
+    $("msgBusca").className = "msg";
+    achados.forEach(a => {
+      const b = document.createElement("button");
+      const numero = /^\d+$/.test(a.numero) ? String(Number(a.numero)).padStart(2, "0") : a.numero;
+      b.textContent = `${a.tipo} · Nº ${numero} · ${a.nome}`;
+      b.onclick = () => {
+        if (origemNome !== origem || $("empresa").value !== empresa || $("planilha").value !== caminho ||
+            $("numero").value.trim()) return;
+        $("tipo").value = a.tipo;
+        preencher(a);
+        $("escolhas").innerHTML = "";
+      };
+      $("escolhas").appendChild(b);
+    });
+  }
+}
+
 // ---------- prévia do caminho e validação ----------
 let timerPrevia;
 function previa() {
@@ -395,7 +436,7 @@ async function salvar(sobrescrever = false) {
 
 // ---------- eventos ----------
 $("empresa").onchange = async () => { guardar("empresa", $("empresa").value); carregarPasta(); await carregarPlanilhas(); buscar(); };
-$("planilha").onchange = () => { $("msgPlanilha").textContent = ""; buscar(); };
+$("planilha").onchange = () => { $("msgPlanilha").textContent = ""; if ($("numero").value.trim()) buscar(); else sugerir(); };
 $("numero").addEventListener("change", buscar);
 $("numero").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); buscar(); } });
 $("nome").addEventListener("input", previa);

@@ -4,7 +4,7 @@ import pytest
 
 from pypdf import PdfReader
 
-from tests.conftest import jpeg, pdf
+from tests.conftest import criar_planilha, jpeg, pdf
 
 
 def enviar(cliente, *arquivos):
@@ -73,6 +73,48 @@ def test_planilhas_e_busca(cliente):
                                                    "planilha": "2026/10_Planilha_de_Faturamento_Exemplo_Outubro_26.xlsx", "numero": "3",
                                                    "tipo": "NEONATAL"}).get_json()
     assert [a["nome"] for a in achados] == ["RN DE FULANA"]
+
+
+def test_sugerir_um_candidato(cliente):
+    achados = cliente.get("/sugerir", query_string={"empresa": "EMPRESA A",
+                         "planilha": "2026/10_Planilha_de_Faturamento_Exemplo_Outubro_26.xlsx",
+                         "origem": "MARIA TESTE-20261014T190644Z-001.zip"}).get_json()
+    assert [(a["numero"], a["tipo"], a["nome"]) for a in achados] == [("3", "ADULTO-PED", "MARIA TESTE")]
+
+
+def test_sugerir_varios_candidatos_em_abas_diferentes(cliente, pasta_planilhas):
+    criar_planilha(pasta_planilhas / "sugestoes.xlsx",
+                   [(4, "Maria Fictícia de Souza")], [(7, "Maria Souza")])
+    achados = cliente.get("/sugerir", query_string={"empresa": "EMPRESA A",
+                         "planilha": "sugestoes.xlsx", "origem": "MARIA SOUZA"}).get_json()
+    assert [(a["numero"], a["tipo"]) for a in achados] == [("7", "NEONATAL"), ("4", "ADULTO-PED")]
+
+
+def test_sugerir_zip_generico(cliente):
+    assert cliente.get("/sugerir", query_string={"empresa": "EMPRESA A",
+                      "planilha": "2026/10_Planilha_de_Faturamento_Exemplo_Outubro_26.xlsx",
+                      "origem": "drive-download-20261014T190644Z-1-001.zip"}).get_json() == []
+
+
+def test_sugerir_nome_de_uma_palavra(cliente):
+    assert cliente.get("/sugerir", query_string={"empresa": "EMPRESA A",
+                      "planilha": "2026/10_Planilha_de_Faturamento_Exemplo_Outubro_26.xlsx",
+                      "origem": "MARIA-20261014T190644Z-001.zip"}).get_json() == []
+
+
+def test_sugerir_planilha_invalida_ou_fora_da_pasta(cliente, pasta_planilhas):
+    criar_planilha(pasta_planilhas.parent / "fora.xlsx", [(4, "Maria Teste")], [])
+    for caminho in ("inexistente.xlsx", "../fora.xlsx"):
+        r = cliente.get("/sugerir", query_string={"empresa": "EMPRESA A",
+                        "planilha": caminho, "origem": "MARIA TESTE"})
+        assert r.status_code == 200 and r.get_json() == []
+
+
+def test_sugerir_planilha_ilegivel(cliente, pasta_planilhas):
+    (pasta_planilhas / "ilegivel.xlsx").write_text("planilha fictícia inválida")
+    r = cliente.get("/sugerir", query_string={"empresa": "EMPRESA A",
+                    "planilha": "ilegivel.xlsx", "origem": "MARIA TESTE"})
+    assert r.status_code == 400 and "erro" in r.get_json()
 
 
 def test_empresa_sem_planilha(cliente):

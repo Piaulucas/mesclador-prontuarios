@@ -78,3 +78,45 @@ def test_nomes_conferem():
     assert planilha.nomes_conferem("JOAO PEREIRA SANTOS", "JOAO PERERIA SANTOS")   # digitação
     assert not planilha.nomes_conferem("MARIA SOUZA", "ANA SOUZA")                 # outra pessoa
     assert not planilha.nomes_conferem("SOUZA", "MARIA SOUZA")                     # primeiro nome difere
+
+
+def test_buscar_por_nome_um_candidato(pasta_planilhas):
+    remocoes = planilha.ler_planilha(pasta_planilhas / "2026/10_Planilha_de_Faturamento_Exemplo_Outubro_26.xlsx", ABAS)
+    [achado] = planilha.buscar_por_nome(remocoes, "MARIA TESTE")
+    assert (achado["numero"], achado["nome"], achado["tipo"]) == ("3", "MARIA TESTE", "ADULTO-PED")
+
+
+def test_buscar_por_nome_em_abas_diferentes():
+    remocoes = [{"numero": "4", "nome": "MARIA FICTICIA DE SOUZA", "tipo": "ADULTO-PED"},
+                {"numero": "7", "nome": "MARIA SOUZA", "tipo": "NEONATAL"}]
+    assert {r["tipo"] for r in planilha.buscar_por_nome(remocoes, "MARIA SOUZA")} == {"ADULTO-PED", "NEONATAL"}
+
+
+def test_buscar_por_nome_abreviado():
+    remocoes = [{"numero": "4", "nome": "MARIA FICTICIA DE SOUZA", "tipo": "ADULTO-PED"}]
+    assert planilha.buscar_por_nome(remocoes, "MARIA SOUZA") == remocoes
+
+
+def test_buscar_por_nome_sem_candidato_e_origem_vazia():
+    remocoes = [{"numero": "4", "nome": "MARIA FICTICIA DE SOUZA", "tipo": "ADULTO-PED"}]
+    assert planilha.buscar_por_nome(remocoes, "ANA FICTICIA") == []
+    assert planilha.buscar_por_nome(remocoes, "") == []
+    assert planilha.buscar_por_nome(remocoes, None) == []
+
+
+def test_buscar_por_nome_ignora_nome_de_uma_palavra():
+    remocoes = [{"numero": "4", "nome": "MARIA FICTICIA DE SOUZA", "tipo": "ADULTO-PED"}]
+    assert planilha.buscar_por_nome(remocoes, "MARIA") == []
+    assert planilha.buscar_por_nome(remocoes, "MARIA DE") == []   # partículas não contam como palavra
+
+
+def test_buscar_por_nome_prioriza_identico_antes_de_parecido():
+    remocoes = [{"numero": "4", "nome": "MARIA FICTICIA DE SOUZA", "tipo": "ADULTO-PED"},
+                {"numero": "5", "nome": "MARIA SOUZA", "tipo": "NEONATAL"}]
+    assert [r["numero"] for r in planilha.buscar_por_nome(remocoes, "MARIA SOUZA")] == ["5", "4"]
+
+
+def test_buscar_por_nome_ordena_parecidos_por_similaridade():
+    remocoes = [{"numero": "4", "nome": "MARIA FICTICIA DE SOUZA"},
+                {"numero": "5", "nome": "MARIA ANA SOUZA"}]
+    assert [r["numero"] for r in planilha.buscar_por_nome(remocoes, "MARIA SOUZA")] == ["5", "4"]
