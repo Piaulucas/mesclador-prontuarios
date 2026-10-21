@@ -149,6 +149,27 @@ def test_pagina_inicial(cliente):
     assert cliente.get("/").status_code == 200
 
 
+def test_telas_abrem_com_e_sem_logo_local(cliente):
+    pasta_estatica = Path(__file__).resolve().parents[1] / "mesclador" / "static"
+    logo = pasta_estatica / "logo-local.svg"
+    if logo.exists():
+        pytest.skip("Logo local existente não deve ser sobrescrito pelo teste")
+
+    pasta_criada = not pasta_estatica.exists()
+    pasta_estatica.mkdir(exist_ok=True)
+    try:
+        for rota in ("/", "/converter"):
+            assert cliente.get(rota).status_code == 200
+
+        logo.write_text('<svg xmlns="http://www.w3.org/2000/svg"></svg>', encoding="utf-8")
+        for rota in ("/", "/converter"):
+            assert cliente.get(rota).status_code == 200
+    finally:
+        logo.unlink(missing_ok=True)
+        if pasta_criada:
+            pasta_estatica.rmdir()
+
+
 def test_lista_so_planilhas_do_mes(cliente):
     lista = cliente.get("/planilhas?empresa=EMPRESA A&mes=2026-10").get_json()
     assert [p["caminho"] for p in lista] == ["2026/10_Planilha_de_Faturamento_Exemplo_Outubro_26.xlsx"]

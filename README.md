@@ -94,6 +94,9 @@ Tudo fica em `config.toml` (veja os comentários em [`config.example.toml`](conf
 - `[empresas]`: pasta de planilhas de cada empresa (vazio = digitar o nome à mão)
 - `[abas."..."]`: nomes possíveis da aba, letras das colunas de Nº e nome, primeira linha de dados e a palavra que identifica a subpasta de destino
 
+O logo é opcional e fica em `mesclador/static/logo-local.svg` (ou `.png`).
+Esse arquivo é local e não é versionado.
+
 ## Estrutura
 
 ```
