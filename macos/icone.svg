@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <title>Mesclador de Prontuários</title>
+  <desc>Três folhas em leque, com uma dobra na folha branca da frente, três linhas e um selo menta de conferência.</desc>
+  <defs>
+    <linearGradient id="background" x1="512" y1="100" x2="512" y2="924" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0b7f66"/>
+      <stop offset="1" stop-color="#064a3c"/>
+    </linearGradient>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#background)"/>
+  <rect x="240" y="270" width="380" height="520" rx="28" fill="#e2f2f0" transform="rotate(-8 430 530)"/>
+  <rect x="411" y="267" width="380" height="520" rx="28" fill="#bfe3d8" transform="rotate(8 601 527)"/>
+  <path d="M348 223H622L718 319V765C718 781.569 704.569 795 688 795H348C331.431 795 318 781.569 318 765V253C318 236.431 331.431 223 348 223Z" fill="#ffffff"/>
+  <path d="M622 223V295C622 308.255 632.745 319 646 319H718L622 223Z" fill="#e2f2f0"/>
+  <path d="M389 417H615M389 489H558M389 561H589" stroke="#086b55" stroke-width="44" stroke-linecap="round"/>
+  <circle cx="708" cy="698" r="126" fill="#ffffff"/>
+  <circle cx="708" cy="698" r="118" fill="#83dbb9"/>
+  <path d="M651 697L689 735L763 661" stroke="#086b55" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
