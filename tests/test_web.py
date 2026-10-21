@@ -217,6 +217,29 @@ def test_enviar_zip_extrai_em_ordem_natural_e_ignora_lixo(cliente):
     assert [r["paginas"] for r in resp] == [1, 1, 1, 1]
 
 
+def test_enviar_zip_sugere_ordem_sesab_e_informa_documentos(cliente):
+    import io, zipfile
+    lote = io.BytesIO()
+    with zipfile.ZipFile(lote, "w") as z:
+        for nome in ("FDR.jpg", "BDV.pdf", "Formulario.jpg", "0/scan_9.jpg"):
+            z.writestr(nome, pdf(2).getvalue() if nome.endswith(".pdf") else jpeg().getvalue())
+    lote.seek(0)
+    resp = enviar(cliente, (lote, "ficticio.zip"))
+    assert [(r["nome"], r["documento"]) for r in resp] == [
+        ("Formulario.jpg", "formulario"), ("BDV.pdf · p1", "bdv"),
+        ("BDV.pdf · p2", "bdv"), ("FDR.jpg", "fdr"), ("scan_9.jpg", None)]
+
+
+def test_enviar_so_ordena_o_lote_recebido(cliente):
+    primeiro = enviar(cliente, (jpeg(), "FDR.jpg"), (jpeg(), "Formulario.jpg"))
+    ordem_manual = [primeiro[1]["id"], primeiro[0]["id"]]
+    segundo = enviar(cliente, (jpeg(), "BDV.jpg"), (jpeg(), "scan_2.jpg"))
+    assert [r["nome"] for r in segundo] == ["BDV.jpg", "scan_2.jpg"]
+    assert [r["id"] for r in primeiro] == [ordem_manual[1], ordem_manual[0]]
+    assert ordem_manual + [r["id"] for r in segundo] == [
+        primeiro[1]["id"], primeiro[0]["id"], segundo[0]["id"], segundo[1]["id"]]
+
+
 def test_zip_mesclado_e_salvo(cliente, pasta_principal):
     ids = [r["id"] for r in enviar(cliente, (zip_do_drive(), "p.zip"))]
     r = cliente.post("/salvar", json=corpo(ids, numero="7"))

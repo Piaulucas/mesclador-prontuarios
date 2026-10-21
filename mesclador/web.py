@@ -148,7 +148,11 @@ def create_app(config, pasta_temp=None, versao=None):
                         resposta.append(item)
             else:
                 resposta.extend(registrar(nome, f.save))
-        return jsonify(resposta)
+        validos = [item for item in resposta if "id" in item]
+        for item in validos:
+            item["documento"] = pdfs.documento_do_arquivo(item["nome"])
+        ordenados = iter(pdfs.ordenar_lote(validos))
+        return jsonify([next(ordenados) if "id" in item else item for item in resposta])
 
     @app.get("/miniatura/<id_>")
     def miniatura(id_):

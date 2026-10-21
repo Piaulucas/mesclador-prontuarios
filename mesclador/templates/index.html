@@ -22,6 +22,10 @@
           background: var(--acento); color: var(--acento-txt); border-radius: 7px;
           font-size: 12px; font-weight: 700; padding: 4px 7px; }
   .cartao.ajustada .selo { display: block; }
+  .etiqueta-documento { display: inline-block; margin-left: 6px; padding: 2px 6px;
+                        border: 1px solid var(--borda); border-radius: 5px;
+                        background: var(--painel-suave); color: var(--suave);
+                        font-size: 11px; font-weight: 600; }
   .acoes button.ampliar { flex: 0 0 36px; }
   .ajustes-pagina { display: none; flex-wrap: wrap; align-items: end; gap: 12px 20px;
                     padding: 15px; background: var(--painel); border: 1px solid var(--borda);
@@ -241,12 +245,13 @@ function desenhar() {
     c.className = "cartao" + (ajustado(it) ? " ajustada" : "") + (it.id === selecionadaId ? " selecionada" : "");
     c.draggable = true; c.dataset.id = it.id;
     const deitada = it.giro % 180 !== 0 ? " deitada" : "";
+    const etiqueta = { formulario: "Formulário", bdv: "BDV", fdr: "FDR" }[it.documento];
     c.innerHTML = `
       <div class="ordem">${i + 1}</div>
       <div class="selo">ajustada</div>
       <div class="mini${deitada}"><img src="${urlMiniatura(it)}" style="transform: translate(-50%, -50%) rotate(${it.giro}deg)"></div>
       <div class="nome" title="${esc(it.nome)}">${esc(it.nome)}</div>
-      <div class="info">${it.paginas} página${it.paginas > 1 ? "s" : ""}</div>
+      <div class="info">${it.paginas} página${it.paginas > 1 ? "s" : ""}${etiqueta ? ` <span class="etiqueta-documento">${etiqueta}</span>` : ""}</div>
       <div class="acoes">
         <button data-acao="ampliar" class="ampliar" title="Ampliar com os ajustes">🔍</button>
         <button data-acao="girar" title="Girar 90°">↻ Girar</button>
@@ -290,9 +295,12 @@ function desenhar() {
     grade.appendChild(c);
   });
   const pags = itens.reduce((s, x) => s + x.paginas, 0);
+  const reconhecidos = itens.filter(x => x.documento).length;
+  const semNome = itens.length - reconhecidos;
   if (!itens.length) { origemAtual = ""; origemNome = ""; }
   $("resumo").textContent = itens.length
     ? `${itens.length} arquivo(s) · ${pags} página(s)` + (origemAtual ? ` · ${origemAtual}` : "")
+      + (reconhecidos && semNome ? ` · ${reconhecidos} reconhecido(s) pelo nome, ${semNome} sem nome reconhecido ficaram no fim ou junto do anterior` : "")
     : "Nenhum arquivo";
   carregarControles();
   validar();

@@ -1,4 +1,5 @@
 from pypdf import PdfReader
+import pytest
 
 from mesclador import pdfs
 from tests.conftest import jpeg, pdf
@@ -14,6 +15,36 @@ def test_tipo_do_arquivo():
     assert pdfs.tipo_do_arquivo("a.PDF") == "pdf"
     assert pdfs.tipo_do_arquivo("foto.jpeg") == "img"
     assert pdfs.tipo_do_arquivo("nota.docx") is None
+
+
+@pytest.mark.parametrize("nome, documento", [
+    ("Formulario.jpg", "formulario"), ("FORMULÁRIO.pdf", "formulario"),
+    ("Formulaio.jpg", "formulario"), ("formulario_2.jpg", "formulario"),
+    ("BDV.jpg", "bdv"), ("bdv 1.jpg", "bdv"), ("BDV-assinado.pdf", "bdv"),
+    ("Boletim de Viagem.pdf", "bdv"), ("boletim_de_viagem.jpg", "bdv"),
+    ("Boletim.jpg", "bdv"), ("FDR.jpg", "fdr"), ("fdr2.jpg", "fdr"),
+    ("Ficha de Remocao.pdf", "fdr"), ("ficha_de_remoção.jpg", "fdr"),
+    ("Ficha.jpg", "fdr"), ("BDV.pdf · p2", "bdv"),
+    ("scan_1.jpg", None), ("abdvx.jpg", None), ("fdrx.jpg", None),
+    ("viagem.jpg", None), ("remocao.jpg", None), ("Ficha Formulario.jpg", None),
+])
+def test_documento_do_arquivo(nome, documento):
+    assert pdfs.documento_do_arquivo(nome) == documento
+
+
+def test_ordenar_lote_mantem_continuacoes_e_sobra():
+    nomes = ["scan_9.jpg", "FDR.jpg", "BDV 1.jpg", "scan_2.jpg", "BDV 2.jpg",
+             "BDV 10.jpg", "Formulario.jpg"]
+    itens = [{"nome": nome} for nome in nomes]
+    assert [item["nome"] for item in pdfs.ordenar_lote(itens)] == [
+        "Formulario.jpg", "BDV 1.jpg", "scan_2.jpg", "BDV 2.jpg", "BDV 10.jpg",
+        "FDR.jpg", "scan_9.jpg"]
+
+
+def test_ordenar_lote_mantem_paginas_do_pdf_juntas():
+    nomes = ["FDR.jpg", "BDV.pdf · p1", "BDV.pdf · p2", "scan_2.jpg", "Formulario.jpg"]
+    assert [item["nome"] for item in pdfs.ordenar_lote([{"nome": nome} for nome in nomes])] == [
+        "Formulario.jpg", "BDV.pdf · p1", "BDV.pdf · p2", "scan_2.jpg", "FDR.jpg"]
 
 
 def test_limpar_nome_arquivo():

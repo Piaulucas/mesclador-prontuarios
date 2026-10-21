@@ -1,6 +1,7 @@
 """Miniaturas e mesclagem de PDFs/imagens."""
 
 import io
+from difflib import SequenceMatcher
 import re
 import zipfile
 from pathlib import Path
@@ -14,6 +15,46 @@ from . import imagens
 EXT_PDF = {".pdf"}
 EXT_IMG = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".heic"}
 DPI_PADRAO = 150   # usado quando a imagem não informa a resolução
+
+
+def documento_do_arquivo(nome):
+    """Reconhece apenas as três fichas-base pelo nome do arquivo."""
+    from .planilha import normalizar
+
+    sem_pagina = re.sub(r" · p\d+$", "", nome, flags=re.IGNORECASE)
+    palavras = re.findall(r"[A-Z]+", normalizar(Path(sem_pagina).stem))
+
+    def corresponde(palavra, alvo):
+        # 0,8 aceita um caractere errado em FICHA, mas exige comprimento quase igual.
+        return abs(len(palavra) - len(alvo)) <= 1 and SequenceMatcher(None, palavra, alvo).ratio() >= 0.8
+
+    encontrados = set()
+    for palavra in palavras:
+        if corresponde(palavra, "FORMULARIO"):
+            encontrados.add("formulario")
+        if palavra == "BDV" or corresponde(palavra, "BOLETIM"):
+            encontrados.add("bdv")
+        if palavra == "FDR" or corresponde(palavra, "FICHA"):
+            encontrados.add("fdr")
+    return next(iter(encontrados)) if len(encontrados) == 1 else None
+
+
+def ordenar_lote(itens):
+    """Sugere a ordem SESAB, preservando continuações e a ordem de entrada do lote."""
+    grupos = {"formulario": [], "bdv": [], "fdr": []}
+    sobra = []
+    grupo_atual = None
+    for item in itens:
+        documento = item.get("documento") if "documento" in item else documento_do_arquivo(item["nome"])
+        if documento:
+            grupo_atual = [item]
+            grupos[documento].append(grupo_atual)
+        elif grupo_atual is not None:
+            grupo_atual.append(item)
+        else:
+            sobra.append(item)
+    return [item for documento in ("formulario", "bdv", "fdr")
+            for grupo in grupos[documento] for item in grupo] + sobra
 
 
 def tipo_do_arquivo(nome):
