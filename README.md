@@ -14,6 +14,7 @@ O fluxo manual era: baixar as folhas em `.zip`, extrair, enviar para um site de 
 ## O que a ferramenta faz
 
 - Arrastar o **.zip baixado**, a **pasta** extraída ou os arquivos soltos; as folhas entram em ordem natural (`pag2` antes de `pag10`) e o lixo do macOS (`__MACOSX`, `.DS_Store`) é ignorado
+- Reconhecer Formulário, BDV e FDR pelo nome do arquivo e sugerir a ordem da SESAB; a ordem final é sempre do usuário
 - Reordenar arrastando os cartões, girar folhas escaneadas de lado, remover folhas; PDFs com várias páginas são separados em um cartão por página
 - Ajustar brilho, contraste e realce por folha na própria tela de mesclar; só as folhas ajustadas viram imagem no PDF final, as demais entram sem alteração
 - Escolher o tipo (ADULTO-PED / NEONATAL) e digitar o Nº da remoção → o nome vem da aba certa da planilha `.xlsx` (a numeração recomeça em cada aba)
@@ -47,6 +48,7 @@ Quando a folha escaneada está escura ou difícil de ler, a tela **Converter em 
 | Não sobrescreve e mostra a prévia do caminho      | Um arquivo com nome errado vira glosa                                                                                     |
 | Ajustes só na página inteira                      | Melhora a legibilidade sem alterar o conteúdo registrado no prontuário; não há ferramenta para apagar ou editar trechos   |
 | Conferência de nome avisa, não bloqueia           | O nome da pasta no Drive pode estar abreviado ou escrito diferente; a decisão final é de quem audita                      |
+| Ordem SESAB sugerida por lote                      | Os nomes ajudam a organizar as fichas-base, mas o usuário pode ajustar a ordem antes de salvar                             |
 
 ## Instalação
 
