@@ -18,6 +18,9 @@ config.toml
 !docs/*.png
 !macos/icone.png
 
+# ---- Marca local (não versionar) ----
+mesclador/static/logo-local.*
+
 # ---- Python ----
 __pycache__/
 *.pyc
