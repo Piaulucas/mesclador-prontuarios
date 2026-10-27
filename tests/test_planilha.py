@@ -72,6 +72,25 @@ def test_nome_da_origem():
     assert planilha.nome_da_origem("") is None and planilha.nome_da_origem(None) is None
 
 
+def test_nome_do_arquivo_remove_tipo_e_pagina():
+    assert planilha.nome_do_arquivo("Maria Teste (FORMULARIO).pdf · p2") == "MARIA TESTE"
+    assert planilha.nome_do_arquivo("Maria_Teste [BDV]_1.pdf") == "MARIA TESTE"
+    assert planilha.nome_do_arquivo("Maria Teste (FDR) 2.jpg") == "MARIA TESTE"
+    assert planilha.nome_do_arquivo("José da Silva [FDR].jpg") == "JOSE DA SILVA"
+    for nome in ("scan_1.jpg", "IMG_0001.jpg", "Formulario.jpg", "Maria.jpg", "Boletim de Viagem.pdf"):
+        assert planilha.nome_do_arquivo(nome) is None
+
+
+def test_nome_dos_arquivos_exige_concordancia():
+    assert planilha.nome_dos_arquivos([
+        "Maria Teste (FORMULARIO).pdf", "MARIA DE TESTE [BDV].pdf", "scan_2.jpg"
+    ]) == "MARIA DE TESTE"
+    assert planilha.nome_dos_arquivos([
+        "Maria Teste (FORMULARIO).pdf", "Ana Souza (BDV).pdf"
+    ]) is None
+    assert planilha.nome_dos_arquivos(["scan_1.jpg", "Formulario.jpg"]) is None
+
+
 def test_nomes_conferem():
     assert planilha.nomes_conferem("MARIA SOUZA", "Maria Fictícia de Souza")       # abreviado
     assert planilha.nomes_conferem("JOSE DA SILVA", "José Silva")                  # partícula
