@@ -44,6 +44,17 @@
               justify-content: center; padding: 24px; background: rgba(0, 0, 0, .82); cursor: zoom-out; }
   .ampliada.aberta { display: flex; }
   .ampliada img { max-width: 100%; max-height: 100%; border-radius: 4px; background: #fff; }
+  .ampliada .seta { position: absolute; top: 50%; transform: translateY(-50%); z-index: 1;
+                   width: 44px; height: 52px; padding: 0; border: 1px solid var(--borda);
+                   border-radius: 8px; background: var(--painel); color: var(--texto);
+                   font-size: 32px; line-height: 1; cursor: pointer; }
+  .ampliada .seta[hidden] { display: none; }
+  .ampliada .anterior { left: 12px; }
+  .ampliada .proximo { right: 12px; }
+  .ampliada .posicao { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+                      max-width: calc(100% - 120px); padding: 5px 10px; border-radius: 6px;
+                      background: var(--painel); color: var(--texto); font-size: 12px;
+                      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: default; }
   .cartao.arrastando { opacity: .35; }
   .cartao.alvo-antes { box-shadow: -5px 0 0 var(--acento); }
   .cartao.alvo-depois { box-shadow: 5px 0 0 var(--acento); }
@@ -137,7 +148,12 @@
     <div class="grade" id="grade"></div>
   </main>
 </div>
-<div class="ampliada" id="ampliada"><img id="imgAmpliada" alt="Arquivo ampliado"></div>
+<div class="ampliada" id="ampliada">
+  <button id="ampliadaAnterior" class="seta anterior" type="button" aria-label="Arquivo anterior">‹</button>
+  <img id="imgAmpliada" alt="Arquivo ampliado">
+  <button id="ampliadaProximo" class="seta proximo" type="button" aria-label="Próximo arquivo">›</button>
+  <span id="ampliadaPosicao" class="posicao" role="status"></span>
+</div>
 {% endblock %}
 
 {% block script %}
@@ -145,6 +161,7 @@
 let itens = [];          // [{id, nome, paginas, giro, brilho, contraste, realce}] na ordem da tela
 let selecionadaId = null; // cartão cujos ajustes aparecem na barra
 let arrastandoId = null; // cartão sendo reordenado
+let ampliadaId = null;   // arquivo aberto na ampliação
 let origemAtual = "";    // de onde vieram os arquivos (zip/pasta), mostrado no resumo
 let origemNome = "";     // nome do zip/pasta usado para conferir com a planilha
 let conferencia = null;  // true/false/null — resposta do servidor
@@ -232,8 +249,35 @@ $("aplicarTodas").onclick = () => {
   if (!o) return;
   itens.forEach(it => { if (it !== o) { Object.assign(it, { brilho: o.brilho, contraste: o.contraste, realce: o.realce }); atualizarCartao(it); } });
 };
-$("ampliada").onclick = () => $("ampliada").classList.remove("aberta");
-document.addEventListener("keydown", e => { if (e.key === "Escape") $("ampliada").classList.remove("aberta"); });
+function fecharAmpliacao() { ampliadaId = null; $("ampliada").classList.remove("aberta"); }
+function atualizarAmpliacao() {
+  if (!ampliadaId) return;
+  const indice = itens.findIndex(it => it.id === ampliadaId);
+  if (indice < 0) { fecharAmpliacao(); return; }
+  const it = itens[indice];
+  $("imgAmpliada").src = urlMiniatura(it, 1400);
+  $("imgAmpliada").style.transform = `rotate(${it.giro}deg)`;
+  $("ampliadaPosicao").textContent = `${indice + 1}/${itens.length} · ${it.nome}`;
+  $("ampliadaAnterior").hidden = indice === 0;
+  $("ampliadaProximo").hidden = indice === itens.length - 1;
+}
+function moverAmpliacao(direcao) {
+  const indice = itens.findIndex(it => it.id === ampliadaId);
+  if (indice < 0 || indice + direcao < 0 || indice + direcao >= itens.length) return;
+  ampliadaId = itens[indice + direcao].id;
+  atualizarAmpliacao();
+}
+$("ampliada").onclick = fecharAmpliacao;
+$("ampliadaAnterior").onclick = e => { e.stopPropagation(); moverAmpliacao(-1); };
+$("ampliadaProximo").onclick = e => { e.stopPropagation(); moverAmpliacao(1); };
+document.addEventListener("keydown", e => {
+  if (!$("ampliada").classList.contains("aberta")) return;
+  if (e.key === "Escape") fecharAmpliacao();
+  if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+    e.preventDefault(); e.stopPropagation();
+    moverAmpliacao(e.key === "ArrowLeft" ? -1 : 1);
+  }
+}, true);
 
 // ---------- grade de cartões ----------
 function desenhar() {
@@ -259,9 +303,7 @@ function desenhar() {
       </div>`;
     c.onclick = e => { if (!e.target.closest("button")) selecionar(it.id); };   // botões não selecionam; arrastar não dispara clique
     c.querySelector('[data-acao="ampliar"]').onclick = () => {
-      $("imgAmpliada").src = urlMiniatura(it, 1400);
-      $("imgAmpliada").style.transform = `rotate(${it.giro}deg)`;
-      $("ampliada").classList.add("aberta");
+      ampliadaId = it.id; atualizarAmpliacao(); $("ampliada").classList.add("aberta");
     };
     c.querySelector('[data-acao="girar"]').onclick = () => { it.giro = (it.giro + 90) % 360; desenhar(); };
     c.querySelector('[data-acao="remover"]').onclick = () => {
@@ -304,6 +346,7 @@ function desenhar() {
     : "Nenhum arquivo";
   carregarControles();
   validar();
+  atualizarAmpliacao();
 }
 $("limpar").onclick = () => {
   itens.forEach(it => fetch(`/remover/${it.id}`, { method: "POST" }));

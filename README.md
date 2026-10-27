@@ -16,6 +16,7 @@ O fluxo manual era: baixar as folhas em `.zip`, extrair, enviar para um site de 
 - Arrastar o **.zip baixado**, a **pasta** extraída ou os arquivos soltos; as folhas entram em ordem natural (`pag2` antes de `pag10`) e o lixo do macOS (`__MACOSX`, `.DS_Store`) é ignorado
 - Reconhecer Formulário, BDV e FDR pelo nome do arquivo e sugerir a ordem da SESAB; a ordem final é sempre do usuário
 - Reordenar arrastando os cartões, girar folhas escaneadas de lado, remover folhas; PDFs com várias páginas são separados em um cartão por página
+- Na ampliação das duas telas, navegar entre as folhas pelas setas do teclado ou da tela, com posição e nome do arquivo
 - Ajustar brilho, contraste e realce por folha na própria tela de mesclar; só as folhas ajustadas viram imagem no PDF final, as demais entram sem alteração
 - Escolher o tipo (ADULTO-PED / NEONATAL) e digitar o Nº da remoção → o nome vem da aba certa da planilha `.xlsx` (a numeração recomeça em cada aba)
 - Quando o .zip ou a pasta tem o nome do paciente, sugerir tipo, Nº e nome a partir da planilha; se houver mais de uma remoção com esse nome, você escolhe a correta

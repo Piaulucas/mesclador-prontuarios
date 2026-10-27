@@ -20,6 +20,17 @@
               justify-content: center; padding: 24px; background: rgba(0, 0, 0, .82); cursor: zoom-out; }
   .ampliada.aberta { display: flex; }
   .ampliada img { max-width: 100%; max-height: 100%; border-radius: 4px; background: #fff; }
+  .ampliada .seta { position: absolute; top: 50%; transform: translateY(-50%); z-index: 1;
+                   width: 44px; height: 52px; padding: 0; border: 1px solid var(--borda);
+                   border-radius: 8px; background: var(--painel); color: var(--texto);
+                   font-size: 32px; line-height: 1; cursor: pointer; }
+  .ampliada .seta[hidden] { display: none; }
+  .ampliada .anterior { left: 12px; }
+  .ampliada .proximo { right: 12px; }
+  .ampliada .posicao { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+                      max-width: calc(100% - 120px); padding: 5px 10px; border-radius: 6px;
+                      background: var(--painel); color: var(--texto); font-size: 12px;
+                      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: default; }
   #mostrar { display: none; }
 {% endblock %}
 
@@ -77,13 +88,19 @@
     <div class="grade" id="grade"></div>
   </main>
 </div>
-<div class="ampliada" id="ampliada"><img id="imgAmpliada" alt="Página ampliada"></div>
+<div class="ampliada" id="ampliada">
+  <button id="ampliadaAnterior" class="seta anterior" type="button" aria-label="Página anterior">‹</button>
+  <img id="imgAmpliada" alt="Página ampliada">
+  <button id="ampliadaProximo" class="seta proximo" type="button" aria-label="Próxima página">›</button>
+  <span id="ampliadaPosicao" class="posicao" role="status"></span>
+</div>
 {% endblock %}
 
 {% block script %}
 <script>
 let paginas = [];       // [{id, nome, giro, brilho, contraste, realce}] na ordem da exportação
 let selecionadaId = null;
+let ampliadaId = null;  // página aberta na ampliação
 let pastaExportada = "";
 
 // ---------- ajustes (por página) ----------
@@ -162,6 +179,35 @@ ativarEntrada(enviar);
 temTrabalhoPendente = () => paginas.length > 0 && !pastaExportada;
 
 // ---------- páginas ----------
+function fecharAmpliacao() { ampliadaId = null; $("ampliada").classList.remove("aberta"); }
+function atualizarAmpliacao() {
+  if (!ampliadaId) return;
+  const indice = paginas.findIndex(p => p.id === ampliadaId);
+  if (indice < 0) { fecharAmpliacao(); return; }
+  const p = paginas[indice];
+  $("imgAmpliada").src = urlPrevia(p, 1400);
+  $("imgAmpliada").style.transform = `rotate(${p.giro}deg)`;
+  $("ampliadaPosicao").textContent = `${indice + 1}/${paginas.length} · ${p.nome}`;
+  $("ampliadaAnterior").hidden = indice === 0;
+  $("ampliadaProximo").hidden = indice === paginas.length - 1;
+}
+function moverAmpliacao(direcao) {
+  const indice = paginas.findIndex(p => p.id === ampliadaId);
+  if (indice < 0 || indice + direcao < 0 || indice + direcao >= paginas.length) return;
+  ampliadaId = paginas[indice + direcao].id;
+  atualizarAmpliacao();
+}
+$("ampliada").onclick = fecharAmpliacao;
+$("ampliadaAnterior").onclick = e => { e.stopPropagation(); moverAmpliacao(-1); };
+$("ampliadaProximo").onclick = e => { e.stopPropagation(); moverAmpliacao(1); };
+document.addEventListener("keydown", e => {
+  if (!$("ampliada").classList.contains("aberta")) return;
+  if (e.key === "Escape") fecharAmpliacao();
+  if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+    e.preventDefault(); e.stopPropagation();
+    moverAmpliacao(e.key === "ArrowLeft" ? -1 : 1);
+  }
+}, true);
 function desenhar() {
   const grade = $("grade");
   grade.innerHTML = "";
@@ -184,9 +230,7 @@ function desenhar() {
       </div>`;
     c.onclick = e => { if (!e.target.closest("button")) selecionar(p.id); };   // botões não selecionam
     c.querySelector('[data-acao="ampliar"]').onclick = () => {
-      $("imgAmpliada").src = urlPrevia(p, 1400);
-      $("imgAmpliada").style.transform = `rotate(${p.giro}deg)`;
-      $("ampliada").classList.add("aberta");
+      ampliadaId = p.id; atualizarAmpliacao(); $("ampliada").classList.add("aberta");
     };
     c.querySelector('[data-acao="girar"]').onclick = () => { p.giro = (p.giro + 90) % 360; desenhar(); };
     c.querySelector('[data-acao="remover"]').onclick = () => {
@@ -200,9 +244,8 @@ function desenhar() {
   carregarControles();
   $("resumo").textContent = paginas.length ? `${paginas.length} página(s)` : "Nenhuma página";
   $("exportar").disabled = !paginas.length;
+  atualizarAmpliacao();
 }
-$("ampliada").onclick = () => $("ampliada").classList.remove("aberta");
-document.addEventListener("keydown", e => { if (e.key === "Escape") $("ampliada").classList.remove("aberta"); });
 $("limpar").onclick = () => {
   paginas.forEach(p => fetch(`/converter/remover/${p.id}`, { method: "POST" }));
   paginas = []; selecionadaId = null; pastaExportada = ""; $("nome").value = "";
