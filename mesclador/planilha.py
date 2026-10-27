@@ -141,6 +141,29 @@ def nome_da_origem(texto):
     return nome
 
 
+def nome_do_arquivo(nome_arquivo):
+    """Nome de paciente no arquivo, sem tipo de ficha nem número de página."""
+    if not nome_arquivo:
+        return None
+    nome = re.sub(r" · p\d+$", "", str(nome_arquivo), flags=re.I)
+    nome = Path(nome).stem
+    nome = re.sub(r"\([^)]*\)|\[[^]]*\]", " ", nome)
+    nome = re.sub(r"(?:[_\s-]\d+)+$", "", nome)
+    nome = normalizar(nome.replace("_", " ").replace("-", " "))
+    if len(_tokens(nome)) < 2 or _tokens(nome)[0] in {"SCAN", "IMG", "FORMULARIO", "BDV", "FDR", "BOLETIM", "FICHA"}:
+        return None
+    return nome
+
+
+def nome_dos_arquivos(nomes):
+    """Nome comum a todos os arquivos que parecem ter nome de paciente, ou None."""
+    encontrados = [nome for arquivo in nomes if (nome := nome_do_arquivo(arquivo))]
+    if not encontrados or any(not nomes_conferem(a, b) for i, a in enumerate(encontrados)
+                              for b in encontrados[i + 1:]):
+        return None
+    return max(encontrados, key=lambda nome: (len(_tokens(nome)), len(nome)))
+
+
 def _tokens(nome):
     return [t for t in re.split(r"[^A-Z0-9]+", normalizar(nome)) if t and t not in _PARTICULAS]
 

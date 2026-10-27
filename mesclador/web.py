@@ -151,6 +151,22 @@ def create_app(config, pasta_temp=None, versao=None):
         validos = [item for item in resposta if "id" in item]
         for item in validos:
             item["documento"] = pdfs.documento_do_arquivo(item["nome"])
+        origem_pasta = request.form.get("origem", "")
+        if origem_pasta and not origem_pasta.lower().endswith(".zip") and "," not in origem_pasta:
+            origem_pasta = planilha.nome_da_origem(origem_pasta)
+            if origem_pasta and len(origem_pasta.split()) < 2:
+                origem_pasta = None
+        else:
+            origem_pasta = None
+        if origem_pasta:
+            for item in validos:
+                item.setdefault("origem", origem_pasta)
+        if validos and not any(item.get("origem") for item in validos):
+            nomes_atuais = [arquivos[id_]["nome"] for id_ in request.form.getlist("ids_atuais") if id_ in arquivos]
+            origem_arquivo = planilha.nome_dos_arquivos(nomes_atuais + [item["nome"] for item in validos])
+            if origem_arquivo:
+                for item in validos:
+                    item["origem_arquivo"] = origem_arquivo
         ordenados = iter(pdfs.ordenar_lote(validos))
         return jsonify([next(ordenados) if "id" in item else item for item in resposta])
 

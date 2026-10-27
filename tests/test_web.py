@@ -8,8 +8,9 @@ from pypdf import PdfReader
 from tests.conftest import criar_planilha, jpeg, pdf
 
 
-def enviar(cliente, *arquivos):
-    return cliente.post("/enviar", data={"arquivos": list(arquivos)},
+def enviar(cliente, *arquivos, origem="", ids_atuais=()):
+    return cliente.post("/enviar", data={"arquivos": list(arquivos), "origem": origem,
+                                        "ids_atuais": list(ids_atuais)},
                         content_type="multipart/form-data").get_json()
 
 
@@ -314,6 +315,51 @@ def test_drive_download_usa_pasta_interna(cliente):
 def test_drive_download_sem_pasta_nao_confere(cliente):
     resp = enviar(cliente, (zip_com(["a.jpg", "b.jpg"]), "drive-download-20261014T190644Z-1-001.zip"))
     assert all("origem" not in r for r in resp)
+
+
+def test_arquivos_soltos_informam_nome_consensual_para_sugestao(cliente):
+    resp = enviar(cliente, (jpeg(), "Maria Teste (FDR).jpg"),
+                  (jpeg(), "Maria Teste (BDV).jpg"),
+                  (jpeg(), "Maria Teste (FORMULARIO).jpg"))
+    assert all(r["origem_arquivo"] == "MARIA TESTE" for r in resp)
+    achados = cliente.get("/sugerir", query_string={"empresa": "EMPRESA A",
+                           "planilha": "2026/10_Planilha_de_Faturamento_Exemplo_Outubro_26.xlsx",
+                           "origem": resp[0]["origem_arquivo"]}).get_json()
+    assert [(r["numero"], r["nome"]) for r in achados] == [("3", "MARIA TESTE")]
+
+
+def test_zip_e_pasta_genericos_usam_nome_dos_arquivos(cliente):
+    nomes = ["Maria Teste (FORMULARIO).jpg", "Maria Teste [BDV].jpg"]
+    zip_resp = enviar(cliente, (zip_com(nomes), "drive-download-20261014T190644Z-1-001.zip"))
+    pasta_resp = enviar(cliente, *((jpeg(), nome) for nome in nomes), origem="drive-download-20261014T190644Z-1-001")
+    assert all(r["origem_arquivo"] == "MARIA TESTE" and "origem" not in r for r in zip_resp + pasta_resp)
+
+
+def test_nome_do_zip_ou_pasta_tem_prioridade(cliente):
+    nomes = ["Ana Souza (FORMULARIO).jpg", "Ana Souza (BDV).jpg"]
+    zip_resp = enviar(cliente, (zip_com(nomes), "MARIA TESTE-20261014T190644Z-001.zip"))
+    pasta_resp = enviar(cliente, *((jpeg(), nome) for nome in nomes), origem="MARIA TESTE")
+    assert all(r["origem"] == "MARIA TESTE" and "origem_arquivo" not in r for r in zip_resp + pasta_resp)
+
+
+def test_nomes_misturados_ou_genericos_nao_sugerem_origem(cliente):
+    misto = enviar(cliente, (jpeg(), "Maria Teste (FDR).jpg"), (jpeg(), "Ana Souza (BDV).jpg"))
+    generico = enviar(cliente, (jpeg(), "scan_1.jpg"), (jpeg(), "IMG_0001.jpg"))
+    assert all("origem_arquivo" not in r and "origem" not in r for r in misto + generico)
+
+
+def test_envios_soltos_sucessivos_com_nomes_diferentes_nao_sugerem(cliente):
+    primeiro = enviar(cliente, (jpeg(), "Lia Exemplo (FDR).jpg"))
+    segundo = enviar(cliente, (jpeg(), "Maria Teste (BDV).jpg"), ids_atuais=[primeiro[0]["id"]])
+    assert "origem_arquivo" not in segundo[0]
+
+
+def test_nome_dos_arquivos_ausente_da_planilha_nao_tem_candidato(cliente):
+    resp = enviar(cliente, (jpeg(), "Lia Exemplo (FDR).jpg"))
+    assert resp[0]["origem_arquivo"] == "LIA EXEMPLO"
+    assert cliente.get("/sugerir", query_string={"empresa": "EMPRESA A",
+                       "planilha": "2026/10_Planilha_de_Faturamento_Exemplo_Outubro_26.xlsx",
+                       "origem": resp[0]["origem_arquivo"]}).get_json() == []
 
 
 def test_previa_informa_conferencia(cliente):

@@ -20,6 +20,7 @@ O fluxo manual era: baixar as folhas em `.zip`, extrair, enviar para um site de 
 - Ajustar brilho, contraste e realce por folha na própria tela de mesclar; só as folhas ajustadas viram imagem no PDF final, as demais entram sem alteração
 - Escolher o tipo (ADULTO-PED / NEONATAL) e digitar o Nº da remoção → o nome vem da aba certa da planilha `.xlsx` (a numeração recomeça em cada aba)
 - Quando o .zip ou a pasta tem o nome do paciente, sugerir tipo, Nº e nome a partir da planilha; se houver mais de uma remoção com esse nome, você escolhe a correta
+- Se o zip ou a pasta não identifica o paciente, usar nomes concordantes dos arquivos para sugerir a remoção quando ela existir na planilha
 - Pré-seleciona a planilha do mês escolhido (pelo mês/ano no caminho do arquivo) e ignora versões antigas/backups
 - Você escolhe a pasta principal no seletor nativo do macOS; o app usa a subpasta do tipo (`ADULTO…` / `NEO…`) e a cria se não existir
 - Nº com 2 dígitos (`04`, `05`, `10`) para a ordenação ficar certa

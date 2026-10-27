@@ -164,6 +164,7 @@ let arrastandoId = null; // cartão sendo reordenado
 let ampliadaId = null;   // arquivo aberto na ampliação
 let origemAtual = "";    // de onde vieram os arquivos (zip/pasta), mostrado no resumo
 let origemNome = "";     // nome do zip/pasta usado para conferir com a planilha
+let origemPendenteArquivo = ""; // só vale após a planilha encontrar uma remoção
 let conferencia = null;  // true/false/null — resposta do servidor
 let nomeOrigemLimpo = ""; // nome da origem já normalizado pelo servidor
 
@@ -172,6 +173,8 @@ async function enviar(lista, origem = "") {
   if (!arquivos.length) { if (ignorados) alert("Nenhum PDF, imagem ou .zip encontrado."); return; }
   const fd = new FormData();
   arquivos.forEach(f => fd.append("arquivos", f, f.name));
+  fd.append("origem", origem);
+  itens.forEach(it => fd.append("ids_atuais", it.id));
   $("resumo").textContent = "Carregando…";
   const r = await fetch("/enviar", { method: "POST", body: fd });
   const resp = await r.json();
@@ -179,15 +182,15 @@ async function enviar(lista, origem = "") {
   resp.filter(x => x.id).forEach(x => itens.push({ ...x, giro: 0, brilho: 0, contraste: 0, realce: false }));
   desenhar();
   if (origem) origemAtual = `de ${origem}` + (ignorados ? ` (${ignorados} ignorado(s))` : "");
-  // nome para conferência: o servidor já extrai do zip; para pasta, usa o nome da pasta
-  // (um lote novo de zip/pasta substitui o anterior; arquivos soltos mantêm o que havia)
-  const doZip = resp.find(x => x.origem);
-  if (doZip) origemNome = doZip.origem;
-  else if (origem) origemNome = (!/\.zip$/i.test(origem) && !origem.includes(",")) ? origem : "";
+  // zip/pasta prevalecem; arquivos soltos novos não trocam uma origem já definida
+  const comOrigem = resp.find(x => x.origem);
+  if (comOrigem) { origemNome = comOrigem.origem; origemPendenteArquivo = ""; }
+  else if (origem) { origemNome = ""; origemPendenteArquivo = ""; }
+  if (!origemNome) origemPendenteArquivo = resp.find(x => x.origem_arquivo)?.origem_arquivo || "";
   previa();
   desenhar();
   if (erros.length) alert(erros.join("\n"));
-  if (origemNome && itens.length && !$("numero").value.trim()) sugerir();
+  if ((origemNome || origemPendenteArquivo) && itens.length && !$("numero").value.trim() && !$("nome").value.trim()) sugerir();
 }
 
 ativarEntrada(enviar);
@@ -339,7 +342,7 @@ function desenhar() {
   const pags = itens.reduce((s, x) => s + x.paginas, 0);
   const reconhecidos = itens.filter(x => x.documento).length;
   const semNome = itens.length - reconhecidos;
-  if (!itens.length) { origemAtual = ""; origemNome = ""; }
+  if (!itens.length) { origemAtual = ""; origemNome = ""; origemPendenteArquivo = ""; }
   $("resumo").textContent = itens.length
     ? `${itens.length} arquivo(s) · ${pags} página(s)` + (origemAtual ? ` · ${origemAtual}` : "")
       + (reconhecidos && semNome ? ` · ${reconhecidos} reconhecido(s) pelo nome, ${semNome} sem nome reconhecido ficaram no fim ou junto do anterior` : "")
@@ -405,26 +408,30 @@ function preencher(a) {
 }
 
 async function sugerir() {
-  if (!origemNome || !itens.length || !$("planilha").value || $("numero").value.trim()) return;
-  const origem = origemNome;
+  if (!(origemNome || origemPendenteArquivo) || !itens.length || !$("planilha").value ||
+      $("numero").value.trim() || $("nome").value.trim()) return;
+  const peloArquivo = !origemNome;
+  const origem = origemNome || origemPendenteArquivo;
   const empresa = $("empresa").value;
   const caminho = $("planilha").value;
   const q = new URLSearchParams({ empresa, planilha: caminho, origem });
   const r = await fetch(`/sugerir?${q}`);
   const achados = await r.json();
-  if (origemNome !== origem || $("empresa").value !== empresa || $("planilha").value !== caminho ||
-      !itens.length || $("numero").value.trim()) return;
+  if ((origemNome || origemPendenteArquivo) !== origem || $("empresa").value !== empresa ||
+      $("planilha").value !== caminho || !itens.length || $("numero").value.trim() || $("nome").value.trim()) return;
   if (!r.ok) { $("msgBusca").textContent = achados.erro; $("msgBusca").className = "msg erro"; return; }
   $("escolhas").innerHTML = "";
   if (!achados.length) {
+    if (peloArquivo) { $("msgBusca").textContent = ""; $("msgBusca").className = "msg"; return; }
     $("msgBusca").textContent = `Nenhuma remoção com o nome "${origem}" na planilha — digite o Nº.`;
     $("msgBusca").className = "msg erro";
     return;
   }
+  if (peloArquivo) { origemNome = origem; origemPendenteArquivo = ""; previa(); }
   if (achados.length === 1) {
     $("tipo").value = achados[0].tipo;
     preencher(achados[0]);
-    $("msgBusca").textContent = `Sugerido pelo nome do zip/pasta — linha ${achados[0].linha} da aba ${achados[0].aba}`;
+    $("msgBusca").textContent = `Sugerido pelo nome ${peloArquivo ? "dos arquivos" : "do zip/pasta"} — linha ${achados[0].linha} da aba ${achados[0].aba}`;
   } else {
     $("msgBusca").textContent = "Mais de uma remoção com esse nome. Escolha:";
     $("msgBusca").className = "msg";
@@ -434,7 +441,7 @@ async function sugerir() {
       b.textContent = `${a.tipo} · Nº ${numero} · ${a.nome}`;
       b.onclick = () => {
         if (origemNome !== origem || $("empresa").value !== empresa || $("planilha").value !== caminho ||
-            $("numero").value.trim()) return;
+            $("numero").value.trim() || $("nome").value.trim()) return;
         $("tipo").value = a.tipo;
         preencher(a);
         $("escolhas").innerHTML = "";
