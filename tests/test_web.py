@@ -1,4 +1,5 @@
 from pathlib import Path
+from html.parser import HTMLParser
 
 import pytest
 
@@ -147,6 +148,29 @@ def test_seletor_fora_do_mac_avisa(cliente, monkeypatch):
 
 def test_pagina_inicial(cliente):
     assert cliente.get("/").status_code == 200
+
+
+@pytest.mark.parametrize("rota", ["/", "/converter"])
+def test_ampliacao_tem_setas_e_indicador_nas_duas_telas(cliente, rota):
+    class Elementos(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.por_id = {}
+
+        def handle_starttag(self, tag, attrs):
+            atributos = dict(attrs)
+            if "id" in atributos:
+                self.por_id[atributos["id"]] = (tag, atributos)
+
+    pagina = cliente.get(rota).get_data(as_text=True)
+    elementos = Elementos()
+    elementos.feed(pagina)
+    for id_ in ("ampliadaAnterior", "ampliadaProximo"):
+        tag, atributos = elementos.por_id[id_]
+        assert tag == "button" and atributos["type"] == "button" and atributos["aria-label"]
+    assert elementos.por_id["ampliadaPosicao"][0] == "span"
+    assert elementos.por_id["ampliada"][0] == "div"
+    assert elementos.por_id["imgAmpliada"][0] == "img"
 
 
 def test_telas_abrem_com_e_sem_logo_local(cliente):
