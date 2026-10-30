@@ -43,6 +43,7 @@ class Config:
     porta: int = 5050
     mes_inicial: str = ""             # "AAAA-MM": meses anteriores ficam bloqueados (vazio = sem limite)
     auditoria_prontuarios: dict = field(default_factory=dict)  # empresa -> molde da pasta do mês
+    auditoria_scanners: dict = field(default_factory=dict)  # empresa -> pasta raiz e formato
     pasta_registros: Path = field(default_factory=lambda: Path(
         "~/Library/Application Support/Mesclador/auditoria").expanduser())
 
@@ -87,6 +88,7 @@ def carregar(caminho=None):
         porta=int(dados.get("porta", 5050)),
         mes_inicial=str(dados.get("mes_inicial", "")),
         auditoria_prontuarios=dados.get("auditoria", {}).get("prontuarios", {}),
+        auditoria_scanners=dados.get("auditoria", {}).get("scanners", {}),
         pasta_registros=_caminho(dados.get("auditoria", {}).get("pasta_registros")
                                  or "~/Library/Application Support/Mesclador/auditoria"),
     )

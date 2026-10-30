@@ -71,7 +71,7 @@
 {% block conteudo %}
 <div class="auditoria">
   <h1>Painel da auditoria</h1>
-  <p class="auditoria-intro">Andamento das fichas do mês, lido da planilha e da pasta de prontuários.</p>
+  <p class="auditoria-intro">Andamento das fichas do mês, lido da planilha e das pastas de prontuários e scanners.</p>
   <div class="auditoria-filtros">
     <label>Mês <input id="painelMes" type="month" min="{{ mes_minimo }}" value="{{ mes_padrao }}"></label>
     <label>Empresa <select id="painelEmpresa"><option value="">Todas as empresas</option>
@@ -130,7 +130,8 @@ function listaPainel(pai, titulo, itens, mensagem, descrever) {
 function mostrarPainel() {
   if (!dadosPainel) return;
   const empresas = dadosPainel.empresas.filter(e => !empresaPainel.value || e.empresa === empresaPainel.value);
-  const totais = {lancadas: 0, por_auditar: 0, com_equipe: 0, concluidas: 0, sem_devolucao: 0};
+  const totais = {lancadas: 0, por_auditar: 0, com_equipe: 0, concluidas: 0,
+    sem_devolucao: 0, falta_escanear: 0};
   empresas.forEach(e => {
     for (const chave of Object.keys(totais)) totais[chave] += e.contagem[chave] ??
       (chave === "sem_devolucao" ? e.contagem.com_equipe : 0);
@@ -141,6 +142,7 @@ function mostrarPainel() {
     ["Lançadas", totais.lancadas], ["Por auditar", totais.por_auditar],
     [`Com a equipe (${totais.sem_devolucao} sem devolução registrada)`, totais.com_equipe],
     ["Aprovadas", totais.concluidas],
+    ["Falta escanear", totais.falta_escanear],
     ["Concluído", (totais.lancadas ? Math.round(100 * totais.concluidas / totais.lancadas) : 0) + "%"]
   ];
   valores.forEach(([rotulo, valor]) => {
@@ -190,6 +192,8 @@ function mostrarPainel() {
       `${e.inconsistencias.length} inconsistência${e.inconsistencias.length === 1 ? "" : "s"}`, "auditoria-selo"));
     if (e.pdfs_sem_linha.length) selos.append(elemento("span",
       `${e.pdfs_sem_linha.length} PDF${e.pdfs_sem_linha.length === 1 ? "" : "s"} sem linha`, "auditoria-selo"));
+    if (e.escaneados_sem_linha.length) selos.append(elemento("span",
+      `${e.escaneados_sem_linha.length} escaneado(s) sem linha`, "auditoria-selo"));
     if (e.aviso || e.contagem.cor_desconhecida) selos.append(elemento("span",
       "Atenção", "auditoria-selo auditoria-selo-aviso"));
     resumo.append(selos);
@@ -201,6 +205,8 @@ function mostrarPainel() {
         f.faixa ? `auditoria-prazo-${f.faixa}` : ""));
       if (f.ultimo_envio) li.append(elemento("small", `Último pedido: ${f.ultimo_envio.pedido}`));
       if (f.comentario) li.append(elemento("small", f.comentario));
+      if (f.scanner) li.append(elemento("small", f.scanner === "falta_escanear" ?
+        "Falta a equipe escanear" : "Escaneada, aguardando auditoria"));
       const formulario = elemento("form", undefined, "auditoria-registro");
       const data = elemento("input"); data.type = "date"; data.required = true;
       data.value = dadosPainel.hoje;
@@ -227,10 +233,16 @@ function mostrarPainel() {
       li.append(situacao);
       return li;
     });
+    listaPainel(listas, "Scanners das fichas abertas", e.fichas.filter(f => f.scanner),
+      "Nenhuma ficha aberta com scanner disponível.", f =>
+      elemento("li", `${f.ficha} · ${f.paciente} · ${f.scanner === "falta_escanear" ?
+        "Falta a equipe escanear" : "Escaneada, aguardando auditoria"}`));
     listaPainel(listas, "Inconsistências", e.inconsistencias, "Nenhuma inconsistência.", i =>
       elemento("li", `${i.ficha || i.numero || "PDF"} · ${i.motivo.replaceAll("_", " ")}`));
     listaPainel(listas, "PDFs sem linha", e.pdfs_sem_linha, "Nenhum PDF sem linha.", p =>
       elemento("li", `${p.tipo} · ${p.arquivo}`));
+    listaPainel(listas, "Escaneados sem linha na planilha", e.escaneados_sem_linha,
+      "Nenhum escaneado sem linha.", p => elemento("li", p.entrada));
     conteudo.append(listas);
     area.append(cartao);
   });

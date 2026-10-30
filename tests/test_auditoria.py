@@ -1,6 +1,7 @@
 """Auditoria com planilhas e nomes inteiramente fictícios."""
 
-from datetime import date
+from datetime import date, datetime
+import os
 
 import pytest
 
@@ -185,3 +186,66 @@ def test_gravacao_atomica_preserva_arquivo_anterior_se_substituicao_falha(tmp_pa
         auditoria.salvar_registros(config, "EMPRESA FICTÍCIA", "2026-10", {"fichas": {}})
     assert caminho.read_bytes() == conteudo
     assert list(caminho.parent.iterdir()) == [caminho]
+
+
+@pytest.mark.parametrize("nome_mes", ["10-OUTUBRO-26", "10 - OUTUBRO", "10 - FICHAS DE OUTUBRO"])
+def test_scanners_em_pastas_com_nomes_variados(tmp_path, nome_mes):
+    raiz = tmp_path / "scanners_ficticios"
+    mes = raiz / nome_mes
+    (mes / "Ana Exemplo" / "folhas").mkdir(parents=True)
+    (mes / "Pessoa Sem Linha").mkdir()
+    (raiz / "09 - SETEMBRO").mkdir()
+    (raiz / "10-OUTUBRO-25").mkdir()
+    config = Config(tmp_path, {}, ABAS, auditoria_scanners={
+        "EMPRESA FICTÍCIA": {"pasta": str(raiz), "formato": "pastas_por_paciente"}})
+    local = auditoria.localizar_scanners(config, "EMPRESA FICTÍCIA", 2026, 10)
+    assert local["pasta"] == mes and local["aviso"] is None
+    nomes, aviso = auditoria.listar_scanners(local, 2026, 10)
+    assert aviso is None
+    fichas, sem_linha = auditoria.conferir_scanners([
+        {"paciente": "ANA EXEMPLO", "estado": "por_auditar"},
+        {"paciente": "BRUNO EXEMPLO", "estado": "com_equipe"},
+        {"paciente": "CLARA EXEMPLO", "estado": "concluida"}], nomes)
+    assert [f.get("scanner") for f in fichas] == [
+        "escaneada_aguardando_auditoria", "falta_escanear", None]
+    assert [n["entrada"] for n in sem_linha] == ["Pessoa Sem Linha"]
+
+
+def test_scanners_arquivos_soltos_filtram_mes_e_extraem_nome(tmp_path):
+    raiz = tmp_path / "scanners_ficticios"
+    raiz.mkdir()
+    for nome, mes in [("Ana Exemplo (BDV).pdf", 10),
+                      ("Pessoa Sem Linha (FORMULARIO).pdf", 10),
+                      ("Bruno Exemplo (FDR).pdf", 9)]:
+        caminho = raiz / nome
+        caminho.touch()
+        instante = datetime(2026, mes, 15).timestamp()
+        os.utime(caminho, (instante, instante))
+    config = Config(tmp_path, {}, ABAS, auditoria_scanners={
+        "EMPRESA FICTÍCIA": {"pasta": str(raiz), "formato": "arquivos_soltos"}})
+    local = auditoria.localizar_scanners(config, "EMPRESA FICTÍCIA", 2026, 10)
+    nomes, aviso = auditoria.listar_scanners(local, 2026, 10)
+    fichas, sem_linha = auditoria.conferir_scanners([
+        {"paciente": "ANA EXEMPLO", "estado": "por_auditar"},
+        {"paciente": "BRUNO EXEMPLO", "estado": "com_equipe"}], nomes)
+    assert aviso is None
+    assert [f["scanner"] for f in fichas] == ["escaneada_aguardando_auditoria", "falta_escanear"]
+    assert [n["nome"] for n in sem_linha] == ["PESSOA SEM LINHA"]
+
+
+def test_scanners_pasta_ausente_e_duplicada(tmp_path):
+    raiz = tmp_path / "scanners_ficticios"
+    config = Config(tmp_path, {}, ABAS, auditoria_scanners={
+        "EMPRESA FICTÍCIA": {"pasta": str(raiz), "formato": "pastas_por_paciente"}})
+    assert "não encontrada" in auditoria.localizar_scanners(config, "EMPRESA FICTÍCIA", 2026, 10)["aviso"]
+    raiz.mkdir()
+    assert "do mês" in auditoria.localizar_scanners(config, "EMPRESA FICTÍCIA", 2026, 10)["aviso"]
+    antiga = raiz / "10 - OUTUBRO"
+    recente = raiz / "10 - FICHAS DE OUTUBRO"
+    antiga.mkdir()
+    recente.mkdir()
+    os.utime(antiga, (100, 100))
+    os.utime(recente, (200, 200))
+    local = auditoria.localizar_scanners(config, "EMPRESA FICTÍCIA", 2026, 10)
+    assert local["pasta"] == recente
+    assert "Mais de uma" in local["aviso"]

@@ -41,14 +41,21 @@ def criar_blueprint(config):
         hoje = date.today().isoformat()
         empresas = []
         totais = {chave: 0 for chave in ("lancadas", "por_auditar", "com_equipe", "concluidas", "cor_desconhecida")}
+        totais["falta_escanear"] = 0
         for nome, base in config.empresas.items():
             avisos = []
             item = {"empresa": nome, "aviso": "", "planilha": None,
                     "contagem": auditoria.contar([]), "pendencias": [], "fichas": [],
-                    "inconsistencias": [], "pdfs_sem_linha": []}
+                    "inconsistencias": [], "pdfs_sem_linha": [], "escaneados_sem_linha": []}
             local = auditoria.localizar_prontuarios(config, nome, ano, mes)
             if local["aviso"]:
                 avisos.append(local["aviso"])
+            scanners = auditoria.localizar_scanners(config, nome, ano, mes)
+            if scanners["aviso"]:
+                avisos.append(scanners["aviso"])
+            nomes_scanners, aviso_scanners = auditoria.listar_scanners(scanners, ano, mes)
+            if aviso_scanners:
+                avisos.append(aviso_scanners)
             try:
                 candidatas = planilha.listar_planilhas(base, ano, mes, somente_do_mes=True)
                 if candidatas:
@@ -60,11 +67,15 @@ def criar_blueprint(config):
                     registros = auditoria.ler_registros(config, nome, texto)
                     item["fichas"], divergencias = auditoria.aplicar_registros(
                         cruzamento["fichas"], registros, date.today())
+                    item["fichas"], item["escaneados_sem_linha"] = auditoria.conferir_scanners(
+                        item["fichas"], nomes_scanners, scanners["pasta"] is not None and not aviso_scanners)
                     item["inconsistencias"] = cruzamento["inconsistencias"] + divergencias
                     item["pdfs_sem_linha"] = [
                         {"tipo": p["tipo"], "numero": p["numero"], "paciente": p["paciente"],
                          "arquivo": p["caminho"].name} for p in cruzamento["pdfs_sem_linha"]]
                     item["contagem"] = auditoria.contar(item["fichas"])
+                    item["contagem"]["falta_escanear"] = sum(
+                        ficha.get("scanner") == "falta_escanear" for ficha in item["fichas"])
                     item["pendencias"] = auditoria.pendencias(item["fichas"])
                     item["contagem"]["sem_devolucao"] = sum(
                         "ultimo_envio" not in ficha for ficha in item["pendencias"])
@@ -74,10 +85,10 @@ def criar_blueprint(config):
                 # Uma planilha danificada não impede a leitura das demais empresas.
                 avisos.append(f"Não foi possível ler a planilha: {erro}")
                 item.update(contagem=auditoria.contar([]), pendencias=[], fichas=[],
-                            inconsistencias=[], pdfs_sem_linha=[])
+                            inconsistencias=[], pdfs_sem_linha=[], escaneados_sem_linha=[])
             item["aviso"] = " ".join(avisos)
             for chave in totais:
-                totais[chave] += item["contagem"][chave]
+                totais[chave] += item["contagem"].get(chave, 0)
             empresas.append(item)
         totais["percentual_concluido"] = (100 * totais["concluidas"] / totais["lancadas"]
                                          if totais["lancadas"] else 0)

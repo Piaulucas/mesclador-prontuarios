@@ -7,7 +7,7 @@ import re
 import tempfile
 import unicodedata
 from collections import Counter
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 from openpyxl import load_workbook
@@ -101,6 +101,95 @@ def localizar_prontuarios(config, empresa, ano, mes):
     pasta = pasta_prontuarios(config, empresa, ano, mes)
     return {"pasta": pasta,
             "aviso": None if pasta else "Pasta de prontuários do mês não encontrada."}
+
+
+def _pasta_do_mes(nome, ano, mes):
+    """Reconhece mês e rejeita ano explícito diferente do consultado."""
+    partes = re.findall(r"[A-Z]+|\d+", planilha.normalizar(nome))
+    numero = f"{mes:02d}"
+    if not (numero in partes or str(mes) in partes or
+            planilha.normalizar(MESES[mes - 1]) in partes):
+        return False
+    anos = [parte for parte in partes if len(parte) == 4 and parte.startswith("20")]
+    anos += [parte for parte in partes if parte.isdigit() and len(parte) == 2 and parte not in
+             {f"{n:02d}" for n in range(1, 13)}]
+    return not anos or all(parte in {str(ano), f"{ano % 100:02d}"} for parte in anos)
+
+
+def localizar_scanners(config, empresa, ano, mes):
+    """Localiza o atalho e, quando necessário, a pasta do mês mais recente."""
+    configuracao = config.auditoria_scanners.get(empresa)
+    if not configuracao:
+        return {"pasta": None, "formato": None, "aviso": "Pasta de scanners não configurada."}
+    formato = configuracao.get("formato")
+    if formato not in {"pastas_por_paciente", "arquivos_soltos"}:
+        return {"pasta": None, "formato": formato, "aviso": "Formato de scanners inválido."}
+    raiz = Path(configuracao.get("pasta") or "").expanduser()
+    if not configuracao.get("pasta") or not raiz.is_dir():
+        return {"pasta": None, "formato": formato, "aviso": "Pasta de scanners não encontrada."}
+    if formato == "arquivos_soltos":
+        return {"pasta": raiz, "formato": formato, "aviso": None}
+    try:
+        with os.scandir(raiz) as entradas:
+            pastas = [(entrada.stat().st_mtime, entrada.name, Path(entrada.path))
+                      for entrada in entradas if entrada.is_dir() and _pasta_do_mes(entrada.name, ano, mes)]
+    except OSError as erro:
+        return {"pasta": None, "formato": formato, "aviso": f"Não foi possível listar scanners: {erro}"}
+    if not pastas:
+        return {"pasta": None, "formato": formato, "aviso": "Pasta de scanners do mês não encontrada."}
+    pastas.sort(reverse=True)
+    return {"pasta": pastas[0][2], "formato": formato,
+            "aviso": "Mais de uma pasta de scanners do mês; usada a mais recente." if len(pastas) > 1 else None}
+
+
+def listar_scanners(local, ano, mes):
+    """Lista somente nomes e metadados; nunca abre o conteúdo escaneado."""
+    pasta, formato = local["pasta"], local["formato"]
+    if not pasta:
+        return [], None
+    nomes = []
+    try:
+        def visitar(diretorio):
+            with os.scandir(diretorio) as entradas:
+                for entrada in entradas:
+                    if entrada.is_dir():
+                        if formato == "pastas_por_paciente":
+                            nome = planilha.nome_do_arquivo(entrada.name)
+                            if nome:
+                                nomes.append({"nome": nome, "entrada": entrada.name})
+                            visitar(entrada.path)
+                    elif entrada.is_file():
+                        if formato == "arquivos_soltos":
+                            modificacao = datetime.fromtimestamp(entrada.stat().st_mtime)
+                            if (modificacao.year, modificacao.month) != (ano, mes):
+                                continue
+                        nome = planilha.nome_do_arquivo(entrada.name)
+                        if nome:
+                            nomes.append({"nome": nome, "entrada": entrada.name})
+        visitar(pasta)
+    except OSError as erro:
+        return [], f"Não foi possível listar scanners: {erro}"
+    return nomes, None
+
+
+def conferir_scanners(fichas, nomes, disponivel=True):
+    """Marca fichas abertas e separa nomes que não conferem com nenhuma linha."""
+    resultado = []
+    for ficha in fichas:
+        item = dict(ficha)
+        if disponivel and ficha["estado"] in {"por_auditar", "com_equipe"}:
+            item["scanner"] = ("escaneada_aguardando_auditoria" if any(
+                planilha.nomes_conferem(nome["nome"], ficha["paciente"]) for nome in nomes)
+                else "falta_escanear")
+        resultado.append(item)
+    sem_linha = []
+    vistos = set()
+    for nome in nomes:
+        if (not any(planilha.nomes_conferem(nome["nome"], ficha["paciente"]) for ficha in fichas)
+                and nome["nome"] not in vistos):
+            sem_linha.append(nome)
+            vistos.add(nome["nome"])
+    return resultado, sem_linha
 
 
 def _cor_da_celula(celula):
