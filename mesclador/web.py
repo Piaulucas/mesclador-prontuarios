@@ -12,7 +12,7 @@ from pathlib import Path
 from flask import Flask, abort, jsonify, render_template, request, send_file
 from PIL import Image
 
-from . import conversor, imagens, navegador, pdfs, planilha, seletor, versao as codigo
+from . import conversor, imagens, navegador, painel, pdfs, planilha, seletor, versao as codigo
 
 IDENTIDADE = "mesclador"   # resposta do /ping, para saber se a porta é deste app
 
@@ -90,6 +90,7 @@ def create_app(config, pasta_temp=None, versao=None):
         return render_template("converter.html", pagina="converter")
 
     app.register_blueprint(conversor.criar_blueprint(temp))
+    app.register_blueprint(painel.criar_blueprint(config))
 
     # ---------------------------------------------------------- arquivos
 
