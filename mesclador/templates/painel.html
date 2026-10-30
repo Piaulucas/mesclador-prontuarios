@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block titulo %}Painel da auditoria · Mesclador{% endblock %}
+
+{% block estilos %}
+  .auditoria { max-width: 1280px; margin: auto; padding: 28px 24px 60px; }
+  .auditoria h1 { margin: 0; font-size: 25px; letter-spacing: -.03em; }
+  .auditoria p { margin: 0; }
+  .auditoria-intro { color: var(--suave); }
+  .auditoria-filtros { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; margin: 22px 0; }
+  .auditoria-filtros label { min-width: 175px; }
+  .auditoria-filtros button { min-height: 38px; }
+  .auditoria-numeros { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 24px; }
+  .auditoria-numero, .auditoria-empresa { background: var(--painel); border: 1px solid var(--borda);
+    border-radius: 11px; box-shadow: var(--sombra); }
+  .auditoria-numero { padding: 14px; }
+  .auditoria-numero strong { display: block; font-size: 26px; line-height: 1.2; }
+  .auditoria-numero span { color: var(--suave); font-size: 12px; }
+  .auditoria-empresas { display: grid; gap: 18px; }
+  .auditoria-empresa { padding: 20px; }
+  .auditoria-cabecalho { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: baseline; }
+  .auditoria-cabecalho h2 { margin: 0; font-size: 19px; }
+  .auditoria-cabecalho strong { color: var(--ok); font-size: 22px; }
+  .auditoria-origem { color: var(--suave); font-size: 12px; overflow-wrap: anywhere; }
+  .auditoria-aviso { margin-top: 10px !important; padding: 9px 11px; border-radius: 7px;
+    background: var(--aviso-fundo); border: 1px solid var(--aviso-borda); }
+  .auditoria-barra { display: flex; height: 13px; margin: 16px 0 6px; border-radius: 10px;
+    overflow: hidden; background: var(--fundo); border: 1px solid var(--borda); }
+  .auditoria-barra span { height: 100%; }
+  .auditoria-aprovadas { background: var(--ok); }
+  .auditoria-equipe { background: var(--erro); }
+  .auditoria-pendentes { background: #d9a232; }
+  .auditoria-legenda { color: var(--suave); font-size: 12px; }
+  .auditoria-listas { display: grid; grid-template-columns: repeat(auto-fit, minmax(265px, 1fr)); gap: 18px; margin-top: 20px; }
+  .auditoria-listas h3 { margin: 0 0 8px; font-size: 14px; }
+  .auditoria-listas ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 7px; }
+  .auditoria-listas li { padding: 9px 10px; border: 1px solid var(--borda); border-radius: 7px;
+    background: var(--painel-suave); overflow-wrap: anywhere; }
+  .auditoria-listas li small { display: block; color: var(--suave); }
+  .auditoria-vazio { color: var(--suave); }
+  @media (max-width: 600px) { .auditoria { padding: 20px 16px 40px; } }
+{% endblock %}
+
+{% block conteudo %}
+<div class="auditoria">
+  <h1>Painel da auditoria</h1>
+  <p class="auditoria-intro">Andamento das fichas do mês, lido da planilha e da pasta de prontuários.</p>
+  <div class="auditoria-filtros">
+    <label>Mês <input id="painelMes" type="month" min="{{ mes_minimo }}" value="{{ mes_padrao }}"></label>
+    <label>Empresa <select id="painelEmpresa"><option value="">Todas as empresas</option>
+      {% for empresa in empresas %}<option value="{{ empresa }}">{{ empresa }}</option>{% endfor %}
+    </select></label>
+    <button id="painelRecarregar" type="button">Ler de novo</button>
+  </div>
+  <p id="painelMensagem" class="msg" role="status"></p>
+  <div id="painelNumeros" class="auditoria-numeros"></div>
+  <div id="painelEmpresas" class="auditoria-empresas"></div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+const mesPainel = $("painelMes"), empresaPainel = $("painelEmpresa");
+const mesLembrado = lembrar("painelMes");
+if (mesLembrado && /^\d{4}-(0[1-9]|1[0-2])$/.test(mesLembrado) &&
+    (!mesPainel.min || mesLembrado >= mesPainel.min)) mesPainel.value = mesLembrado;
+let dadosPainel = null;
+
+function elemento(tag, texto, classe) {
+  const no = document.createElement(tag);
+  if (texto !== undefined) no.textContent = String(texto);
+  if (classe) no.className = classe;
+  return no;
+}
+
+function listaPainel(pai, titulo, itens, mensagem, descrever) {
+  const secao = elemento("section");
+  secao.append(elemento("h3", titulo));
+  if (!itens.length) secao.append(elemento("p", mensagem, "auditoria-vazio"));
+  else {
+    const lista = elemento("ul");
+    itens.forEach(item => lista.append(descrever(item)));
+    secao.append(lista);
+  }
+  pai.append(secao);
+}
+
+function mostrarPainel() {
+  if (!dadosPainel) return;
+  const empresas = dadosPainel.empresas.filter(e => !empresaPainel.value || e.empresa === empresaPainel.value);
+  const totais = {lancadas: 0, por_auditar: 0, com_equipe: 0, concluidas: 0, sem_devolucao: 0};
+  empresas.forEach(e => {
+    for (const chave of Object.keys(totais)) totais[chave] += e.contagem[chave] ||
+      (chave === "sem_devolucao" ? e.contagem.com_equipe : 0);
+  });
+  const numeros = $("painelNumeros");
+  numeros.replaceChildren();
+  const valores = [
+    ["Lançadas", totais.lancadas], ["Por auditar", totais.por_auditar],
+    [`Com a equipe (${totais.sem_devolucao} sem devolução registrada)`, totais.com_equipe],
+    ["Aprovadas", totais.concluidas],
+    ["Concluído", (totais.lancadas ? Math.round(100 * totais.concluidas / totais.lancadas) : 0) + "%"]
+  ];
+  valores.forEach(([rotulo, valor]) => {
+    const cartao = elemento("div", undefined, "auditoria-numero");
+    cartao.append(elemento("strong", valor), elemento("span", rotulo));
+    numeros.append(cartao);
+  });
+  const area = $("painelEmpresas");
+  area.replaceChildren();
+  if (!empresas.length) area.append(elemento("p", "Nenhuma empresa configurada.", "auditoria-vazio"));
+  empresas.forEach(e => {
+    const cartao = elemento("section", undefined, "auditoria-empresa");
+    const cabecalho = elemento("div", undefined, "auditoria-cabecalho");
+    cabecalho.append(elemento("h2", e.empresa),
+      elemento("strong", Math.round(e.contagem.percentual_concluido) + "%"));
+    cartao.append(cabecalho);
+    cartao.append(elemento("p", e.planilha || "Sem planilha do mês", "auditoria-origem"));
+    if (e.aviso) cartao.append(elemento("p", e.aviso, "auditoria-aviso"));
+    if (e.contagem.cor_desconhecida) cartao.append(elemento("p",
+      e.contagem.cor_desconhecida + " ficha(s) com cor fora do padrão.", "auditoria-aviso"));
+    if (!e.contagem.concluidas) cartao.append(elemento("p", "Nenhuma ficha aprovada.", "auditoria-aviso"));
+    const barra = elemento("div", undefined, "auditoria-barra");
+    barra.setAttribute("role", "img");
+    barra.setAttribute("aria-label", `${e.contagem.concluidas} aprovadas, ${e.contagem.com_equipe} com a equipe, ${e.contagem.por_auditar} por auditar`);
+    [["concluidas", "auditoria-aprovadas"], ["com_equipe", "auditoria-equipe"],
+      ["por_auditar", "auditoria-pendentes"]].forEach(([chave, classe]) => {
+      const parte = elemento("span", undefined, classe);
+      parte.style.width = (e.contagem.lancadas ? 100 * e.contagem[chave] / e.contagem.lancadas : 0) + "%";
+      barra.append(parte);
+    });
+    cartao.append(barra, elemento("p",
+      `${e.contagem.concluidas} aprovadas · ${e.contagem.com_equipe} com a equipe · ${e.contagem.por_auditar} por auditar`,
+      "auditoria-legenda"));
+    const listas = elemento("div", undefined, "auditoria-listas");
+    listaPainel(listas, "Pendências com a equipe", e.pendencias, "Nenhuma pendência com a equipe.", f => {
+      const li = elemento("li", `${f.ficha} · ${f.paciente}`);
+      li.append(elemento("small", f.devolucao || "devolução não registrada"));
+      if (f.comentario) li.append(elemento("small", f.comentario));
+      return li;
+    });
+    listaPainel(listas, "Inconsistências", e.inconsistencias, "Nenhuma inconsistência.", i =>
+      elemento("li", `${i.ficha || i.numero || "PDF"} · ${i.motivo.replaceAll("_", " ")}`));
+    listaPainel(listas, "PDFs sem linha", e.pdfs_sem_linha, "Nenhum PDF sem linha.", p =>
+      elemento("li", `${p.tipo} · ${p.arquivo}`));
+    cartao.append(listas);
+    area.append(cartao);
+  });
+}
+
+async function lerPainel() {
+  const mes = mesPainel.value;
+  guardar("painelMes", mes);
+  $("painelMensagem").textContent = "Lendo planilhas…";
+  try {
+    const resposta = await fetch("/painel/dados?mes=" + encodeURIComponent(mes));
+    const dados = await resposta.json();
+    if (!resposta.ok) throw new Error(dados.erro || "Não foi possível ler o mês.");
+    dadosPainel = dados;
+    $("painelMensagem").textContent = "Leitura de " + dados.hoje + ".";
+    mostrarPainel();
+  } catch (erro) {
+    $("painelMensagem").textContent = erro.message;
+  }
+}
+mesPainel.addEventListener("change", lerPainel);
+empresaPainel.addEventListener("change", mostrarPainel);
+$("painelRecarregar").addEventListener("click", lerPainel);
+lerPainel();
+</script>
+{% endblock %}

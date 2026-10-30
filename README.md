@@ -1,6 +1,6 @@
 # Mesclador de Prontuários
 
-Ferramenta local para montar, um a um, os prontuários que acompanham o faturamento de remoções em UTI móvel: junta as folhas escaneadas (PDF/JPEG/PNG) na ordem certa, busca o nome do paciente na planilha de faturamento pelo Nº da remoção e salva o PDF com o nome e na pasta corretos. O app tem duas telas, acessadas pela barra superior: **Mesclar prontuário** e **Converter em JPG**.
+Ferramenta local para montar, um a um, os prontuários que acompanham o faturamento de remoções em UTI móvel: junta as folhas escaneadas (PDF/JPEG/PNG) na ordem certa, busca o nome do paciente na planilha de faturamento pelo Nº da remoção e salva o PDF com o nome e na pasta corretos. A barra superior dá acesso a **Mesclar prontuário**, **Converter em JPG** e **Painel da auditoria**.
 
 ![Tela do Mesclador](docs/tela.png)
 _Dados fictícios._
@@ -40,6 +40,10 @@ Quando a folha escaneada está escura ou difícil de ler, a tela **Converter em 
 - Ajustes **por página** (brilho, contraste e realçar escrita), com prévia no cartão; **Aplicar a todas** copia os ajustes da página selecionada para as demais e **Restaurar esta página** desfaz os ajustes dela
 - Ampliar a página com 🔍, girar e remover
 - Exporta para `Downloads/<nome>/<nome> - 01.jpg…` em 200 DPI, sem sobrescrever (se a pasta já existir, cria `<nome> (2)`), com o botão **Mostrar no Finder**
+
+## Painel da auditoria
+
+Na barra superior, **Painel da auditoria** mostra o andamento do mês por empresa. Escolha o mês e, se quiser, filtre uma empresa; **Ler de novo** atualiza a leitura das planilhas e pastas de prontuários configuradas. A tela mostra pendências, inconsistências e PDFs sem linha. É somente leitura: a devolução aparece como **“devolução não registrada”** até que o registro manual seja implementado. A leitura dos scanners do Google Drive para desktop será adicionada em uma etapa futura.
 
 ## Decisões de projeto
 
