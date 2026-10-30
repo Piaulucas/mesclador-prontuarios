@@ -42,6 +42,7 @@ class Config:
     abas: list = field(default_factory=list)
     porta: int = 5050
     mes_inicial: str = ""             # "AAAA-MM": meses anteriores ficam bloqueados (vazio = sem limite)
+    auditoria_prontuarios: dict = field(default_factory=dict)  # empresa -> molde da pasta do mês
 
     @property
     def tipos(self):
@@ -83,4 +84,5 @@ def carregar(caminho=None):
         abas=abas,
         porta=int(dados.get("porta", 5050)),
         mes_inicial=str(dados.get("mes_inicial", "")),
+        auditoria_prontuarios=dados.get("auditoria", {}).get("prontuarios", {}),
     )

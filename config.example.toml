@@ -18,6 +18,11 @@ mes_inicial = "2026-10"
 "EMPRESA EXEMPLO A" = "~/Documents/faturamento/empresa-a"
 "EMPRESA EXEMPLO B" = ""
 
+# Pasta de prontuários do mês por empresa. {ano}, {mm} e {MES} são substituídos
+# pelo ano, mês com dois dígitos e nome do mês em maiúsculas.
+[auditoria.prontuarios]
+"EMPRESA EXEMPLO A" = "~/Documents/exemplo/EMPRESA A/PRONTUARIOS/{ano}/{mm}_{MES}"
+
 # Tipos de remoção (cada um é uma aba da planilha e uma subpasta de destino).
 # nomes_aba      = nomes que a aba pode ter (varia entre empresas); o primeiro que existir é usado
 # col_numero     = letra da coluna com o Nº da remoção
