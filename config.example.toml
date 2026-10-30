@@ -27,6 +27,17 @@ pasta_registros = "~/Library/Application Support/Mesclador/auditoria"
 [auditoria.prontuarios]
 "EMPRESA EXEMPLO A" = "~/Documents/exemplo/EMPRESA A/PRONTUARIOS/{ano}/{mm}_{MES}"
 
+# Atalhos das pastas compartilhadas no Meu Drive (Google Drive para desktop).
+# Configure a raiz completa de cada empresa; os nomes das pastas de mês variam.
+# Formatos aceitos: pastas_por_paciente e arquivos_soltos.
+[auditoria.scanners."EMPRESA EXEMPLO A"]
+pasta = "~/Library/CloudStorage/GoogleDrive-exemplo/Meu Drive/SCANNERS/EMPRESA A"
+formato = "pastas_por_paciente"
+
+[auditoria.scanners."EMPRESA EXEMPLO B"]
+pasta = "~/Library/CloudStorage/GoogleDrive-exemplo/Meu Drive/SCANNERS/EMPRESA B"
+formato = "arquivos_soltos"
+
 # Tipos de remoção (cada um é uma aba da planilha e uma subpasta de destino).
 # nomes_aba      = nomes que a aba pode ter (varia entre empresas); o primeiro que existir é usado
 # col_numero     = letra da coluna com o Nº da remoção

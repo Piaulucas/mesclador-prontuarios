@@ -16,6 +16,9 @@ def test_config_de_exemplo_e_valido():
     assert c.mes_inicial == "2026-10"
     assert c.auditoria_prontuarios["EMPRESA EXEMPLO A"].endswith("/{ano}/{mm}_{MES}")
     assert "EMPRESA EXEMPLO B" not in c.auditoria_prontuarios
+    assert c.auditoria_scanners["EMPRESA EXEMPLO A"]["formato"] == "pastas_por_paciente"
+    assert c.auditoria_scanners["EMPRESA EXEMPLO B"]["formato"] == "arquivos_soltos"
+    assert c.auditoria_scanners["EMPRESA EXEMPLO A"]["pasta"].endswith("SCANNERS/EMPRESA A")
     assert c.pasta_registros == Path("~/Library/Application Support/Mesclador/auditoria").expanduser()
     assert c.abas[0].nomes == ["ADULTO-PED", "Remoção ADULTO-PED"] and c.abas[0].primeira_linha == 16
 
@@ -26,6 +29,7 @@ def test_codigo_padrao_usa_tres_primeiras_letras_maiusculas(tmp_path):
 
     assert config.carregar(caminho).abas[0].codigo == "ADU"
     assert config.carregar(caminho).auditoria_prontuarios == {}
+    assert config.carregar(caminho).auditoria_scanners == {}
     assert config.carregar(caminho).pasta_registros == Path(
         "~/Library/Application Support/Mesclador/auditoria").expanduser()
 

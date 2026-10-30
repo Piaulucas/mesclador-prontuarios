@@ -180,3 +180,31 @@ def test_painel_ignora_registro_de_outro_paciente(config, pasta_planilhas, tmp_p
     assert cliente.post("/painel/registro", json={"mes": "2026-10", "empresa": "EMPRESA A",
         "ficha": "ADU45", "paciente": "José da Silva",
         "envio": {"data": "2026-10-25", "pedido": "Novo pedido fictício"}}).status_code == 409
+
+
+def test_painel_mostra_scanners_e_escaneados_sem_linha(config, pasta_planilhas, tmp_path):
+    caminho = pasta_planilhas / "2026" / "10_Planilha_de_Faturamento_Exemplo_Outubro_26.xlsx"
+    livro = load_workbook(caminho)
+    livro["Remoção ADULTO-PED"]["E16"].fill = PatternFill(fill_type="solid", fgColor="FFFFFF00")
+    livro["Remoção ADULTO-PED"]["E17"].fill = PatternFill(fill_type="solid", fgColor="FFFF0000")
+    livro.save(caminho)
+    livro.close()
+    raiz = tmp_path / "scanners_ficticios"
+    mes = raiz / "10-OUTUBRO-26"
+    (mes / "Jose da Silva").mkdir(parents=True)
+    (mes / "Pessoa Sem Linha").mkdir()
+    config.auditoria_scanners = {"EMPRESA A": {"pasta": str(raiz), "formato": "pastas_por_paciente"}}
+    cliente = create_app(config, pasta_temp=tmp_path / "temporarios").test_client()
+    dados = cliente.get("/painel/dados?mes=2026-10").get_json()
+    empresa = dados["empresas"][0]
+    estados = {f["ficha"]: f.get("scanner") for f in empresa["fichas"]}
+    assert estados["ADU45"] == "escaneada_aguardando_auditoria"
+    assert estados["ADU03"] == "falta_escanear"
+    assert estados["ADU46"] is None
+    assert empresa["contagem"]["falta_escanear"] == 1
+    assert dados["totais"]["falta_escanear"] == 1
+    assert [n["entrada"] for n in empresa["escaneados_sem_linha"]] == ["Pessoa Sem Linha"]
+    assert "Pasta de scanners" in dados["empresas"][1]["aviso"]
+    html = cliente.get("/painel/").get_data(as_text=True)
+    assert "Escaneados sem linha na planilha" in html
+    assert "Falta a equipe escanear" in html

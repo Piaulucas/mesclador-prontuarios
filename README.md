@@ -43,7 +43,7 @@ Quando a folha escaneada está escura ou difícil de ler, a tela **Converter em 
 
 ## Painel da auditoria
 
-Na barra superior, **Painel da auditoria** mostra o andamento do mês por empresa. Escolha o mês e, se quiser, filtre uma empresa; **Ler de novo** atualiza a leitura das planilhas e pastas de prontuários configuradas. A tela mostra pendências, inconsistências e PDFs sem linha. Nas pendências com a equipe, registre a data e o pedido enviado por WhatsApp e selecione a situação da correção. O prazo começa no último envio registrado. Os registros ficam em `[auditoria].pasta_registros`, fora das planilhas e pastas das empresas. A leitura dos scanners será adicionada em uma etapa futura e precisará do Google Drive para desktop.
+Na barra superior, **Painel da auditoria** mostra o andamento do mês por empresa. Escolha o mês e, se quiser, filtre uma empresa; **Ler de novo** atualiza a leitura das planilhas e pastas configuradas. A tela mostra pendências, inconsistências, PDFs sem linha e a situação do scanner das fichas abertas. Nas pendências com a equipe, registre a data e o pedido enviado por WhatsApp e selecione a situação da correção. O prazo começa no último envio registrado. Os registros ficam em `[auditoria].pasta_registros`, fora das planilhas e pastas das empresas. Para ler scanners, instale o Google Drive para desktop, crie atalhos para as pastas compartilhadas no Meu Drive e configure a raiz e o formato de cada empresa em `[auditoria.scanners]`. O app lê apenas nomes e datas de modificação, sem abrir os arquivos.
 
 ## Decisões de projeto
 
