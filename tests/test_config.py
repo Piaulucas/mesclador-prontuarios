@@ -14,6 +14,8 @@ def test_config_de_exemplo_e_valido():
         "ADULTO", "NEO", "ADULTO_PED_COVID", "NEONATAL_COVID"]
     assert [a.codigo for a in c.abas] == ["ADU", "NEO", "COV", "NCV"]
     assert c.mes_inicial == "2026-10"
+    assert c.auditoria_prontuarios["EMPRESA EXEMPLO A"].endswith("/{ano}/{mm}_{MES}")
+    assert "EMPRESA EXEMPLO B" not in c.auditoria_prontuarios
     assert c.abas[0].nomes == ["ADULTO-PED", "Remoção ADULTO-PED"] and c.abas[0].primeira_linha == 16
 
 
@@ -22,6 +24,7 @@ def test_codigo_padrao_usa_tres_primeiras_letras_maiusculas(tmp_path):
     caminho.write_text('[abas."adulto-ped"]\ncol_numero = "B"\ncol_nome = "D"\n', encoding="utf-8")
 
     assert config.carregar(caminho).abas[0].codigo == "ADU"
+    assert config.carregar(caminho).auditoria_prontuarios == {}
 
 
 def test_tipos_covid_do_exemplo_aparecem_na_tela(tmp_path):
