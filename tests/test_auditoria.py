@@ -1,5 +1,9 @@
 """Auditoria com planilhas e nomes inteiramente fictícios."""
 
+from datetime import date
+
+import pytest
+
 from openpyxl import Workbook
 from openpyxl.comments import Comment
 from openpyxl.styles import Color, PatternFill
@@ -134,3 +138,50 @@ def test_pasta_do_mes_ausente_e_variante_sem_acento(tmp_path):
     pasta.mkdir(parents=True)
     assert auditoria.pasta_prontuarios(config, "EMPRESA FICTÍCIA", 2026, 3) == pasta
     assert auditoria.localizar_prontuarios(config, "EMPRESA FICTÍCIA", 2026, 3)["aviso"] is None
+
+
+def test_ultimo_envio_define_prazo_e_registro_de_outro_paciente_e_ignorado(tmp_path):
+    fichas = [
+        {"ficha": "ADU01", "paciente": "ANA EXEMPLO", "tipo": "ADULTO-PED", "estado": "com_equipe"},
+        {"ficha": "ADU02", "paciente": "BIA FICTICIA", "tipo": "ADULTO-PED", "estado": "com_equipe"},
+        {"ficha": "ADU03", "paciente": "CAIO EXEMPLO", "tipo": "ADULTO-PED", "estado": "com_equipe"},
+    ]
+    registros = {"fichas": {
+        "ADU01": {"paciente": "ANA EXEMPLO", "envios": [
+            {"data": "2026-10-10", "pedido": "Primeiro pedido"},
+            {"data": "2026-10-23", "pedido": "Segundo pedido"}]},
+        "ADU02": {"paciente": "OUTRA PESSOA", "envios": [
+            {"data": "2026-10-15", "pedido": "Pedido fictício"}]},
+    }}
+    resultado, inconsistencias = auditoria.aplicar_registros(fichas, registros, date(2026, 10, 30))
+    assert resultado[0]["dias"] == 7
+    assert resultado[0]["faixa"] == "laranja"
+    assert resultado[0]["ultimo_envio"]["pedido"] == "Segundo pedido"
+    assert "dias" not in resultado[1] and "dias" not in resultado[2]
+    assert resultado[1]["devolucao"] == "devolução não registrada"
+    assert inconsistencias == [{"ficha": "ADU02", "tipo": "ADULTO-PED",
+                             "motivo": "registro_outro_paciente"}]
+    assert [f["ficha"] for f in auditoria.pendencias(resultado)] == ["ADU02", "ADU03", "ADU01"]
+    assert auditoria.aplicar_registros(fichas[:1], {"fichas": {"ADU01": {
+        "paciente": "ANA EXEMPLO", "envios": [{"data": "2026-10-24", "pedido": "Pedido"}]}}},
+        date(2026, 10, 30))[0][0]["faixa"] == "amarelo"
+    assert auditoria.aplicar_registros(fichas[:1], {"fichas": {"ADU01": {
+        "paciente": "ANA EXEMPLO", "envios": [{"data": "2026-10-19", "pedido": "Pedido"}]}}},
+        date(2026, 10, 30))[0][0]["faixa"] == "vermelho"
+
+
+def test_gravacao_atomica_preserva_arquivo_anterior_se_substituicao_falha(tmp_path, monkeypatch):
+    config = Config(tmp_path, {}, ABAS, pasta_registros=tmp_path / "registros")
+    anterior = {"fichas": {"ADU01": {"paciente": "ANA EXEMPLO", "envios": []}}}
+    auditoria.salvar_registros(config, "EMPRESA FICTÍCIA", "2026-10", anterior)
+    caminho = auditoria.caminho_registros(config, "EMPRESA FICTÍCIA", "2026-10")
+    conteudo = caminho.read_bytes()
+
+    def falhar_substituicao(*argumentos):
+        raise OSError("Falha fictícia")
+
+    monkeypatch.setattr(auditoria.os, "replace", falhar_substituicao)
+    with pytest.raises(OSError):
+        auditoria.salvar_registros(config, "EMPRESA FICTÍCIA", "2026-10", {"fichas": {}})
+    assert caminho.read_bytes() == conteudo
+    assert list(caminho.parent.iterdir()) == [caminho]

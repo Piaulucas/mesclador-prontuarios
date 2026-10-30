@@ -1,8 +1,13 @@
 """Leitura da auditoria do mês, sem alterar planilhas ou pastas de prontuários."""
 
+import hashlib
+import json
+import os
 import re
+import tempfile
 import unicodedata
 from collections import Counter
+from datetime import date
 from pathlib import Path
 
 from openpyxl import load_workbook
@@ -15,6 +20,66 @@ from . import planilha, pdfs
 AMARELOS = {"FFFFFF00", "FFFFFF99", "FFFFE699"}
 VERMELHOS = {"FFFF0000", "FFFFC7CE", "FFFF9999"}
 PADRAO_PDF = re.compile(r"^(\d+)\s*-\s*(.+)\.pdf$", re.IGNORECASE)
+FAIXAS_EQUIPE = (6, 10)
+
+
+def caminho_registros(config, empresa, mes):
+    """Um arquivo por empresa e mês, sem usar o nome da empresa como caminho."""
+    identificador = hashlib.sha256(empresa.encode("utf-8")).hexdigest()[:16]
+    return Path(config.pasta_registros).expanduser() / f"{mes}-{identificador}.json"
+
+
+def ler_registros(config, empresa, mes):
+    caminho = caminho_registros(config, empresa, mes)
+    if not caminho.exists():
+        return {"fichas": {}}
+    with caminho.open(encoding="utf-8") as arquivo:
+        return json.load(arquivo)
+
+
+def salvar_registros(config, empresa, mes, registros):
+    """Substitui o JSON completo somente após a gravação do temporário."""
+    caminho = caminho_registros(config, empresa, mes)
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    temporario = None
+    try:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=caminho.parent,
+                                         prefix=".registro-", suffix=".tmp", delete=False) as arquivo:
+            temporario = arquivo.name
+            json.dump(registros, arquivo, ensure_ascii=False, indent=2)
+            arquivo.flush()
+            os.fsync(arquivo.fileno())
+        os.replace(temporario, caminho)
+    finally:
+        if temporario and os.path.exists(temporario):
+            os.unlink(temporario)
+
+
+def aplicar_registros(fichas, registros, hoje):
+    """Associa registros conferidos e calcula dias a partir do último envio."""
+    resultado, inconsistencias = [], []
+    for ficha in fichas:
+        item = dict(ficha)
+        registro = registros.get("fichas", {}).get(ficha["ficha"])
+        if registro and not planilha.nomes_conferem(registro.get("paciente", ""), ficha["paciente"]):
+            inconsistencias.append({"ficha": ficha["ficha"], "tipo": ficha["tipo"],
+                                    "motivo": "registro_outro_paciente"})
+            registro = None
+        if registro:
+            item["correcao"] = registro.get("correcao")
+            envios = registro.get("envios", [])
+            if envios:
+                ultimo = max(enumerate(envios), key=lambda par: (par[1]["data"], par[0]))[1]
+                item["ultimo_envio"] = ultimo
+                dias = (hoje - date.fromisoformat(ultimo["data"])).days
+                item["dias"] = dias
+                item["faixa"] = ("amarelo" if dias <= FAIXAS_EQUIPE[0] else
+                                 "laranja" if dias <= FAIXAS_EQUIPE[1] else "vermelho")
+                item["devolucao"] = f"Enviada em {ultimo['data']} · {dias} dia(s) com a equipe"
+        if "ultimo_envio" not in item:
+            item["devolucao"] = "devolução não registrada"
+        resultado.append(item)
+    return resultado, inconsistencias
 
 
 def pasta_prontuarios(config, empresa, ano, mes):
@@ -190,5 +255,6 @@ def contar(fichas):
 
 
 def pendencias(fichas):
-    """Fichas devolvidas à equipe, ainda sem cálculo de prazos ou registros."""
-    return [ficha for ficha in fichas if ficha["estado"] == "com_equipe"]
+    """Fichas sem envio primeiro, seguidas das devolvidas há mais tempo."""
+    return sorted((ficha for ficha in fichas if ficha["estado"] == "com_equipe"),
+                  key=lambda ficha: ("dias" in ficha, -ficha.get("dias", 0)))

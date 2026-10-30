@@ -1,10 +1,13 @@
 """Rotas do painel com planilhas e pastas inteiramente fictícias."""
 
+import json
+
 from openpyxl import load_workbook
 from openpyxl.comments import Comment
 from openpyxl.styles import PatternFill
 
 from mesclador.web import create_app
+from mesclador import auditoria
 
 from .conftest import criar_planilha
 
@@ -18,6 +21,8 @@ def test_tela_e_link_do_painel(cliente):
     assert 'id="painelEmpresa"' in html
     assert 'href="/painel/"' in cliente.get("/").get_data(as_text=True)
     assert "textContent" in html
+    assert "Registrar envio" in html
+    assert "Situação da correção" in html
 
 
 def test_dados_do_mes_cruzam_planilha_e_pdfs_sem_linha(config, pasta_planilhas, tmp_path):
@@ -80,3 +85,80 @@ def test_planilha_com_defeito_em_uma_empresa_nao_derruba_outra(config, tmp_path)
     assert primeira["contagem"]["lancadas"] == 0
     assert segunda["contagem"]["lancadas"] == 1
     assert resposta.get_json()["totais"]["lancadas"] == 1
+
+
+def test_registro_de_envio_correcao_e_contagem(config, pasta_planilhas, tmp_path):
+    caminho = pasta_planilhas / "2026" / "10_Planilha_de_Faturamento_Exemplo_Outubro_26.xlsx"
+    livro = load_workbook(caminho)
+    livro["Remoção ADULTO-PED"]["E16"].fill = PatternFill(fill_type="solid", fgColor="FFFF0000")
+    livro.save(caminho)
+    livro.close()
+    cliente = create_app(config, pasta_temp=tmp_path / "temporarios").test_client()
+    base = {"mes": "2026-10", "empresa": "EMPRESA A", "ficha": "ADU45",
+            "paciente": "José da Silva"}
+    for data in ("2026-10-20", "2026-10-25"):
+        resposta = cliente.post("/painel/registro", json={**base,
+            "envio": {"data": data, "pedido": "Enviar BDV fictício"}})
+        assert resposta.status_code == 200
+    resposta = cliente.post("/painel/registro", json={**base,
+        "correcao": {"situacao": "parcial", "data": "2026-10-28"}})
+    assert resposta.status_code == 200
+    arquivos = list(config.pasta_registros.glob("*.json"))
+    assert len(arquivos) == 1
+    registro = json.loads(arquivos[0].read_text(encoding="utf-8"))["fichas"]["ADU45"]
+    assert registro["paciente"] == "JOSE DA SILVA"
+    assert [e["data"] for e in registro["envios"]] == ["2026-10-20", "2026-10-25"]
+    assert registro["correcao"] == {"situacao": "parcial", "data": "2026-10-28"}
+    dados = cliente.get("/painel/dados?mes=2026-10").get_json()
+    pendencia = dados["empresas"][0]["pendencias"][0]
+    assert pendencia["ultimo_envio"]["data"] == "2026-10-25"
+    assert pendencia["correcao"]["situacao"] == "parcial"
+    assert dados["totais"]["sem_devolucao"] == 0
+    assert dados["empresas"][0]["contagem"]["sem_devolucao"] == 0
+
+
+def test_registro_invalido_nao_grava(config, pasta_planilhas, tmp_path):
+    caminho = pasta_planilhas / "2026" / "10_Planilha_de_Faturamento_Exemplo_Outubro_26.xlsx"
+    livro = load_workbook(caminho)
+    livro["Remoção ADULTO-PED"]["E16"].fill = PatternFill(fill_type="solid", fgColor="FFFF0000")
+    livro.save(caminho)
+    livro.close()
+    cliente = create_app(config, pasta_temp=tmp_path / "temporarios").test_client()
+    base = {"mes": "2026-10", "empresa": "EMPRESA A", "ficha": "ADU45",
+            "paciente": "José da Silva", "envio": {"data": "2026-10-20", "pedido": "BDV fictício"}}
+    casos = [
+        {**base, "empresa": "EMPRESA INEXISTENTE"},
+        {**base, "empresa": ["EMPRESA A"]},
+        {**base, "mes": "2026-13"},
+        {**base, "ficha": "ADU99"},
+        {**base, "paciente": "OUTRA PESSOA"},
+        {**base, "envio": {"data": "2026-02-30", "pedido": "BDV fictício"}},
+        {**base, "correcao": {"situacao": "recebida", "data": "2026-10-28"}},
+        {chave: valor for chave, valor in base.items() if chave != "envio"},
+        {**base, "envio": None, "correcao": {"situacao": "invalida", "data": "2026-10-28"}},
+    ]
+    for caso in casos:
+        assert cliente.post("/painel/registro", json=caso).status_code == 400
+    assert not config.pasta_registros.exists()
+
+
+def test_painel_ignora_registro_de_outro_paciente(config, pasta_planilhas, tmp_path):
+    caminho = pasta_planilhas / "2026" / "10_Planilha_de_Faturamento_Exemplo_Outubro_26.xlsx"
+    livro = load_workbook(caminho)
+    livro["Remoção ADULTO-PED"]["E16"].fill = PatternFill(fill_type="solid", fgColor="FFFF0000")
+    livro.save(caminho)
+    livro.close()
+    auditoria.salvar_registros(config, "EMPRESA A", "2026-10", {"fichas": {
+        "ADU45": {"paciente": "OUTRA PESSOA FICTICIA", "envios": [
+            {"data": "2026-10-20", "pedido": "Pedido fictício"}]}}})
+    cliente = create_app(config, pasta_temp=tmp_path / "temporarios").test_client()
+    dados = cliente.get("/painel/dados?mes=2026-10").get_json()
+    pendencia = dados["empresas"][0]["pendencias"][0]
+    assert pendencia["devolucao"] == "devolução não registrada"
+    assert "dias" not in pendencia
+    assert dados["totais"]["sem_devolucao"] == 1
+    assert {"ficha": "ADU45", "tipo": "ADULTO-PED", "motivo": "registro_outro_paciente"} in (
+        dados["empresas"][0]["inconsistencias"])
+    assert cliente.post("/painel/registro", json={"mes": "2026-10", "empresa": "EMPRESA A",
+        "ficha": "ADU45", "paciente": "José da Silva",
+        "envio": {"data": "2026-10-25", "pedido": "Novo pedido fictício"}}).status_code == 409

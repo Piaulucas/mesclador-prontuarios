@@ -18,6 +18,10 @@ mes_inicial = "2026-10"
 "EMPRESA EXEMPLO A" = "~/Documents/faturamento/empresa-a"
 "EMPRESA EXEMPLO B" = ""
 
+# Registros manuais da auditoria, fora do projeto e das pastas das empresas.
+[auditoria]
+pasta_registros = "~/Library/Application Support/Mesclador/auditoria"
+
 # Pasta de prontuários do mês por empresa. {ano}, {mm} e {MES} são substituídos
 # pelo ano, mês com dois dígitos e nome do mês em maiúsculas.
 [auditoria.prontuarios]
