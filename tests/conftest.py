@@ -54,7 +54,7 @@ def pasta_planilhas(tmp_path):
 def config(tmp_path, pasta_planilhas):
     return Config(pasta_inicial=tmp_path,
                   empresas={"EMPRESA A": pasta_planilhas, "EMPRESA B": None},
-                  abas=ABAS)
+                  abas=ABAS, pasta_registros=tmp_path / "registros")
 
 
 @pytest.fixture

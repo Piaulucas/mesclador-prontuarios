@@ -43,7 +43,7 @@ Quando a folha escaneada está escura ou difícil de ler, a tela **Converter em 
 
 ## Painel da auditoria
 
-Na barra superior, **Painel da auditoria** mostra o andamento do mês por empresa. Escolha o mês e, se quiser, filtre uma empresa; **Ler de novo** atualiza a leitura das planilhas e pastas de prontuários configuradas. A tela mostra pendências, inconsistências e PDFs sem linha. É somente leitura: a devolução aparece como **“devolução não registrada”** até que o registro manual seja implementado. A leitura dos scanners do Google Drive para desktop será adicionada em uma etapa futura.
+Na barra superior, **Painel da auditoria** mostra o andamento do mês por empresa. Escolha o mês e, se quiser, filtre uma empresa; **Ler de novo** atualiza a leitura das planilhas e pastas de prontuários configuradas. A tela mostra pendências, inconsistências e PDFs sem linha. Nas pendências com a equipe, registre a data e o pedido enviado por WhatsApp e selecione a situação da correção. O prazo começa no último envio registrado. Os registros ficam em `[auditoria].pasta_registros`, fora das planilhas e pastas das empresas. A leitura dos scanners será adicionada em uma etapa futura e precisará do Google Drive para desktop.
 
 ## Decisões de projeto
 

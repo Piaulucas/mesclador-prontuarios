@@ -37,6 +37,12 @@
     background: var(--painel-suave); overflow-wrap: anywhere; }
   .auditoria-listas li small { display: block; color: var(--suave); }
   .auditoria-vazio { color: var(--suave); }
+  .auditoria-registro { display: grid; gap: 6px; margin-top: 9px; }
+  .auditoria-registro input, .auditoria-registro select { min-width: 0; width: 100%; }
+  .auditoria-registro button { width: fit-content; }
+  .auditoria-prazo-amarelo { color: #c29520; }
+  .auditoria-prazo-laranja { color: #d87930; }
+  .auditoria-prazo-vermelho { color: var(--erro); }
   @media (max-width: 600px) { .auditoria { padding: 20px 16px 40px; } }
 {% endblock %}
 
@@ -89,7 +95,7 @@ function mostrarPainel() {
   const empresas = dadosPainel.empresas.filter(e => !empresaPainel.value || e.empresa === empresaPainel.value);
   const totais = {lancadas: 0, por_auditar: 0, com_equipe: 0, concluidas: 0, sem_devolucao: 0};
   empresas.forEach(e => {
-    for (const chave of Object.keys(totais)) totais[chave] += e.contagem[chave] ||
+    for (const chave of Object.keys(totais)) totais[chave] += e.contagem[chave] ??
       (chave === "sem_devolucao" ? e.contagem.com_equipe : 0);
   });
   const numeros = $("painelNumeros");
@@ -134,8 +140,34 @@ function mostrarPainel() {
     const listas = elemento("div", undefined, "auditoria-listas");
     listaPainel(listas, "Pendências com a equipe", e.pendencias, "Nenhuma pendência com a equipe.", f => {
       const li = elemento("li", `${f.ficha} · ${f.paciente}`);
-      li.append(elemento("small", f.devolucao || "devolução não registrada"));
+      li.append(elemento("small", f.devolucao || "devolução não registrada",
+        f.faixa ? `auditoria-prazo-${f.faixa}` : ""));
+      if (f.ultimo_envio) li.append(elemento("small", `Último pedido: ${f.ultimo_envio.pedido}`));
       if (f.comentario) li.append(elemento("small", f.comentario));
+      const formulario = elemento("form", undefined, "auditoria-registro");
+      const data = elemento("input"); data.type = "date"; data.required = true;
+      data.value = dadosPainel.hoje;
+      const pedido = elemento("input"); pedido.type = "text"; pedido.required = true;
+      pedido.placeholder = "Pedido enviado à equipe";
+      const botao = elemento("button", "Registrar envio"); botao.type = "submit";
+      formulario.append(data, pedido, botao);
+      formulario.addEventListener("submit", async evento => {
+        evento.preventDefault();
+        await registrarPainel(e.empresa, f, {envio: {data: data.value, pedido: pedido.value}});
+      });
+      li.append(formulario);
+      const situacao = elemento("select");
+      [["", "Situação da correção"], ["nao_recebida", "Não recebida"],
+        ["parcial", "Parcial"], ["recebida", "Recebida"]].forEach(([valor, rotulo]) => {
+        const opcao = elemento("option", rotulo); opcao.value = valor; situacao.append(opcao);
+      });
+      situacao.value = f.correcao?.situacao || "";
+      situacao.setAttribute("aria-label", `Situação da correção de ${f.ficha}`);
+      situacao.addEventListener("change", async () => {
+        if (situacao.value) await registrarPainel(e.empresa, f,
+          {correcao: {situacao: situacao.value, data: dadosPainel.hoje}});
+      });
+      li.append(situacao);
       return li;
     });
     listaPainel(listas, "Inconsistências", e.inconsistencias, "Nenhuma inconsistência.", i =>
@@ -161,6 +193,17 @@ async function lerPainel() {
   } catch (erro) {
     $("painelMensagem").textContent = erro.message;
   }
+}
+async function registrarPainel(empresa, ficha, alteracao) {
+  try {
+    const resposta = await fetch("/painel/registro", {method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({mes: mesPainel.value, empresa, ficha: ficha.ficha,
+        paciente: ficha.paciente, ...alteracao})});
+    const dados = await resposta.json();
+    if (!resposta.ok) throw new Error(dados.erro || "Não foi possível registrar.");
+    await lerPainel();
+  } catch (erro) { $("painelMensagem").textContent = erro.message; }
 }
 mesPainel.addEventListener("change", lerPainel);
 empresaPainel.addEventListener("change", mostrarPainel);

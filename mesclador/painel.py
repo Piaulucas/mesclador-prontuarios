@@ -1,4 +1,4 @@
-"""Painel somente leitura da auditoria de prontuários."""
+"""Painel da auditoria e registros manuais de devolução."""
 
 import re
 from datetime import date
@@ -11,6 +11,20 @@ from . import auditoria, planilha
 def criar_blueprint(config):
     bp = Blueprint("painel", __name__, url_prefix="/painel")
 
+    def mes_valido(texto):
+        return (isinstance(texto, str) and bool(re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", texto))
+                and not texto.startswith("0000-")
+                and (not config.mes_inicial or texto >= config.mes_inicial))
+
+    def data_valida(texto):
+        if not isinstance(texto, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", texto):
+            return False
+        try:
+            date.fromisoformat(texto)
+            return True
+        except ValueError:
+            return False
+
     @bp.get("/")
     def inicio():
         hoje = date.today()
@@ -21,7 +35,7 @@ def criar_blueprint(config):
     @bp.get("/dados")
     def dados():
         texto = request.args.get("mes", "")
-        if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", texto) or texto.startswith("0000-") or (config.mes_inicial and texto < config.mes_inicial):
+        if not mes_valido(texto):
             return jsonify(erro="Mês inválido ou anterior ao início configurado."), 400
         ano, mes = map(int, texto.split("-"))
         hoje = date.today().isoformat()
@@ -43,15 +57,17 @@ def criar_blueprint(config):
                     fichas = auditoria.ler_fichas(caminho, config.abas)
                     pdfs = {aba.tipo: auditoria.listar_pdfs(local["pasta"], aba) for aba in config.abas}
                     cruzamento = auditoria.cruzar(fichas, pdfs)
-                    item["fichas"] = cruzamento["fichas"]
-                    item["inconsistencias"] = cruzamento["inconsistencias"]
+                    registros = auditoria.ler_registros(config, nome, texto)
+                    item["fichas"], divergencias = auditoria.aplicar_registros(
+                        cruzamento["fichas"], registros, date.today())
+                    item["inconsistencias"] = cruzamento["inconsistencias"] + divergencias
                     item["pdfs_sem_linha"] = [
                         {"tipo": p["tipo"], "numero": p["numero"], "paciente": p["paciente"],
                          "arquivo": p["caminho"].name} for p in cruzamento["pdfs_sem_linha"]]
                     item["contagem"] = auditoria.contar(item["fichas"])
-                    item["pendencias"] = [
-                        {**ficha, "devolucao": "devolução não registrada"}
-                        for ficha in auditoria.pendencias(item["fichas"])]
+                    item["pendencias"] = auditoria.pendencias(item["fichas"])
+                    item["contagem"]["sem_devolucao"] = sum(
+                        "ultimo_envio" not in ficha for ficha in item["pendencias"])
                 else:
                     avisos.append("Planilha de faturamento do mês não encontrada.")
             except Exception as erro:
@@ -65,7 +81,54 @@ def criar_blueprint(config):
             empresas.append(item)
         totais["percentual_concluido"] = (100 * totais["concluidas"] / totais["lancadas"]
                                          if totais["lancadas"] else 0)
-        totais["sem_devolucao"] = totais["com_equipe"]
+        totais["sem_devolucao"] = sum(
+            empresa["contagem"].get("sem_devolucao", 0) for empresa in empresas)
         return jsonify(mes=texto, hoje=hoje, totais=totais, empresas=empresas)
+
+    @bp.post("/registro")
+    def registro():
+        dados = request.get_json(silent=True)
+        if not isinstance(dados, dict):
+            return jsonify(erro="Registro inválido."), 400
+        mes, empresa, ficha = dados.get("mes"), dados.get("empresa"), dados.get("ficha")
+        paciente = dados.get("paciente")
+        envio, correcao = dados.get("envio"), dados.get("correcao")
+        if (not mes_valido(mes) or not isinstance(empresa, str) or empresa not in config.empresas
+                or not isinstance(ficha, str)
+                or not ficha or not isinstance(paciente, str) or not paciente.strip()
+                or (envio is None) == (correcao is None)):
+            return jsonify(erro="Mês, empresa, ficha ou paciente inválido."), 400
+        if envio is not None:
+            if (not isinstance(envio, dict) or not data_valida(envio.get("data"))
+                    or not isinstance(envio.get("pedido"), str) or not envio["pedido"].strip()):
+                return jsonify(erro="Data ou pedido inválido."), 400
+        elif (not isinstance(correcao, dict) or not data_valida(correcao.get("data"))
+              or correcao.get("situacao") not in ("nao_recebida", "parcial", "recebida")):
+            return jsonify(erro="Data ou situação inválida."), 400
+        ano, numero_mes = map(int, mes.split("-"))
+        base = config.empresas[empresa]
+        try:
+            candidatas = planilha.listar_planilhas(base, ano, numero_mes, somente_do_mes=True)
+            if not candidatas:
+                return jsonify(erro="Planilha do mês não encontrada."), 400
+            caminho = planilha.resolver_caminho(base, candidatas[0]["caminho"])
+            linha = next((item for item in auditoria.ler_fichas(caminho, config.abas)
+                          if item["ficha"] == ficha and item["estado"] == "com_equipe"), None)
+        except Exception:
+            return jsonify(erro="Não foi possível ler a planilha do mês."), 400
+        if not linha or not planilha.nomes_conferem(paciente, linha["paciente"]):
+            return jsonify(erro="Ficha ou paciente não confere com a planilha."), 400
+        registros = auditoria.ler_registros(config, empresa, mes)
+        atual = registros.setdefault("fichas", {}).get(ficha)
+        if atual and not planilha.nomes_conferem(atual.get("paciente", ""), linha["paciente"]):
+            return jsonify(erro="Há registro de outro paciente para esta ficha."), 409
+        atual = registros["fichas"].setdefault(ficha, {"paciente": planilha.normalizar(linha["paciente"]),
+                                                  "envios": []})
+        if envio is not None:
+            atual["envios"].append({"data": envio["data"], "pedido": envio["pedido"].strip()})
+        else:
+            atual["correcao"] = {"situacao": correcao["situacao"], "data": correcao["data"]}
+        auditoria.salvar_registros(config, empresa, mes, registros)
+        return jsonify(ok=True)
 
     return bp
