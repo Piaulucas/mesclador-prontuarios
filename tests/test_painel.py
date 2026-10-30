@@ -25,6 +25,24 @@ def test_tela_e_link_do_painel(cliente):
     assert "Situação da correção" in html
 
 
+def test_painel_tem_caixas_recolhiveis_e_lembra_o_estado(cliente):
+    html = cliente.get("/painel/").get_data(as_text=True)
+    assert 'id="painelExpandir"' in html
+    assert 'id="painelRecolher"' in html
+    assert "Expandir todas" in html and "Recolher todas" in html
+    assert 'elemento("details"' in html
+    assert 'elemento("summary"' in html
+    assert 'cartao.open = estadosEmpresas.has(chave)' in html
+    assert 'cartao.addEventListener("toggle"' in html
+    assert 'lembrar(chave) === "aberta"' in html
+    assert 'guardar(chave, aberto ? "aberta" : "fechada")' in html
+    assert 'resumo.append(barra' in html
+    assert 'resumo.append(selos)' in html
+    assert 'cartao.append(resumo, conteudo)' in html
+    assert 'conteudo.append(listas)' in html
+    assert 'no.textContent = String(texto)' in html
+
+
 def test_dados_do_mes_cruzam_planilha_e_pdfs_sem_linha(config, pasta_planilhas, tmp_path):
     caminho = pasta_planilhas / "2026" / "10_Planilha_de_Faturamento_Exemplo_Outubro_26.xlsx"
     livro = load_workbook(caminho)

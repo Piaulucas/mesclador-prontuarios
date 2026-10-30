@@ -16,9 +16,24 @@
   .auditoria-numero strong { display: block; font-size: 26px; line-height: 1.2; }
   .auditoria-numero span { color: var(--suave); font-size: 12px; }
   .auditoria-empresas { display: grid; gap: 18px; }
-  .auditoria-empresa { padding: 20px; }
+  .auditoria-empresa { min-width: 0; }
+  .auditoria-resumo { display: block; padding: 20px 20px 18px 42px; position: relative;
+    cursor: pointer; list-style: none; border-radius: 11px; }
+  .auditoria-resumo::-webkit-details-marker { display: none; }
+  .auditoria-resumo::before { content: "▸"; position: absolute; left: 20px; top: 22px;
+    color: var(--suave); }
+  .auditoria-empresa[open] .auditoria-resumo::before { content: "▾"; }
+  .auditoria-resumo:focus-visible { outline: 3px solid var(--acento); outline-offset: 3px; }
+  .auditoria-conteudo { padding: 0 20px 20px; border-top: 1px solid var(--borda); }
+  .auditoria-conteudo .auditoria-origem { margin-top: 14px; }
+  .auditoria-selos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .auditoria-selo { padding: 3px 8px; border: 1px solid var(--borda); border-radius: 20px;
+    background: var(--painel-suave); font-size: 12px; }
+  .auditoria-selo-aviso { background: var(--aviso-fundo); border-color: var(--aviso-borda); }
+  .auditoria-acoes { display: flex; flex-wrap: wrap; gap: 6px; }
+  .auditoria-acoes button { font-size: 12px; color: var(--suave); }
   .auditoria-cabecalho { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: baseline; }
-  .auditoria-cabecalho h2 { margin: 0; font-size: 19px; }
+  .auditoria-cabecalho h2 { margin: 0; min-width: 0; font-size: 19px; overflow-wrap: anywhere; }
   .auditoria-cabecalho strong { color: var(--ok); font-size: 22px; }
   .auditoria-origem { color: var(--suave); font-size: 12px; overflow-wrap: anywhere; }
   .auditoria-aviso { margin-top: 10px !important; padding: 9px 11px; border-radius: 7px;
@@ -30,7 +45,8 @@
   .auditoria-equipe { background: var(--erro); }
   .auditoria-pendentes { background: #d9a232; }
   .auditoria-legenda { color: var(--suave); font-size: 12px; }
-  .auditoria-listas { display: grid; grid-template-columns: repeat(auto-fit, minmax(265px, 1fr)); gap: 18px; margin-top: 20px; }
+  .auditoria-listas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 265px), 1fr)); gap: 18px; margin-top: 20px; }
+  .auditoria-listas > section { min-width: 0; }
   .auditoria-listas h3 { margin: 0 0 8px; font-size: 14px; }
   .auditoria-listas ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 7px; }
   .auditoria-listas li { padding: 9px 10px; border: 1px solid var(--borda); border-radius: 7px;
@@ -43,7 +59,13 @@
   .auditoria-prazo-amarelo { color: #c29520; }
   .auditoria-prazo-laranja { color: #d87930; }
   .auditoria-prazo-vermelho { color: var(--erro); }
-  @media (max-width: 600px) { .auditoria { padding: 20px 16px 40px; } }
+  @media (max-width: 600px) {
+    .auditoria { padding: 20px 16px 40px; }
+    .auditoria-resumo { padding: 16px 14px 16px 34px; }
+    .auditoria-resumo::before { left: 14px; top: 18px; }
+    .auditoria-conteudo { padding: 0 14px 16px; }
+    .auditoria-cabecalho { align-items: center; }
+  }
 {% endblock %}
 
 {% block conteudo %}
@@ -55,7 +77,11 @@
     <label>Empresa <select id="painelEmpresa"><option value="">Todas as empresas</option>
       {% for empresa in empresas %}<option value="{{ empresa }}">{{ empresa }}</option>{% endfor %}
     </select></label>
-    <button id="painelRecarregar" type="button">Ler de novo</button>
+    <div class="auditoria-acoes">
+      <button id="painelRecarregar" type="button">Ler de novo</button>
+      <button id="painelExpandir" type="button">Expandir todas</button>
+      <button id="painelRecolher" type="button">Recolher todas</button>
+    </div>
   </div>
   <p id="painelMensagem" class="msg" role="status"></p>
   <div id="painelNumeros" class="auditoria-numeros"></div>
@@ -70,6 +96,17 @@ const mesLembrado = lembrar("painelMes");
 if (mesLembrado && /^\d{4}-(0[1-9]|1[0-2])$/.test(mesLembrado) &&
     (!mesPainel.min || mesLembrado >= mesPainel.min)) mesPainel.value = mesLembrado;
 let dadosPainel = null;
+const estadosEmpresas = new Map();
+
+function chaveEstadoPainel(empresa) {
+  return `painelAberta:${mesPainel.value}:${empresa}`;
+}
+
+function guardarEstadoPainel(cartao, aberto) {
+  const chave = cartao.dataset.chaveEstado;
+  estadosEmpresas.set(chave, aberto);
+  guardar(chave, aberto ? "aberta" : "fechada");
+}
 
 function elemento(tag, texto, classe) {
   const no = document.createElement(tag);
@@ -115,16 +152,22 @@ function mostrarPainel() {
   area.replaceChildren();
   if (!empresas.length) area.append(elemento("p", "Nenhuma empresa configurada.", "auditoria-vazio"));
   empresas.forEach(e => {
-    const cartao = elemento("section", undefined, "auditoria-empresa");
+    const cartao = elemento("details", undefined, "auditoria-empresa");
+    const chave = chaveEstadoPainel(e.empresa);
+    cartao.dataset.chaveEstado = chave;
+    cartao.open = estadosEmpresas.has(chave) ? estadosEmpresas.get(chave) : lembrar(chave) === "aberta";
+    cartao.addEventListener("toggle", () => guardarEstadoPainel(cartao, cartao.open));
+    const resumo = elemento("summary", undefined, "auditoria-resumo");
     const cabecalho = elemento("div", undefined, "auditoria-cabecalho");
     cabecalho.append(elemento("h2", e.empresa),
       elemento("strong", Math.round(e.contagem.percentual_concluido) + "%"));
-    cartao.append(cabecalho);
-    cartao.append(elemento("p", e.planilha || "Sem planilha do mês", "auditoria-origem"));
-    if (e.aviso) cartao.append(elemento("p", e.aviso, "auditoria-aviso"));
-    if (e.contagem.cor_desconhecida) cartao.append(elemento("p",
+    resumo.append(cabecalho);
+    const conteudo = elemento("div", undefined, "auditoria-conteudo");
+    conteudo.append(elemento("p", e.planilha || "Sem planilha do mês", "auditoria-origem"));
+    if (e.aviso) conteudo.append(elemento("p", e.aviso, "auditoria-aviso"));
+    if (e.contagem.cor_desconhecida) conteudo.append(elemento("p",
       e.contagem.cor_desconhecida + " ficha(s) com cor fora do padrão.", "auditoria-aviso"));
-    if (!e.contagem.concluidas) cartao.append(elemento("p", "Nenhuma ficha aprovada.", "auditoria-aviso"));
+    if (!e.contagem.concluidas) conteudo.append(elemento("p", "Nenhuma ficha aprovada.", "auditoria-aviso"));
     const barra = elemento("div", undefined, "auditoria-barra");
     barra.setAttribute("role", "img");
     barra.setAttribute("aria-label", `${e.contagem.concluidas} aprovadas, ${e.contagem.com_equipe} com a equipe, ${e.contagem.por_auditar} por auditar`);
@@ -134,9 +177,23 @@ function mostrarPainel() {
       parte.style.width = (e.contagem.lancadas ? 100 * e.contagem[chave] / e.contagem.lancadas : 0) + "%";
       barra.append(parte);
     });
-    cartao.append(barra, elemento("p",
+    resumo.append(barra, elemento("p",
       `${e.contagem.concluidas} aprovadas · ${e.contagem.com_equipe} com a equipe · ${e.contagem.por_auditar} por auditar`,
       "auditoria-legenda"));
+    const selos = elemento("div", undefined, "auditoria-selos");
+    if (e.pendencias.length) {
+      const semDevolucao = e.contagem.sem_devolucao ?? e.pendencias.filter(f => !f.ultimo_envio).length;
+      selos.append(elemento("span", `${e.pendencias.length} pendência${e.pendencias.length === 1 ? "" : "s"}` +
+        (semDevolucao ? ` · ${semDevolucao} sem devolução` : ""), "auditoria-selo"));
+    }
+    if (e.inconsistencias.length) selos.append(elemento("span",
+      `${e.inconsistencias.length} inconsistência${e.inconsistencias.length === 1 ? "" : "s"}`, "auditoria-selo"));
+    if (e.pdfs_sem_linha.length) selos.append(elemento("span",
+      `${e.pdfs_sem_linha.length} PDF${e.pdfs_sem_linha.length === 1 ? "" : "s"} sem linha`, "auditoria-selo"));
+    if (e.aviso || e.contagem.cor_desconhecida) selos.append(elemento("span",
+      "Atenção", "auditoria-selo auditoria-selo-aviso"));
+    resumo.append(selos);
+    cartao.append(resumo, conteudo);
     const listas = elemento("div", undefined, "auditoria-listas");
     listaPainel(listas, "Pendências com a equipe", e.pendencias, "Nenhuma pendência com a equipe.", f => {
       const li = elemento("li", `${f.ficha} · ${f.paciente}`);
@@ -174,7 +231,7 @@ function mostrarPainel() {
       elemento("li", `${i.ficha || i.numero || "PDF"} · ${i.motivo.replaceAll("_", " ")}`));
     listaPainel(listas, "PDFs sem linha", e.pdfs_sem_linha, "Nenhum PDF sem linha.", p =>
       elemento("li", `${p.tipo} · ${p.arquivo}`));
-    cartao.append(listas);
+    conteudo.append(listas);
     area.append(cartao);
   });
 }
@@ -208,6 +265,18 @@ async function registrarPainel(empresa, ficha, alteracao) {
 mesPainel.addEventListener("change", lerPainel);
 empresaPainel.addEventListener("change", mostrarPainel);
 $("painelRecarregar").addEventListener("click", lerPainel);
+$("painelExpandir").addEventListener("click", () => {
+  $("painelEmpresas").querySelectorAll("details.auditoria-empresa").forEach(cartao => {
+    cartao.open = true;
+    guardarEstadoPainel(cartao, true);
+  });
+});
+$("painelRecolher").addEventListener("click", () => {
+  $("painelEmpresas").querySelectorAll("details.auditoria-empresa").forEach(cartao => {
+    cartao.open = false;
+    guardarEstadoPainel(cartao, false);
+  });
+});
 lerPainel();
 </script>
 {% endblock %}
