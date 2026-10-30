@@ -25,6 +25,7 @@ mes_inicial = "2026-10"
 # primeira_linha = primeira linha com dados (abaixo do cabeçalho)
 # palavra_subpasta = dentro da pasta principal, usa a subpasta cujo nome começa com esta palavra;
 #                    se não existir, cria uma com o nome do tipo
+# codigo         = código da ficha para auditoria (padrão: 3 primeiras letras do tipo, em maiúsculas)
 # Atenção: a numeração recomeça em cada aba, por isso a busca é feita só na aba do tipo escolhido.
 [abas."ADULTO-PED"]
 nomes_aba = ["ADULTO-PED", "Remoção ADULTO-PED"]
@@ -39,3 +40,19 @@ col_numero = "B"
 col_nome = "D"
 primeira_linha = 16
 palavra_subpasta = "NEO"
+
+[abas."ADULTO-PED COVID"]
+nomes_aba = ["ADULTO-PED COVID", "Remoção ADULTO-PED COVID"]
+col_numero = "B"
+col_nome = "D"
+primeira_linha = 16
+palavra_subpasta = "ADULTO_PED_COVID"
+codigo = "COV"
+
+[abas."NEONATAL COVID"]
+nomes_aba = ["NEONATAL COVID", "Remoção NEONATAL COVID"]
+col_numero = "B"
+col_nome = "D"
+primeira_linha = 16
+palavra_subpasta = "NEONATAL_COVID"
+codigo = "NCV"

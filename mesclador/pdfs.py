@@ -187,12 +187,14 @@ def mesclar(itens):
 
 def achar_subpasta(pasta, palavra, nome_padrao):
     """Dentro de `pasta`, procura uma subpasta cujo nome comece com `palavra`
-    (sem diferenciar maiúsculas/acentos). Devolve (caminho, existe).
+    (sem diferenciar maiúsculas/acentos). Tipos sem COVID ignoram pastas COVID.
+    Devolve (caminho, existe).
     Se não houver, devolve pasta/nome_padrao para ser criada."""
     from .planilha import normalizar
     alvo = normalizar(palavra)
     candidatas = sorted(p for p in Path(pasta).iterdir()
-                        if p.is_dir() and normalizar(p.name).startswith(alvo))
+                        if p.is_dir() and normalizar(p.name).startswith(alvo)
+                        and ("COVID" in alvo or "COVID" not in normalizar(p.name)))
     if candidatas:
         return candidatas[0], True
     return Path(pasta) / nome_padrao, False

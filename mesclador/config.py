@@ -28,6 +28,11 @@ class Aba:
     col_nome: str        # letra da coluna do nome do paciente
     primeira_linha: int  # primeira linha com dados
     palavra_subpasta: str = ""   # subpasta de destino = a que começa com esta palavra (ex.: "NEO")
+    codigo: str = ""             # código da ficha; padrão: 3 primeiras letras do tipo
+
+    def __post_init__(self):
+        if not self.codigo:
+            self.codigo = self.tipo[:3].upper()
 
 
 @dataclass
@@ -65,7 +70,8 @@ def carregar(caminho=None):
     abas = [
         Aba(nomes=a.get("nomes_aba", [tipo]), tipo=tipo, col_numero=a["col_numero"].upper(),
             col_nome=a["col_nome"].upper(), primeira_linha=int(a.get("primeira_linha", 2)),
-            palavra_subpasta=a.get("palavra_subpasta", tipo.split("-")[0]))
+            palavra_subpasta=a.get("palavra_subpasta", tipo.split("-")[0]),
+            codigo=a.get("codigo", ""))
         for tipo, a in dados.get("abas", {}).items()
     ]
     if not abas:

@@ -51,6 +51,26 @@ def test_limpar_nome_arquivo():
     assert pdfs.limpar_nome_arquivo('A/B:C*"D') == "ABCD"
 
 
+def test_achar_subpasta_nao_confunde_adulto_com_covid(tmp_path):
+    pasta_covid = tmp_path / "ADULTO_PED_COVID"
+    pasta_covid.mkdir()
+
+    assert pdfs.achar_subpasta(tmp_path, "ADULTO", "ADULTO-PED") == (
+        tmp_path / "ADULTO-PED", False)
+    assert pdfs.achar_subpasta(tmp_path, "ADULTO_PED_COVID", "ADULTO-PED COVID") == (
+        pasta_covid, True)
+
+
+def test_achar_subpasta_ignora_covid_mesmo_com_pasta_adulto(tmp_path):
+    pasta_covid = tmp_path / "ADULTO_PED_COVID"
+    pasta_adulto = tmp_path / "Adulto e Pediátrico"
+    pasta_covid.mkdir()
+    pasta_adulto.mkdir()
+
+    assert pdfs.achar_subpasta(tmp_path, "ADULTO", "ADULTO-PED") == (
+        pasta_adulto, True)
+
+
 def test_miniatura_conta_paginas(tmp_path):
     origem = salvar(tmp_path, "a.pdf", pdf(3))
     assert pdfs.gerar_miniatura(origem, "pdf", tmp_path / "m.jpg") == 3
