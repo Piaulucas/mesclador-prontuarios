@@ -18,6 +18,15 @@ mes_inicial = "2026-10"
 "EMPRESA EXEMPLO A" = "~/Documents/faturamento/empresa-a"
 "EMPRESA EXEMPLO B" = ""
 
+# Banco local das faturas e tarefas, fora do projeto. Não guarde nomes de pacientes.
+[trabalho]
+arquivo = "~/Library/Application Support/Mesclador/trabalho.db"
+
+# Prazo após a chegada do ofício de glosa e janela de alerta, em dias corridos.
+[prazos]
+glosa_dias = 60
+alerta_dias = 10
+
 # Registros manuais da auditoria, fora do projeto e das pastas das empresas.
 [auditoria]
 pasta_registros = "~/Library/Application Support/Mesclador/auditoria"

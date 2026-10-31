@@ -20,6 +20,8 @@ def test_config_de_exemplo_e_valido():
     assert c.auditoria_scanners["EMPRESA EXEMPLO B"]["formato"] == "arquivos_soltos"
     assert c.auditoria_scanners["EMPRESA EXEMPLO A"]["pasta"].endswith("SCANNERS/EMPRESA A")
     assert c.pasta_registros == Path("~/Library/Application Support/Mesclador/auditoria").expanduser()
+    assert c.trabalho_arquivo == Path("~/Library/Application Support/Mesclador/trabalho.db").expanduser()
+    assert (c.prazo_glosa_dias, c.alerta_dias) == (60, 10)
     assert c.abas[0].nomes == ["ADULTO-PED", "Remoção ADULTO-PED"] and c.abas[0].primeira_linha == 16
 
 
@@ -32,6 +34,18 @@ def test_codigo_padrao_usa_tres_primeiras_letras_maiusculas(tmp_path):
     assert config.carregar(caminho).auditoria_scanners == {}
     assert config.carregar(caminho).pasta_registros == Path(
         "~/Library/Application Support/Mesclador/auditoria").expanduser()
+    assert config.carregar(caminho).trabalho_arquivo == Path(
+        "~/Library/Application Support/Mesclador/trabalho.db").expanduser()
+
+
+def test_config_le_caminho_e_prazos_personalizados(tmp_path):
+    caminho = tmp_path / "config-ficticia.toml"
+    caminho.write_text('[abas."ADULTO"]\ncol_numero = "B"\ncol_nome = "D"\n'
+                       '[trabalho]\narquivo = "~/trabalho-ficticio.db"\n'
+                       '[prazos]\nglosa_dias = 45\nalerta_dias = 5\n', encoding="utf-8")
+    resultado = config.carregar(caminho)
+    assert resultado.trabalho_arquivo == Path("~/trabalho-ficticio.db").expanduser()
+    assert (resultado.prazo_glosa_dias, resultado.alerta_dias) == (45, 5)
 
 
 def test_tipos_covid_do_exemplo_aparecem_na_tela(tmp_path):
