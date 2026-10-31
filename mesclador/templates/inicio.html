@@ -41,7 +41,7 @@
 <main class="inicio">
   <h1>Início</h1>
   <section class="inicio-secao" aria-labelledby="inicioAndamento">
-    <h2 id="inicioAndamento">Andamento do mês <span id="inicioMes"></span></h2>
+    <h2 id="inicioAndamento">Hoje</h2>
     <p id="inicioEstado" class="inicio-estado" role="status">Lendo andamento do mês…</p>
     <div id="inicioTotais" class="inicio-grade"></div>
     <div id="inicioEmpresas" class="inicio-empresas"></div>
@@ -68,6 +68,13 @@
 {% block script %}
 <script>
 const mesInicio = {{ mes_padrao|tojson }};
+function dataHoraAtual() {
+  const agora = new Date();
+  const dois = valor => String(valor).padStart(2, "0");
+  return `${dois(agora.getDate())}-${dois(agora.getMonth() + 1)}-${dois(agora.getFullYear() % 100)} ` +
+    `${dois(agora.getHours())}:${dois(agora.getMinutes())}`;
+}
+$("inicioAndamento").textContent = dataHoraAtual();
 function noInicio(tag, texto, classe) {
   const no = document.createElement(tag);
   no.textContent = String(texto);
@@ -78,7 +85,6 @@ function linkAuditoria(foco, mes) {
   return "/painel/?" + new URLSearchParams({mes, foco}).toString();
 }
 function mostrarInicio(dados) {
-  $("inicioMes").textContent = dados.mes;
   const totais = $("inicioTotais");
   totais.replaceChildren();
   [["Aprovadas", dados.totais.concluidas], ["Com a equipe", dados.totais.com_equipe],
@@ -139,7 +145,8 @@ async function lerInicio() {
     const dados = await resposta.json();
     if (!resposta.ok) throw new Error(dados.erro || "Não foi possível ler o mês.");
     mostrarInicio(dados);
-    $("inicioEstado").textContent = "Dados lidos em " + dados.hoje.split("-").reverse().join("/") + ".";
+    $("inicioAndamento").textContent = dataHoraAtual();
+    $("inicioEstado").textContent = "";
   } catch (erro) {
     $("inicioEstado").textContent = erro.message;
   }
