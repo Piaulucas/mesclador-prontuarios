@@ -21,14 +21,11 @@
   .inicio-empresa { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
   .inicio-empresa strong { overflow-wrap: anywhere; }
   .inicio-empresa span { color: var(--suave); text-align: right; }
-  .inicio-reservas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 30px; }
-  .inicio-reserva { min-height: 85px; }
   .inicio-estado { color: var(--suave); }
   @media (max-width: 600px) {
     .inicio { padding: 22px 16px 42px; }
     .inicio-empresa { display: block; }
     .inicio-empresa span { display: block; text-align: left; }
-    .inicio-reservas { grid-template-columns: 1fr; }
   }
 {% endblock %}
 
@@ -53,7 +50,11 @@
       <a class="inicio-cartao inicio-link" href="/converter"><strong>Converter em JPG</strong><span>Ajustar e exportar páginas.</span><span class="inicio-acao">Abrir ferramenta →</span></a>
     </div>
   </section>
-  <div class="inicio-reservas" aria-hidden="true"><div class="inicio-reserva"></div><div class="inicio-reserva"></div></div>
+  <section class="inicio-secao" aria-labelledby="inicioPendenciasTitulo">
+    <h2 id="inicioPendenciasTitulo">Pendências</h2>
+    <p id="inicioPendenciasEstado" class="inicio-estado" role="status">Lendo pendências…</p>
+    <div id="inicioPendencias" class="inicio-grade"></div>
+  </section>
 </main>
 {% endblock %}
 
@@ -116,5 +117,25 @@ async function lerInicio() {
   }
 }
 lerInicio();
+async function lerPendenciasInicio() {
+  try {
+    const resposta = await fetch("/pendencias/dados");
+    const dados = await resposta.json();
+    if (!resposta.ok) throw new Error(dados.erro || "Não foi possível ler as pendências.");
+    const area = $("inicioPendencias");
+    area.replaceChildren();
+    [["Vencidas", dados.totais.vencidas], ["Vencendo", dados.totais.vencendo],
+      ["Aguardando terceiros", dados.totais.aguardando_terceiros],
+      ["NF a solicitar", dados.totais.nf_a_solicitar]].forEach(([rotulo, quantidade]) => {
+      const cartao = noInicio("a", "", "inicio-cartao inicio-link");
+      cartao.href = "/pendencias/";
+      cartao.append(noInicio("strong", quantidade), noInicio("span", rotulo),
+        noInicio("span", "Ver Pendências →", "inicio-acao"));
+      area.append(cartao);
+    });
+    $("inicioPendenciasEstado").textContent = "Atualizado em " + dados.hoje + ".";
+  } catch (erro) { $("inicioPendenciasEstado").textContent = erro.message; }
+}
+lerPendenciasInicio();
 </script>
 {% endblock %}

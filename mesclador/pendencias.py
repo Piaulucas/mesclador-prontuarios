@@ -5,7 +5,7 @@ import sqlite3
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, render_template, request
 
 GRUPOS = ("vencidas", "vencendo", "no_prazo", "aguardando_terceiros",
           "nf_a_solicitar", "tarefas")
@@ -221,9 +221,24 @@ def listar(config, hoje):
 def criar_blueprint(config):
     bp = Blueprint("pendencias", __name__, url_prefix="/pendencias")
 
+    @bp.get("/")
+    def pagina():
+        return render_template("pendencias.html", pagina="pendencias", empresas=list(config.empresas))
+
     @bp.get("/dados")
     def dados():
         return jsonify(listar(config, date.today()))
+
+    @bp.get("/nfs-solicitadas")
+    def nfs_solicitadas():
+        banco = abrir_banco(config)
+        try:
+            linhas = banco.execute("""SELECT id, empresa, competencia, referencia
+                                  FROM fatura WHERE nf = 'solicitada'
+                                  ORDER BY empresa, competencia, id""").fetchall()
+            return jsonify([dict(linha) for linha in linhas if linha["empresa"] in config.empresas])
+        finally:
+            banco.close()
 
     def salvar(tabela, id_=None):
         try:

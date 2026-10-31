@@ -6,6 +6,54 @@ from datetime import date
 from mesclador import pendencias
 
 
+def test_pagina_pendencias_tem_aba_grupos_e_formularios(cliente):
+    resposta = cliente.get("/pendencias/")
+    assert resposta.status_code == 200
+    html = resposta.get_data(as_text=True)
+    assert "<title>Pendências · Área de trabalho</title>" in html
+    assert 'href="/pendencias/" class="ativa" aria-current="page"' in html
+    assert html.index("Vencidas") < html.index("Vencendo") < html.index("No prazo")
+    assert html.index("No prazo") < html.index("Aguardando terceiros")
+    assert html.index("Aguardando terceiros") < html.index("NF a solicitar") < html.index("Tarefas")
+    for texto in ("Registrar fatura", "Chegou o ofício de glosa", "Respondi a glosa",
+                  "NF solicitada", "NF emitida", "Nova tarefa", "Concluir tarefa"):
+        assert texto in html
+    assert 'id="pendenciasAviso"' in html
+    assert 'id="formNfEmitida"' in html and 'fetch("/pendencias/nfs-solicitadas")' in html
+    assert "pendenciasAberta:" in html and "textContent" in html
+    assert "https://" not in html
+
+
+def test_inicio_mostra_contagens_e_link_para_pendencias(cliente):
+    html = cliente.get("/").get_data(as_text=True)
+    assert 'id="inicioPendencias"' in html
+    assert 'fetch("/pendencias/dados")' in html
+    assert 'cartao.href = "/pendencias/"' in html
+    assert 'class="inicio-reservas"' not in html
+
+
+def test_fluxo_das_rotas_usadas_pela_tela(cliente):
+    fatura = cliente.post("/pendencias/fatura", json={
+        "empresa": "EMPRESA A", "competencia": "2026-10", "referencia": "Fictícia"})
+    assert fatura.status_code == 200
+    numero = fatura.get_json()["id"]
+    for campos in ({"oficio_data": "2026-10-10"}, {"resposta_data": "2026-10-20"},
+                   {"nf": "solicitada", "nf_data": "2026-10-21"}):
+        assert cliente.post(f"/pendencias/fatura/{numero}", json=campos).status_code == 200
+    assert cliente.get("/pendencias/nfs-solicitadas").get_json() == [{
+        "id": numero, "empresa": "EMPRESA A", "competencia": "2026-10", "referencia": "Fictícia"}]
+    assert cliente.post(f"/pendencias/fatura/{numero}", json={
+        "nf": "emitida", "nf_data": "2026-10-22"}).status_code == 200
+    assert cliente.get("/pendencias/nfs-solicitadas").get_json() == []
+    tarefa = cliente.post("/pendencias/tarefa", json={
+        "empresa": "EMPRESA A", "texto": "Conferir fatura fictícia", "prazo": None})
+    assert tarefa.status_code == 200
+    assert cliente.post(f"/pendencias/tarefa/{tarefa.get_json()['id']}",
+                        json={"concluida": True}).status_code == 200
+    dados = cliente.get("/pendencias/dados").get_json()
+    assert all(not itens for itens in dados["empresas"][0]["grupos"].values())
+
+
 def test_banco_criado_na_primeira_abertura_e_unicidade(config, cliente):
     assert not config.trabalho_arquivo.exists()
     dados = {"empresa": "EMPRESA A", "competencia": "2026-09", "referencia": "F-1"}
