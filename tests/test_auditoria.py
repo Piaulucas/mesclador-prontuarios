@@ -233,6 +233,49 @@ def test_scanners_arquivos_soltos_filtram_mes_e_extraem_nome(tmp_path):
     assert [n["nome"] for n in sem_linha] == ["PESSOA SEM LINHA"]
 
 
+def test_scanners_em_pasta_usam_data_do_arquivo_mais_recente(tmp_path):
+    pasta = tmp_path / "Ana Exemplo"
+    (pasta / "folhas").mkdir(parents=True)
+    for nome, dia in [("primeira.pdf", 20), ("folhas/segunda.pdf", 27)]:
+        arquivo = pasta / nome
+        arquivo.touch()
+        instante = datetime(2026, 10, dia, 12).timestamp()
+        os.utime(arquivo, (instante, instante))
+    os.utime(pasta, (datetime(2026, 10, 30).timestamp(),) * 2)
+    nomes, aviso = auditoria.listar_scanners(
+        {"pasta": tmp_path, "formato": "pastas_por_paciente"}, 2026, 10)
+    assert aviso is None
+    assert next(nome for nome in nomes if nome["nome"] == "ANA EXEMPLO")["modificado"] == "2026-10-27"
+    ficha = {"ficha": "ADU01", "paciente": "ANA EXEMPLO", "estado": "com_equipe",
+             "ultimo_envio": {"data": "2026-10-25", "pedido": ""}}
+    assert auditoria.conferir_scanners([ficha], nomes)[0][0]["arquivo_novo_em"] == "2026-10-27"
+    for data in ("2026-10-27", "2026-10-28"):
+        ficha["ultimo_envio"]["data"] = data
+        assert auditoria.conferir_scanners([ficha], nomes)[0][0]["scanner"] == "escaneada_aguardando_auditoria"
+    del ficha["ultimo_envio"]
+    assert auditoria.conferir_scanners([ficha], nomes)[0][0]["scanner"] == "escaneada_aguardando_auditoria"
+
+
+def test_scanners_soltos_detectam_arquivo_do_mes_seguinte_apos_aviso(tmp_path):
+    arquivo = tmp_path / "Ana Exemplo (BDV).pdf"
+    arquivo.touch()
+    instante = datetime(2026, 11, 2, 12).timestamp()
+    os.utime(arquivo, (instante, instante))
+    nomes, aviso = auditoria.listar_scanners(
+        {"pasta": tmp_path, "formato": "arquivos_soltos"}, 2026, 10)
+    assert aviso is None
+    assert nomes == [{"nome": "ANA EXEMPLO", "entrada": arquivo.name,
+                      "modificado": "2026-11-02", "do_mes": False}]
+    ficha = {"paciente": "ANA EXEMPLO", "estado": "com_equipe",
+             "ultimo_envio": {"data": "2026-10-25", "pedido": ""}}
+    conferidas, sem_linha = auditoria.conferir_scanners([ficha], nomes)
+    assert conferidas[0]["scanner"] == "arquivo_novo_apos_aviso"
+    assert conferidas[0]["arquivo_novo_em"] == "2026-11-02"
+    assert sem_linha == []
+    del ficha["ultimo_envio"]
+    assert auditoria.conferir_scanners([ficha], nomes)[0][0]["scanner"] == "falta_escanear"
+
+
 def test_scanners_pasta_ausente_e_duplicada(tmp_path):
     raiz = tmp_path / "scanners_ficticios"
     config = Config(tmp_path, {}, ABAS, auditoria_scanners={

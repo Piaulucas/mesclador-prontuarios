@@ -1,6 +1,8 @@
 """Rotas do painel com planilhas e pastas inteiramente fictícias."""
 
 import json
+import os
+from datetime import datetime
 
 from openpyxl import load_workbook
 from openpyxl.comments import Comment
@@ -21,8 +23,10 @@ def test_tela_e_link_do_painel(cliente):
     assert 'id="painelEmpresa"' in html
     assert 'href="/painel/"' in cliente.get("/").get_data(as_text=True)
     assert "textContent" in html
-    assert "Registrar envio" in html
-    assert "Situação da correção" in html
+    assert "Avisei a equipe" in html
+    assert "Parcial, reenviei" in html
+    assert "Situação da correção" not in html
+    assert "chegou arquivo novo em" in html
 
 
 def test_painel_tem_caixas_recolhiveis_e_lembra_o_estado(cliente):
@@ -151,6 +155,7 @@ def test_registro_invalido_nao_grava(config, pasta_planilhas, tmp_path):
         {**base, "ficha": "ADU99"},
         {**base, "paciente": "OUTRA PESSOA"},
         {**base, "envio": {"data": "2026-02-30", "pedido": "BDV fictício"}},
+        {**base, "envio": {"data": "2026-10-20", "pedido": 123}},
         {**base, "correcao": {"situacao": "recebida", "data": "2026-10-28"}},
         {chave: valor for chave, valor in base.items() if chave != "envio"},
         {**base, "envio": None, "correcao": {"situacao": "invalida", "data": "2026-10-28"}},
@@ -158,6 +163,39 @@ def test_registro_invalido_nao_grava(config, pasta_planilhas, tmp_path):
     for caso in casos:
         assert cliente.post("/painel/registro", json=caso).status_code == 400
     assert not config.pasta_registros.exists()
+
+
+def test_aviso_sem_nota_e_reenvio_parcial_reiniciam_deteccao(config, pasta_planilhas, tmp_path):
+    caminho = pasta_planilhas / "2026" / "10_Planilha_de_Faturamento_Exemplo_Outubro_26.xlsx"
+    livro = load_workbook(caminho)
+    livro["Remoção ADULTO-PED"]["E16"].fill = PatternFill(fill_type="solid", fgColor="FFFF0000")
+    livro.save(caminho)
+    livro.close()
+    raiz = tmp_path / "scanners_ficticios"
+    raiz.mkdir()
+    arquivo = raiz / "Jose da Silva (BDV).pdf"
+    arquivo.touch()
+    instante = datetime(2026, 10, 27, 12).timestamp()
+    os.utime(arquivo, (instante, instante))
+    config.auditoria_scanners = {"EMPRESA A": {"pasta": str(raiz), "formato": "arquivos_soltos"}}
+    cliente = create_app(config, pasta_temp=tmp_path / "temporarios").test_client()
+    base = {"mes": "2026-10", "empresa": "EMPRESA A", "ficha": "ADU45",
+            "paciente": "José da Silva"}
+    for nota in ({}, {"pedido": ""}):
+        assert cliente.post("/painel/registro", json={**base,
+            "envio": {"data": "2026-10-25", **nota}}).status_code == 200
+    pendencia = cliente.get("/painel/dados?mes=2026-10").get_json()["empresas"][0]["pendencias"][0]
+    assert pendencia["ultimo_envio"]["pedido"] == ""
+    assert pendencia["scanner"] == "arquivo_novo_apos_aviso"
+    assert pendencia["arquivo_novo_em"] == "2026-10-27"
+    assert cliente.post("/painel/registro", json={**base,
+        "envio": {"data": "2026-10-31", "pedido": "parcial"}}).status_code == 200
+    pendencia = cliente.get("/painel/dados?mes=2026-10").get_json()["empresas"][0]["pendencias"][0]
+    assert pendencia["ultimo_envio"] == {"data": "2026-10-31", "pedido": "parcial"}
+    assert pendencia["scanner"] == "escaneada_aguardando_auditoria"
+    assert "arquivo_novo_em" not in pendencia
+    registro = auditoria.ler_registros(config, "EMPRESA A", "2026-10")["fichas"]["ADU45"]
+    assert [envio["pedido"] for envio in registro["envios"]] == ["", "", "parcial"]
 
 
 def test_painel_ignora_registro_de_outro_paciente(config, pasta_planilhas, tmp_path):
