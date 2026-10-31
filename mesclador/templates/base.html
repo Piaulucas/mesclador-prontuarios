@@ -184,6 +184,32 @@
                 padding-top: 16px; border-top: 1px solid var(--borda);
                 color: var(--suave); font-size: 12px; }
   .assinatura strong { color: var(--texto); font-weight: 700; }
+  .postit-botao { position: fixed; right: 16px; bottom: 16px; z-index: 30;
+    background: var(--acento); border-color: var(--acento); color: var(--acento-txt);
+    box-shadow: var(--sombra); }
+  .postit-botao:hover:not(:disabled) { background: var(--acento); filter: brightness(.92); }
+  .postit-painel { position: fixed; right: 16px; bottom: 64px; z-index: 30;
+    width: 320px; max-height: min(560px, calc(100dvh - 80px)); overflow-y: auto;
+    padding: 15px; background: var(--painel); color: var(--texto);
+    border: 1px solid var(--borda); border-radius: 11px; box-shadow: 0 6px 28px rgba(0, 0, 0, .18); }
+  .postit-painel[hidden] { display: none; }
+  .postit-painel h2 { margin: 0 0 10px; font-size: 17px; }
+  .postit-formulario { display: grid; gap: 8px; }
+  .postit-formulario button { justify-self: start; }
+  .postit-painel label { min-width: 0; }
+  .postit-filtro { margin: 14px 0 10px; padding-top: 12px; border-top: 1px solid var(--borda); }
+  .postit-grupo { margin: 0 0 12px; }
+  .postit-grupo h3 { margin: 0 0 5px; font-size: 13px; overflow-wrap: anywhere; }
+  .postit-lista { list-style: none; margin: 0; padding: 0; }
+  .postit-lista li { padding: 7px 0; border-top: 1px solid var(--borda); }
+  .postit-linha { display: flex; flex-direction: row; align-items: flex-start; gap: 8px;
+    font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
+  .postit-linha input { flex: none; margin: 2px 0 0; }
+  .postit-prazo { display: block; margin-left: 24px; color: var(--suave); font-size: 12px; }
+  .postit-prazo.vencida { color: var(--erro); }
+  .postit-prazo.vencendo { color: var(--texto); background: var(--aviso-fundo);
+    border-left: 3px solid var(--aviso-borda); padding-left: 5px; font-weight: 700; }
+  .postit-vazio { margin: 0; color: var(--suave); font-size: 12px; }
   @media (max-width: 760px) {
     .topo { flex-wrap: wrap; gap: 0 12px; padding: 9px 16px 0; }
     .marca { flex: 1 1 auto; min-height: 38px; }
@@ -197,6 +223,12 @@
     .area-titulo { display: block; }
     .grade { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
     .mini { height: 230px; }
+  }
+  @media (max-width: 600px) {
+    body { padding-bottom: 44px; }
+    .postit-botao { right: 8px; bottom: 8px; min-height: 32px; padding: 5px 9px; font-size: 12px; }
+    .postit-painel { right: 8px; bottom: 48px; width: calc(100vw - 16px);
+      max-height: min(480px, calc(100dvh - 60px)); }
   }
   @media (max-width: 430px) {
     .marca-divisor, .marca-reserva { display: none; }
@@ -326,5 +358,21 @@ $("encerrar").onclick = async () => {
 };
 </script>
 {% block script %}{% endblock %}
+<button id="postitBotao" class="postit-botao" type="button" aria-controls="postitPainel" aria-expanded="false">Tarefas (0)</button>
+<section id="postitPainel" class="postit-painel" aria-label="Tarefas rápidas" hidden>
+  <h2>Nova tarefa</h2>
+  <form id="postitFormulario" class="postit-formulario">
+    <label>Descrição <input name="texto" type="text" required autocomplete="off"></label>
+    <label>Empresa <select name="empresa" required></select></label>
+    <label>Prazo (opcional) <input name="prazo" type="date"></label>
+    <button type="submit">Salvar tarefa</button>
+  </form>
+  <p id="postitAviso" class="msg" role="status" aria-live="polite"></p>
+  <label class="postit-filtro">Mostrar empresa
+    <select id="postitFiltro"><option value="">Todas</option></select>
+  </label>
+  <div id="postitTarefas" aria-live="polite"></div>
+</section>
+<script src="{{ url_for('static', filename='postit.js') }}" defer></script>
 </body>
 </html>

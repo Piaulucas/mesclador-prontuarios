@@ -115,6 +115,7 @@ async function enviarPendencias(caminho, dados, botao, confirmacao) {
     const resultado = await resposta.json();
     if (!resposta.ok) throw new Error(resultado.erro || "Não foi possível salvar.");
     await lerPendencias();
+    if (caminho.startsWith("/pendencias/tarefa")) document.dispatchEvent(new Event("tarefasAtualizadas"));
     avisoPendencias(confirmacao);
     return true;
   } catch (erro) {
@@ -268,5 +269,6 @@ $("formNfEmitida").addEventListener("submit", async evento => {
   if (salvo) campos.data.value = "";
 });
 lerPendencias().catch(() => {});
+document.addEventListener("tarefasAtualizadas", () => lerPendencias().catch(() => {}));
 </script>
 {% endblock %}
