@@ -30,6 +30,7 @@ venv/
 
 # ---- Gerados ao rodar o app ----
 *.log
+*.db
 
 # ---- Sistema ----
 .DS_Store

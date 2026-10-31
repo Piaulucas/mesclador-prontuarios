@@ -46,6 +46,10 @@ class Config:
     auditoria_scanners: dict = field(default_factory=dict)  # empresa -> pasta raiz e formato
     pasta_registros: Path = field(default_factory=lambda: Path(
         "~/Library/Application Support/Mesclador/auditoria").expanduser())
+    trabalho_arquivo: Path = field(default_factory=lambda: Path(
+        "~/Library/Application Support/Mesclador/trabalho.db").expanduser())
+    prazo_glosa_dias: int = 60
+    alerta_dias: int = 10
 
     @property
     def tipos(self):
@@ -91,4 +95,8 @@ def carregar(caminho=None):
         auditoria_scanners=dados.get("auditoria", {}).get("scanners", {}),
         pasta_registros=_caminho(dados.get("auditoria", {}).get("pasta_registros")
                                  or "~/Library/Application Support/Mesclador/auditoria"),
+        trabalho_arquivo=_caminho(dados.get("trabalho", {}).get("arquivo")
+                                  or "~/Library/Application Support/Mesclador/trabalho.db"),
+        prazo_glosa_dias=int(dados.get("prazos", {}).get("glosa_dias", 60)),
+        alerta_dias=int(dados.get("prazos", {}).get("alerta_dias", 10)),
     )
