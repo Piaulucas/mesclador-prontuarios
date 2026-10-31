@@ -32,6 +32,43 @@ def test_inicio_mostra_contagens_e_link_para_pendencias(cliente):
     assert 'class="inicio-reservas"' not in html
 
 
+def test_postit_presente_nas_telas_e_carrega_script_local(cliente):
+    for rota in ("/", "/painel/", "/mesclar", "/pendencias/"):
+        resposta = cliente.get(rota)
+        assert resposta.status_code == 200
+        html = resposta.get_data(as_text=True)
+        assert 'id="postitBotao"' in html
+        assert 'aria-controls="postitPainel" aria-expanded="false">Tarefas (0)' in html
+        assert 'id="postitPainel"' in html
+        assert 'id="postitFormulario"' in html
+        assert 'id="postitFiltro"' in html
+        assert 'src="/static/postit.js"' in html
+    script = cliente.get("/static/postit.js")
+    assert script.status_code == 200
+    codigo = script.get_data(as_text=True)
+    for trecho in ('fetch("/pendencias/dados")', '"/pendencias/tarefa"',
+                   "{concluida: true}", 'localStorage.setItem', 'evento.key === "Escape"',
+                   'botao.setAttribute("aria-expanded"', "textContent"):
+        assert trecho in codigo
+
+
+def test_postit_usa_contagem_de_todas_as_empresas(cliente):
+    ids = []
+    for empresa in ("EMPRESA A", "EMPRESA B"):
+        resposta = cliente.post("/pendencias/tarefa", json={
+            "empresa": empresa, "texto": "Conferir documento fictício"})
+        assert resposta.status_code == 200
+        ids.append(resposta.get_json()["id"])
+    dados = cliente.get("/pendencias/dados").get_json()
+    assert dados["totais"]["tarefas"] == 2
+    assert [item["id"] for empresa in dados["empresas"]
+            for item in empresa["grupos"]["tarefas"]] == ids
+    assert cliente.post(f"/pendencias/tarefa/{ids[0]}", json={"concluida": True}).status_code == 200
+    dados = cliente.get("/pendencias/dados").get_json()
+    assert dados["totais"]["tarefas"] == 1
+    assert not dados["empresas"][0]["grupos"]["tarefas"]
+
+
 def test_fluxo_das_rotas_usadas_pela_tela(cliente):
     fatura = cliente.post("/pendencias/fatura", json={
         "empresa": "EMPRESA A", "competencia": "2026-10", "referencia": "Fictícia"})
