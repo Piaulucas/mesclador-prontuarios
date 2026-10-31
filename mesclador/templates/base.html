@@ -102,9 +102,12 @@
     background: var(--painel); border: 1px solid var(--borda); border-radius: 8px;
     box-shadow: var(--sombra); z-index: 11; }
   .menu-opcoes a { min-height: 38px; padding: 7px 10px; border: 0; border-radius: 5px; }
-  .horas-indicador { color: var(--acento); text-decoration: none; font-size: 12px;
-    font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .horas-indicador { margin-left: auto; padding: 6px 12px; color: var(--acento); text-decoration: none;
+    font-size: 12px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums;
+    background: transparent; border: 1px solid var(--acento); border-radius: 6px; }
+  .horas-indicador:hover { background: var(--painel-suave); }
   .horas-indicador[hidden] { display: none; }
+  .horas-indicador:not([hidden]) + .encerrar { margin-left: 0; }
   .topo .encerrar { margin-left: auto; color: var(--suave); font-size: 12px;
                     background: transparent; border: 1px solid transparent; white-space: nowrap; }
   .topo .encerrar:hover { border-color: var(--borda); color: var(--texto); }
@@ -217,6 +220,7 @@
     .topo { flex-wrap: wrap; gap: 0 12px; padding: 9px 16px 0; }
     .marca { flex: 1 1 auto; min-height: 38px; }
     .topo .encerrar { order: 1; margin-left: 0; min-height: 32px; }
+    .horas-indicador { order: 1; margin-left: 0; }
     .abas { order: 2; width: 100%; flex-wrap: wrap; }
     .abas a { min-height: 40px; padding: 0 10px; font-size: 12px; }
     .menu-ferramentas summary { padding: 0 10px; font-size: 12px; }
@@ -352,14 +356,16 @@ function ativarEntrada(receber) {
 let temTrabalhoPendente = () => false;
 
 // ---------- sessão de horas em andamento ----------
-let horasInicio = null, horasTipo = "";
+let horasInicio = null, horasEmpresa = "", horasDescricao = "";
 function atualizarIndicadorHoras() {
   const indicador = $("horasIndicador");
   indicador.hidden = !horasInicio;
   if (!horasInicio) return;
-  const minutos = Math.max(0, Math.floor((Date.now() - horasInicio) / 60000));
-  const tempo = `${String(Math.floor(minutos / 60)).padStart(2, "0")}:${String(minutos % 60).padStart(2, "0")}`;
-  indicador.textContent = `● ${horasTipo} ${tempo}`;
+  const segundos = Math.max(0, Math.floor((Date.now() - horasInicio) / 1000));
+  const dois = valor => String(valor).padStart(2, "0");
+  const tempo = `${dois(Math.floor(segundos / 3600))}:${dois(Math.floor(segundos / 60) % 60)}:${dois(segundos % 60)}`;
+  indicador.textContent = `${horasEmpresa || "Sem empresa"} · ${tempo}`;
+  indicador.title = horasDescricao;
 }
 async function carregarIndicadorHoras() {
   try {
@@ -367,7 +373,8 @@ async function carregarIndicadorHoras() {
     if (!resposta.ok) return;
     const dados = await resposta.json();
     horasInicio = dados.ativa ? new Date(dados.ativa.inicio).getTime() : null;
-    horasTipo = dados.ativa ? dados.ativa.tipo : "";
+    horasEmpresa = dados.ativa && dados.ativa.empresa ? dados.ativa.empresa : "";
+    horasDescricao = dados.ativa ? dados.ativa.tipo + (dados.ativa.tarefa ? " · " + dados.ativa.tarefa : "") : "";
     atualizarIndicadorHoras();
   } catch (erro) { /* A navegação continua se o contador não responder. */ }
 }

@@ -543,3 +543,11 @@ def test_tela_horas_usa_data_dd_mm_aa(cliente):
     html = cliente.get("/horas/").get_data(as_text=True)
     assert "function horasDataHora(data)" in html
     assert "toLocaleString" not in html
+
+
+def test_indicador_de_horas_mostra_empresa_e_tempo_em_caixa_com_borda(cliente):
+    html = cliente.get("/").get_data(as_text=True)
+    assert 'border: 1px solid var(--acento)' in html
+    assert '${horasEmpresa || "Sem empresa"} · ${tempo}' in html
+    assert '● ${horasTipo}' not in html
+    assert 'indicador.title = horasDescricao' in html
