@@ -102,6 +102,9 @@
     background: var(--painel); border: 1px solid var(--borda); border-radius: 8px;
     box-shadow: var(--sombra); z-index: 11; }
   .menu-opcoes a { min-height: 38px; padding: 7px 10px; border: 0; border-radius: 5px; }
+  .horas-indicador { color: var(--acento); text-decoration: none; font-size: 12px;
+    font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .horas-indicador[hidden] { display: none; }
   .topo .encerrar { margin-left: auto; color: var(--suave); font-size: 12px;
                     background: transparent; border: 1px solid transparent; white-space: nowrap; }
   .topo .encerrar:hover { border-color: var(--borda); color: var(--texto); }
@@ -260,6 +263,7 @@
   <div class="abas">
     <a href="/" class="{{ 'ativa' if pagina == 'inicio' }}"{% if pagina == 'inicio' %} aria-current="page"{% endif %}>Início</a>
     <a href="/painel/" class="{{ 'ativa' if pagina == 'painel' }}"{% if pagina == 'painel' %} aria-current="page"{% endif %}>Auditoria</a>
+    <a href="/horas/" class="{{ 'ativa' if pagina == 'horas' }}"{% if pagina == 'horas' %} aria-current="page"{% endif %}>Horas</a>
     <a href="/pendencias/" class="{{ 'ativa' if pagina == 'pendencias' }}"{% if pagina == 'pendencias' %} aria-current="page"{% endif %}>Pendências</a>
     <details class="menu-ferramentas">
       <summary class="{{ 'ativa' if pagina in ('mesclar', 'converter') }}">Ferramentas</summary>
@@ -269,6 +273,7 @@
       </div>
     </details>
   </div>
+  <a id="horasIndicador" class="horas-indicador" href="/horas/" hidden></a>
   <button id="encerrar" class="encerrar" type="button" title="Fecha o app (os arquivos já salvos não são afetados)">Encerrar o app</button>
 </nav>
 
@@ -345,6 +350,30 @@ function ativarEntrada(receber) {
 
 // cada tela informa se há trabalho não salvo (para avisar antes de encerrar)
 let temTrabalhoPendente = () => false;
+
+// ---------- sessão de horas em andamento ----------
+let horasInicio = null, horasTipo = "";
+function atualizarIndicadorHoras() {
+  const indicador = $("horasIndicador");
+  indicador.hidden = !horasInicio;
+  if (!horasInicio) return;
+  const minutos = Math.max(0, Math.floor((Date.now() - horasInicio) / 60000));
+  const tempo = `${String(Math.floor(minutos / 60)).padStart(2, "0")}:${String(minutos % 60).padStart(2, "0")}`;
+  indicador.textContent = `● ${horasTipo} ${tempo}`;
+}
+async function carregarIndicadorHoras() {
+  try {
+    const resposta = await fetch("/horas/dados");
+    if (!resposta.ok) return;
+    const dados = await resposta.json();
+    horasInicio = dados.ativa ? new Date(dados.ativa.inicio).getTime() : null;
+    horasTipo = dados.ativa ? dados.ativa.tipo : "";
+    atualizarIndicadorHoras();
+  } catch (erro) { /* A navegação continua se o contador não responder. */ }
+}
+carregarIndicadorHoras();
+window.addEventListener("horasAlteradas", carregarIndicadorHoras);
+setInterval(atualizarIndicadorHoras, 1000);
 
 // ---------- encerrar o app ----------
 $("encerrar").onclick = async () => {

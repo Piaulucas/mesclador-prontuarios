@@ -35,6 +35,7 @@ mesclador/
   web.py        app Flask: Início (/), Mesclar (/mesclar) e rotas gerais
   painel.py     Auditoria (/painel/) e dados do mês (/painel/dados)
   pendencias.py dados locais de faturas, tarefas e prazos (/pendencias)
+  horas.py      contador manual e totais de horas (/horas)
   conversor.py  tela "Converter em JPG" (Blueprint /converter)
   imagens.py    renderização de páginas e ajustes de imagem
   pdfs.py       miniaturas, zip, mesclagem

@@ -522,3 +522,24 @@ def test_versao_informada_na_criacao_e_a_que_a_rota_devolve(config, tmp_path):
     from mesclador.web import create_app
     app = create_app(config, pasta_temp=tmp_path / "t5", versao="abc123")
     assert app.test_client().get("/versao").get_data(as_text=True) == "abc123"
+
+
+def test_horas_aparece_na_navegacao_e_na_pagina(cliente):
+    for rota in ("/", "/painel/", "/mesclar", "/horas/"):
+        html = cliente.get(rota).get_data(as_text=True)
+        assert 'href="/horas/"' in html
+        assert 'id="horasIndicador"' in html
+        assert 'fetch("/horas/dados")' in html
+        assert 'setInterval(atualizarIndicadorHoras, 1000)' in html
+    pagina = cliente.get("/horas/").get_data(as_text=True)
+    for identificador in ("horasTipo", "horasNovoTipo", "horasTarefa", "horasEmpresa",
+                          "horasIniciar", "horasParar", "horasRelogio", "horasTotais", "horasSessoes"):
+        assert f'id="{identificador}"' in pagina
+    assert 'href="/horas/" class="ativa"' in pagina
+    assert '.textContent =' in pagina
+
+
+def test_tela_horas_usa_data_dd_mm_aa(cliente):
+    html = cliente.get("/horas/").get_data(as_text=True)
+    assert "function horasDataHora(data)" in html
+    assert "toLocaleString" not in html
