@@ -27,6 +27,10 @@ def test_tela_e_link_do_painel(cliente):
     assert "Parcial, reenviei" in html
     assert "Situação da correção" not in html
     assert "chegou arquivo novo em" in html
+    assert 'parametrosPainel.get("foco")' in html
+    assert 'f.dias > 10' in html
+    assert 'f.scanner === "arquivo_novo_apos_aviso"' in html
+    assert 'f.estado === "por_auditar" && f.scanner === "falta_escanear"' in html
 
 
 def test_painel_tem_caixas_recolhiveis_e_lembra_o_estado(cliente):
