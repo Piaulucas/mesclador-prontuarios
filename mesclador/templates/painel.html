@@ -56,6 +56,10 @@
   .auditoria-registro { display: grid; gap: 6px; margin-top: 9px; }
   .auditoria-registro input { min-width: 0; width: 100%; }
   .auditoria-registro button { width: fit-content; }
+  .auditoria-aviso { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 20;
+    max-width: calc(100vw - 32px); padding: 11px 18px; border-radius: 8px; font-weight: 650;
+    background: var(--texto); color: var(--painel); box-shadow: var(--sombra); }
+  .auditoria-aviso[hidden] { display: none; }
   .auditoria-arquivo-novo { display: inline-block; margin-top: 5px; padding: 3px 8px;
     border: 1px solid var(--aviso-borda); border-radius: 20px; background: var(--aviso-fundo); }
   .auditoria-prazo-amarelo { color: #c29520; }
@@ -87,6 +91,7 @@
     </div>
   </div>
   <p id="painelMensagem" class="msg" role="status"></p>
+  <div id="painelAviso" class="auditoria-aviso" role="status" aria-live="polite" hidden></div>
   <div id="painelNumeros" class="auditoria-numeros"></div>
   <div id="painelEmpresas" class="auditoria-empresas"></div>
 </div>
@@ -244,7 +249,9 @@ function mostrarPainel() {
       formulario.append(data, nota, botao);
       formulario.addEventListener("submit", async evento => {
         evento.preventDefault();
+        botao.disabled = true;   // evita registrar o mesmo aviso duas vezes
         await registrarPainel(e.empresa, f, {envio: {data: data.value, pedido: nota.value}});
+        botao.disabled = false;
       });
       li.append(formulario);
       if (f.scanner === "arquivo_novo_apos_aviso") {
@@ -294,7 +301,18 @@ async function registrarPainel(empresa, ficha, alteracao) {
     const dados = await resposta.json();
     if (!resposta.ok) throw new Error(dados.erro || "Não foi possível registrar.");
     await lerPainel();
-  } catch (erro) { $("painelMensagem").textContent = erro.message; }
+    if (alteracao.envio) {
+      const [, mes, dia] = alteracao.envio.data.split("-");
+      avisoPainel(`Aviso registrado: ${ficha.ficha} em ${dia}/${mes}.`);
+    }
+  } catch (erro) { avisoPainel(erro.message); }
+}
+let temporizadorAviso;
+function avisoPainel(texto) {
+  const aviso = $("painelAviso");
+  aviso.textContent = texto; aviso.hidden = false;
+  clearTimeout(temporizadorAviso);
+  temporizadorAviso = setTimeout(() => { aviso.hidden = true; }, 5000);
 }
 mesPainel.addEventListener("change", lerPainel);
 empresaPainel.addEventListener("change", mostrarPainel);
