@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block titulo %}Horas · Área de trabalho{% endblock %}
+{% block estilos %}
+  .horas { max-width: 1100px; margin: auto; padding: 30px 24px 56px; }
+  .horas h1 { margin: 0 0 5px; font-size: 28px; }
+  .horas p { color: var(--suave); }
+  .horas-grade { display: grid; grid-template-columns: minmax(260px, 350px) 1fr; gap: 18px; margin-top: 20px; }
+  .horas-cartao { padding: 20px; background: var(--painel); border: 1px solid var(--borda);
+    border-radius: 11px; box-shadow: var(--sombra); }
+  .horas-cartao h2 { margin: 0 0 14px; font-size: 18px; }
+  .horas-formulario { display: grid; gap: 12px; }
+  .horas-linha { display: flex; gap: 8px; align-items: end; }
+  .horas-linha label { flex: 1; min-width: 0; }
+  .horas-relogio { font-size: 30px; font-variant-numeric: tabular-nums; font-weight: 750; }
+  .horas-totais { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .horas-total { padding: 12px; border: 1px solid var(--borda); border-radius: 8px; }
+  .horas-total strong { display: block; font-size: 21px; font-variant-numeric: tabular-nums; }
+  .horas-total small { display: block; color: var(--suave); }
+  .horas-lista { list-style: none; margin: 0; padding: 0; }
+  .horas-lista li { border-top: 1px solid var(--borda); padding: 11px 0; display: flex;
+    justify-content: space-between; gap: 12px; }
+  .horas-lista span { color: var(--suave); font-size: 12px; }
+  .horas-lista button { flex: none; min-height: 30px; font-size: 12px; }
+  @media (max-width: 750px) { .horas-grade { grid-template-columns: 1fr; }
+    .horas-totais { grid-template-columns: 1fr; } }
+{% endblock %}
+{% block conteudo %}
+<main class="horas">
+  <h1>Horas</h1>
+  <p>Registre o tempo de cada tarefa. Iniciar outra sessão encerra a anterior.</p>
+  <div class="horas-grade">
+    <section class="horas-cartao" aria-labelledby="horasRegistroTitulo">
+      <h2 id="horasRegistroTitulo">Registrar tempo</h2>
+      <form id="horasFormulario" class="horas-formulario">
+        <label>Tipo <select id="horasTipo" required></select></label>
+        <div class="horas-linha">
+          <label>Novo tipo <input id="horasNovoTipo" type="text" maxlength="80" autocomplete="off"></label>
+          <button id="horasAdicionarTipo" type="button">Adicionar</button>
+        </div>
+        <label>Tarefa (opcional) <input id="horasTarefa" type="text" maxlength="200" autocomplete="off"
+          placeholder="O que está fazendo?"></label>
+        <label>Empresa (opcional)
+          <select id="horasEmpresa"><option value="">Sem empresa</option>
+            {% for empresa in empresas %}<option value="{{ empresa }}">{{ empresa }}</option>{% endfor %}
+          </select>
+        </label>
+        <button id="horasIniciar" class="principal" type="submit">Iniciar</button>
+        <button id="horasParar" type="button" hidden>Parar</button>
+      </form>
+      <p id="horasAtiva" role="status">Nenhuma sessão em andamento.</p>
+      <div id="horasRelogio" class="horas-relogio" aria-live="off">00:00:00</div>
+      <p id="horasAviso" class="msg" role="status" aria-live="polite"></p>
+    </section>
+    <div>
+      <section class="horas-cartao" aria-labelledby="horasTotaisTitulo">
+        <h2 id="horasTotaisTitulo">Totais</h2>
+        <div id="horasTotais" class="horas-totais"></div>
+      </section>
+      <section class="horas-cartao" aria-labelledby="horasSessoesTitulo" style="margin-top:18px">
+        <h2 id="horasSessoesTitulo">Sessões recentes</h2>
+        <ul id="horasSessoes" class="horas-lista"></ul>
+      </section>
+    </div>
+  </div>
+</main>
+{% endblock %}
+{% block script %}
+<script>
+let horasDados = null;
+const horasNo = (tag, texto) => { const no = document.createElement(tag); no.textContent = texto; return no; };
+function horasDataHora(data) {
+  const dois = valor => String(valor).padStart(2, "0");
+  return `${dois(data.getDate())}-${dois(data.getMonth() + 1)}-${dois(data.getFullYear() % 100)} ` +
+    `${dois(data.getHours())}:${dois(data.getMinutes())}`;
+}
+function horasDuracao(segundos) {
+  const valor = Math.max(0, Math.floor(segundos));
+  const dois = numero => String(numero).padStart(2, "0");
+  return `${dois(Math.floor(valor / 3600))}:${dois(Math.floor(valor / 60) % 60)}:${dois(valor % 60)}`;
+}
+function horasAtualizarRelogio() {
+  const ativa = horasDados && horasDados.ativa;
+  $("horasRelogio").textContent = horasDuracao(ativa ? (Date.now() - new Date(ativa.inicio).getTime()) / 1000 : 0);
+}
+function horasMostrar(dados) {
+  horasDados = dados;
+  const seletor = $("horasTipo"), escolhido = seletor.value;
+  seletor.replaceChildren();
+  dados.tipos.forEach(tipo => { const opcao = horasNo("option", tipo.nome); opcao.value = tipo.id; seletor.append(opcao); });
+  if (dados.tipos.some(tipo => String(tipo.id) === escolhido)) seletor.value = escolhido;
+  $("horasParar").hidden = !dados.ativa;
+  $("horasAtiva").textContent = dados.ativa ?
+    `${dados.ativa.tipo}${dados.ativa.tarefa ? " · " + dados.ativa.tarefa : ""}` : "Nenhuma sessão em andamento.";
+  horasAtualizarRelogio();
+  const totais = $("horasTotais"); totais.replaceChildren();
+  [["dia", "Hoje"], ["semana", "Semana"], ["mes", "Mês"]].forEach(([chave, rotulo]) => {
+    const cartao = horasNo("div", ""); cartao.className = "horas-total";
+    cartao.append(horasNo("span", rotulo), horasNo("strong", horasDuracao(dados.totais[chave].geral)));
+    Object.entries(dados.totais[chave].por_tipo).forEach(([tipo, segundos]) => {
+      cartao.append(horasNo("small", `${tipo}: ${horasDuracao(segundos)}`));
+    });
+    totais.append(cartao);
+  });
+  const lista = $("horasSessoes"); lista.replaceChildren();
+  if (!dados.sessoes.length) lista.append(horasNo("li", "Nenhuma sessão registrada."));
+  dados.sessoes.forEach(sessao => {
+    const item = horasNo("li", ""), descricao = horasNo("div", "");
+    descricao.append(horasNo("strong", sessao.tipo + (sessao.tarefa ? " · " + sessao.tarefa : "")));
+    const inicio = new Date(sessao.inicio), fim = sessao.fim ? new Date(sessao.fim) : null;
+    descricao.append(document.createElement("br"), horasNo("span",
+      `${horasDataHora(inicio)} — ${fim ? horasDataHora(fim) : "em andamento"}` +
+      (sessao.empresa ? ` · ${sessao.empresa}` : "")));
+    item.append(descricao);
+    if (fim) { const botao = horasNo("button", "Excluir"); botao.type = "button";
+      botao.onclick = () => horasEnviar(`/horas/sessao/${sessao.id}/excluir`, {}); item.append(botao); }
+    lista.append(item);
+  });
+}
+async function horasCarregar() {
+  try {
+    const resposta = await fetch("/horas/dados");
+    if (!resposta.ok) throw new Error("Não foi possível carregar as horas.");
+    horasMostrar(await resposta.json());
+  } catch (erro) { $("horasAviso").textContent = erro.message; }
+}
+async function horasEnviar(caminho, dados) {
+  $("horasAviso").textContent = "";
+  try {
+    const resposta = await fetch(caminho, {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(dados)});
+    const resultado = await resposta.json();
+    if (!resposta.ok) throw new Error(resultado.erro || "Não foi possível salvar.");
+    await horasCarregar();
+    window.dispatchEvent(new Event("horasAlteradas"));
+  } catch (erro) { $("horasAviso").textContent = erro.message; }
+}
+$("horasFormulario").addEventListener("submit", evento => { evento.preventDefault();
+  horasEnviar("/horas/iniciar", {tipo: Number($("horasTipo").value), tarefa: $("horasTarefa").value,
+    empresa: $("horasEmpresa").value});
+});
+$("horasParar").onclick = () => horasEnviar("/horas/parar", {});
+$("horasAdicionarTipo").onclick = async () => {
+  const nome = $("horasNovoTipo").value.trim();
+  if (!nome) { $("horasAviso").textContent = "Informe o nome do tipo."; return; }
+  await horasEnviar("/horas/tipo", {nome});
+  $("horasNovoTipo").value = "";
+};
+horasCarregar();
+setInterval(horasAtualizarRelogio, 1000);
+</script>
+{% endblock %}

@@ -49,6 +49,10 @@ Quando a folha escaneada está escura ou difícil de ler, a tela **Converter em 
 
 Na barra superior, **Auditoria** mostra o andamento do mês por empresa. Escolha o mês e, se quiser, filtre uma empresa; **Ler de novo** atualiza a leitura das planilhas e pastas configuradas. A tela mostra pendências, inconsistências, PDFs sem linha e a situação do scanner das fichas abertas. Nas pendências com a equipe, registre a data em **Avisei a equipe**; a nota é opcional. O prazo começa no último aviso registrado. Quando chega um arquivo após o aviso, a ficha mostra a data para conferência; se a correção for parcial, **Parcial, reenviei** registra um novo aviso. Os registros ficam em `[auditoria].pasta_registros`, fora das planilhas e pastas das empresas. Para ler scanners, instale o Google Drive para desktop, crie atalhos para as pastas compartilhadas no Meu Drive e configure a raiz e o formato de cada empresa em `[auditoria.scanners]`. O app lê apenas nomes e datas de modificação, sem abrir os arquivos.
 
+## Horas
+
+Na aba **Horas**, inicie e pare sessões manuais com tipo, tarefa opcional e empresa opcional. Iniciar outra sessão encerra a anterior. A tela mostra totais do dia, da semana (segunda a domingo) e do mês; o indicador da barra acompanha a sessão em qualquer aba. Os registros ficam no mesmo SQLite de `[trabalho].arquivo`, sem dados de pacientes.
+
 ## Pendências de faturas e tarefas
 
 A API local em `/pendencias/dados` acompanha, por empresa, ofícios de glosa ainda não recebidos, respostas pendentes, NFs ainda não solicitadas e tarefas livres. O prazo da resposta começa na chegada do ofício (60 dias por padrão). Os registros ficam no SQLite indicado em `[trabalho].arquivo`; `[prazos]` ajusta os dias de glosa e de alerta. Não registre nomes de pacientes. A interface visual virá em outra etapa.
@@ -123,6 +127,7 @@ mesclador/
   config.py     leitura do config.toml
   planilha.py   listar, ler e buscar na planilha de faturamento
   pdfs.py       miniaturas, conversão de imagem e mesclagem
+  horas.py      contador manual de horas
   conversor.py  tela Converter em JPG
   imagens.py    renderização de páginas e ajustes de imagem
   navegador.py  focar/fechar a aba no Chrome/Safari
