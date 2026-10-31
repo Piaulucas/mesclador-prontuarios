@@ -160,6 +160,22 @@ def test_pagina_inicial(cliente):
     assert '<h1 class="painel-titulo">Mesclar prontuário</h1>' in cliente.get("/mesclar").get_data(as_text=True)
 
 
+def test_pagina_inicial_mostra_barra_acessivel_por_empresa(cliente):
+    html = cliente.get("/").get_data(as_text=True)
+    assert '.inicio-barra { display: flex; height: 8px;' in html
+    assert '.inicio-aprovadas { background: var(--ok); }' in html
+    assert '.inicio-equipe { background: var(--erro); }' in html
+    assert '.inicio-pendentes { background: #d9a232; }' in html
+    assert 'noInicio("span", Math.round(empresa.contagem.percentual_concluido) + "%")' in html
+    assert 'barra.setAttribute("role", "img")' in html
+    assert 'barra.setAttribute("aria-label", descricao)' in html
+    assert 'barra.title = descricao' in html
+    assert '${empresa.contagem.lancadas} no total' in html
+    assert 'parte.style.width = (empresa.contagem.lancadas ?' in html
+    assert 'linha.append(cabecalho, barra)' in html
+    assert 'cartao.append(noInicio("strong", valor), noInicio("span", rotulo))' in html
+
+
 @pytest.mark.parametrize("rota", ["/mesclar", "/converter"])
 def test_ampliacao_tem_setas_e_indicador_nas_duas_telas(cliente, rota):
     class Elementos(HTMLParser):

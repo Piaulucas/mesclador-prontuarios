@@ -18,14 +18,19 @@
   .inicio-link .inicio-acao { display: block; margin-top: 14px; color: var(--acento); font-weight: 700; }
   .inicio-secao:last-of-type .inicio-cartao strong { font-size: 18px; margin-bottom: 5px; }
   .inicio-empresas { display: grid; gap: 8px; margin-top: 12px; }
-  .inicio-empresa { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
-  .inicio-empresa strong { overflow-wrap: anywhere; }
-  .inicio-empresa span { color: var(--suave); text-align: right; }
+  .inicio-empresa-cabecalho { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+  .inicio-empresa-cabecalho strong { min-width: 0; overflow-wrap: anywhere; }
+  .inicio-empresa-cabecalho span { flex: none; color: var(--suave); }
+  .inicio-barra { display: flex; height: 8px; margin-top: 10px; border-radius: 10px;
+    overflow: hidden; background: var(--fundo); border: 1px solid var(--borda); }
+  .inicio-barra span { height: 100%; }
+  .inicio-aprovadas { background: var(--ok); }
+  .inicio-equipe { background: var(--erro); }
+  .inicio-pendentes { background: #d9a232; }
   .inicio-estado { color: var(--suave); }
   @media (max-width: 600px) {
     .inicio { padding: 22px 16px 42px; }
-    .inicio-empresa { display: block; }
-    .inicio-empresa span { display: block; text-align: left; }
+    .inicio-empresa-cabecalho { flex-wrap: wrap; }
   }
 {% endblock %}
 
@@ -84,9 +89,23 @@ function mostrarInicio(dados) {
   empresas.replaceChildren();
   dados.empresas.forEach(empresa => {
     const linha = noInicio("div", "", "inicio-empresa");
-    linha.append(noInicio("strong", empresa.empresa), noInicio("span",
-      `${empresa.contagem.concluidas} aprovadas · ${empresa.contagem.com_equipe} com a equipe · ` +
-      `${empresa.contagem.por_auditar} por auditar · ${empresa.contagem.lancadas} no total`));
+    const cabecalho = noInicio("div", "", "inicio-empresa-cabecalho");
+    cabecalho.append(noInicio("strong", empresa.empresa),
+      noInicio("span", Math.round(empresa.contagem.percentual_concluido) + "%"));
+    const barra = noInicio("div", "", "inicio-barra");
+    const descricao = `${empresa.contagem.concluidas} aprovadas · ${empresa.contagem.com_equipe} com a equipe · ` +
+      `${empresa.contagem.por_auditar} por auditar · ${empresa.contagem.lancadas} no total`;
+    barra.setAttribute("role", "img");
+    barra.setAttribute("aria-label", descricao);
+    barra.title = descricao;
+    [["concluidas", "inicio-aprovadas"], ["com_equipe", "inicio-equipe"],
+      ["por_auditar", "inicio-pendentes"]].forEach(([chave, classe]) => {
+      const parte = noInicio("span", "", classe);
+      parte.style.width = (empresa.contagem.lancadas ?
+        100 * empresa.contagem[chave] / empresa.contagem.lancadas : 0) + "%";
+      barra.append(parte);
+    });
+    linha.append(cabecalho, barra);
     empresas.append(linha);
   });
   const fichas = dados.empresas.flatMap(empresa => empresa.fichas);
