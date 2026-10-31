@@ -5,7 +5,6 @@
   .inicio { max-width: 1220px; margin: auto; padding: 30px 24px 56px; }
   .inicio h1 { margin: 0; font-size: 28px; letter-spacing: -.03em; }
   .inicio h2 { margin: 0 0 14px; font-size: 19px; letter-spacing: -.02em; }
-  .inicio-intro { margin: 2px 0 26px; color: var(--suave); }
   .inicio-secao { margin-top: 30px; }
   .inicio-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; }
   .inicio-cartao, .inicio-empresa, .inicio-reserva { min-width: 0; padding: 17px;
@@ -27,11 +26,11 @@
   .inicio-aprovadas { background: var(--ok); }
   .inicio-equipe { background: var(--erro); }
   .inicio-pendentes { background: #d9a232; }
-  .inicio-legenda { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 12px 0 0; padding: 0;
+  .inicio-legenda { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; padding: 0;
     list-style: none; color: var(--suave); font-size: 12px; }
   .inicio-legenda li { display: flex; align-items: center; gap: 6px; }
   .inicio-legenda i { width: 10px; height: 10px; border-radius: 3px; }
-  .inicio-estado { color: var(--suave); }
+  .inicio-estado { margin: 4px 0 12px; color: var(--suave); font-size: 13px; }
   @media (max-width: 600px) {
     .inicio { padding: 22px 16px 42px; }
     .inicio-empresa-cabecalho { flex-wrap: wrap; }
@@ -41,16 +40,10 @@
 {% block conteudo %}
 <main class="inicio">
   <h1>Início</h1>
-  <p class="inicio-intro">Visão do mês atual e acesso às tarefas.</p>
-  <p id="inicioEstado" class="inicio-estado" role="status">Lendo andamento do mês…</p>
   <section class="inicio-secao" aria-labelledby="inicioAndamento">
     <h2 id="inicioAndamento">Andamento do mês <span id="inicioMes"></span></h2>
+    <p id="inicioEstado" class="inicio-estado" role="status">Lendo andamento do mês…</p>
     <div id="inicioTotais" class="inicio-grade"></div>
-    <ul class="inicio-legenda" aria-label="Legenda das barras">
-      <li><i class="inicio-aprovadas"></i>Aprovadas</li>
-      <li><i class="inicio-equipe"></i>Com a equipe</li>
-      <li><i class="inicio-pendentes"></i>Por auditar</li>
-    </ul>
     <div id="inicioEmpresas" class="inicio-empresas"></div>
   </section>
   <section class="inicio-secao" aria-labelledby="inicioHoje">
@@ -114,7 +107,14 @@ function mostrarInicio(dados) {
         100 * empresa.contagem[chave] / empresa.contagem.lancadas : 0) + "%";
       barra.append(parte);
     });
-    linha.append(cabecalho, barra);
+    const legenda = noInicio("ul", "", "inicio-legenda");
+    [["concluidas", "inicio-aprovadas", "aprovadas"], ["com_equipe", "inicio-equipe", "com a equipe"],
+      ["por_auditar", "inicio-pendentes", "por auditar"]].forEach(([chave, classe, rotulo]) => {
+      const item = noInicio("li", "");
+      item.append(noInicio("i", "", classe), `${empresa.contagem[chave]} ${rotulo}`);
+      legenda.append(item);
+    });
+    linha.append(cabecalho, barra, legenda);
     empresas.append(linha);
   });
   const fichas = dados.empresas.flatMap(empresa => empresa.fichas);
@@ -139,7 +139,7 @@ async function lerInicio() {
     const dados = await resposta.json();
     if (!resposta.ok) throw new Error(dados.erro || "Não foi possível ler o mês.");
     mostrarInicio(dados);
-    $("inicioEstado").textContent = "Leitura de " + dados.hoje + ".";
+    $("inicioEstado").textContent = "Dados lidos em " + dados.hoje.split("-").reverse().join("/") + ".";
   } catch (erro) {
     $("inicioEstado").textContent = erro.message;
   }

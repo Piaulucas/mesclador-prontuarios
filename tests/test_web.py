@@ -172,7 +172,10 @@ def test_pagina_inicial_mostra_barra_acessivel_por_empresa(cliente):
     assert 'barra.title = descricao' in html
     assert '${empresa.contagem.lancadas} no total' in html
     assert 'parte.style.width = (empresa.contagem.lancadas ?' in html
-    assert 'linha.append(cabecalho, barra)' in html
+    assert 'linha.append(cabecalho, barra, legenda)' in html
+    assert '${empresa.contagem[chave]} ${rotulo}' in html
+    assert 'Visão do mês atual' not in html
+    assert 'Dados lidos em' in html
     assert 'cartao.append(noInicio("strong", valor), noInicio("span", rotulo))' in html
 
 
