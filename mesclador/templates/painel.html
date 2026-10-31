@@ -250,8 +250,8 @@ function mostrarPainel() {
         f.faixa ? `auditoria-prazo-${f.faixa}` : ""));
       if (f.ultimo_envio?.pedido) li.append(elemento("small", `Nota do último aviso: ${f.ultimo_envio.pedido}`));
       if (f.comentario) li.append(elemento("small", f.comentario));
-      if (f.scanner) li.append(elemento("small", textoScanner(f),
-        f.scanner === "arquivo_novo_apos_aviso" ? "auditoria-arquivo-novo" : ""));
+      if (f.scanner === "arquivo_novo_apos_aviso") li.append(elemento("small", textoScanner(f),
+        "auditoria-arquivo-novo"));
       const formulario = elemento("form", undefined, "auditoria-registro");
       const data = elemento("input"); data.type = "date"; data.required = true;
       data.value = dadosPainel.hoje; data.setAttribute("aria-label", `Data do aviso de ${f.ficha}`);
