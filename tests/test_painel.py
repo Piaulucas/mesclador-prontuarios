@@ -37,6 +37,8 @@ def test_painel_tem_caixas_recolhiveis_e_lembra_o_estado(cliente):
     html = cliente.get("/painel/").get_data(as_text=True)
     assert 'id="painelExpandir"' in html
     assert 'id="painelRecolher"' in html
+    assert 'id="painelAviso"' in html
+    assert "Aviso registrado" in html
     assert "Expandir todas" in html and "Recolher todas" in html
     assert 'elemento("details"' in html
     assert 'elemento("summary"' in html
