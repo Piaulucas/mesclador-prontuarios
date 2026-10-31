@@ -1,8 +1,8 @@
-# Mesclador de Prontuários
+# Área de trabalho
 
-Ferramenta local para montar, um a um, os prontuários que acompanham o faturamento de remoções em UTI móvel: junta as folhas escaneadas (PDF/JPEG/PNG) na ordem certa, busca o nome do paciente na planilha de faturamento pelo Nº da remoção e salva o PDF com o nome e na pasta corretos. A barra superior dá acesso a **Mesclar prontuário**, **Converter em JPG** e **Painel da auditoria**.
+Área de trabalho local com Início, Auditoria e menu Ferramentas. Em Mesclar prontuário, é possível montar, um a um, os prontuários que acompanham o faturamento de remoções em UTI móvel: junta as folhas escaneadas (PDF/JPEG/PNG) na ordem certa, busca o nome do paciente na planilha de faturamento pelo Nº da remoção e salva o PDF com o nome e na pasta corretos. A barra superior dá acesso a **Início**, **Auditoria** e **Ferramentas** (Mesclar prontuário e Converter em JPG).
 
-![Tela do Mesclador](docs/tela.png)
+![Tela de mesclar prontuário](docs/tela.png)
 _Dados fictícios._
 
 ## O problema
@@ -10,6 +10,10 @@ _Dados fictícios._
 Na auditoria de faturamento, cada remoção precisa de um prontuário em PDF nomeado como `04 - NOME DO PACIENTE.pdf` e arquivado na pasta do mês, separado por tipo de remoção (adulto/pediátrico ou neonatal). As folhas chegam escaneadas separadamente, em formatos misturados, com nomes de arquivo sem padrão.
 
 O fluxo manual era: baixar as folhas em `.zip`, extrair, enviar para um site de mesclagem online, baixar o resultado, renomear consultando a planilha e mover para a pasta certa. Além de lento, isso enviava **dados de saúde de pacientes para um serviço de terceiros**.
+
+## Mesclar prontuário
+
+Abra **Ferramentas → Mesclar prontuário** ou acesse `/mesclar`. A Início (`/`) mostra contagens do mês, prioridades do dia e links para a Auditoria, sem nomes de pacientes.
 
 ## O que a ferramenta faz
 
@@ -43,7 +47,7 @@ Quando a folha escaneada está escura ou difícil de ler, a tela **Converter em 
 
 ## Painel da auditoria
 
-Na barra superior, **Painel da auditoria** mostra o andamento do mês por empresa. Escolha o mês e, se quiser, filtre uma empresa; **Ler de novo** atualiza a leitura das planilhas e pastas configuradas. A tela mostra pendências, inconsistências, PDFs sem linha e a situação do scanner das fichas abertas. Nas pendências com a equipe, registre a data em **Avisei a equipe**; a nota é opcional. O prazo começa no último aviso registrado. Quando chega um arquivo após o aviso, a ficha mostra a data para conferência; se a correção for parcial, **Parcial, reenviei** registra um novo aviso. Os registros ficam em `[auditoria].pasta_registros`, fora das planilhas e pastas das empresas. Para ler scanners, instale o Google Drive para desktop, crie atalhos para as pastas compartilhadas no Meu Drive e configure a raiz e o formato de cada empresa em `[auditoria.scanners]`. O app lê apenas nomes e datas de modificação, sem abrir os arquivos.
+Na barra superior, **Auditoria** mostra o andamento do mês por empresa. Escolha o mês e, se quiser, filtre uma empresa; **Ler de novo** atualiza a leitura das planilhas e pastas configuradas. A tela mostra pendências, inconsistências, PDFs sem linha e a situação do scanner das fichas abertas. Nas pendências com a equipe, registre a data em **Avisei a equipe**; a nota é opcional. O prazo começa no último aviso registrado. Quando chega um arquivo após o aviso, a ficha mostra a data para conferência; se a correção for parcial, **Parcial, reenviei** registra um novo aviso. Os registros ficam em `[auditoria].pasta_registros`, fora das planilhas e pastas das empresas. Para ler scanners, instale o Google Drive para desktop, crie atalhos para as pastas compartilhadas no Meu Drive e configure a raiz e o formato de cada empresa em `[auditoria.scanners]`. O app lê apenas nomes e datas de modificação, sem abrir os arquivos.
 
 ## Decisões de projeto
 
@@ -75,8 +79,10 @@ cp config.example.toml config.toml   # edite caminhos, empresas e colunas da pla
 python3 -m mesclador
 ```
 
-O navegador abre em `http://127.0.0.1:5050`. Para encerrar, use o botão **Encerrar o app** na barra superior (`Ctrl+C` continua valendo quando aberto pelo terminal).
+O navegador abre a Início em `http://127.0.0.1:5050/`. Para encerrar, use o botão **Encerrar o app** na barra superior (`Ctrl+C` continua valendo quando aberto pelo terminal).
 Se o app já estiver aberto e o código da pasta tiver mudado (ex.: depois de atualizar o projeto), abrir de novo pelo ícone ou pelo comando encerra o app antigo e abre o novo; se o código for o mesmo, só mostra a janela que já existe.
+
+Na tela **Mesclar prontuário** (`/mesclar`):
 
 1. Escolha empresa e mês (a planilha do mês é selecionada sozinha)
 2. Escolha a pasta principal do mês (fica lembrada por empresa e mês)
@@ -92,7 +98,7 @@ Para não precisar do Terminal no dia a dia, crie o ícone uma vez:
 bash macos/criar_app.sh
 ```
 
-Isso gera `~/Applications/Mesclador.app`; arraste-o para o Dock. O ícone abre o app em segundo plano e, se ele já estiver aberto, só mostra a janela de novo. Para fechar, use o botão **Encerrar o app** na tela. O registro de execução fica em `~/Library/Logs/mesclador.log`. Se a pasta do projeto mudar de lugar, rode o script de novo.
+Isso gera `~/Applications/Área de trabalho.app`; arraste-o para o Dock. O ícone abre o app em segundo plano e, se ele já estiver aberto, só mostra a janela de novo. Para fechar, use o botão **Encerrar o app** na tela. O registro de execução fica em `~/Library/Logs/mesclador.log`. Se a pasta do projeto mudar de lugar, rode o script de novo.
 
 ## Configuração
 
@@ -120,9 +126,11 @@ mesclador/
   web.py        rotas Flask
   templates/    interface (HTML/CSS/JS sem dependências externas)
     base.html       barra superior e JS comum
-    index.html      tela de mesclar
+    inicio.html     Início: contagens e links para a Auditoria
+    index.html      tela de mesclar (/mesclar)
     converter.html  tela Converter em JPG
-macos/          ícone e scripts do Mesclador.app
+    painel.html     Auditoria
+macos/          ícone e scripts da Área de trabalho.app
 tests/          testes com dados fictícios
 CLAUDE.md       regras para agentes
 ```

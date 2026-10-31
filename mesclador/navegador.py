@@ -12,6 +12,7 @@ import subprocess
 
 # Percorre as abas abertas do Chrome e do Safari (só se já estiverem abertos)
 # e executa a ação na primeira aba cujo endereço começa com o do app.
+# O endereço-base encontra Início, Mesclar, Converter e Auditoria na mesma porta.
 _SCRIPT = """
 on run argv
   set alvo to item 1 of argv
@@ -91,7 +92,7 @@ def avisar(mensagem):
         r = subprocess.run(
             ["osascript",
              "-e", "on run argv",
-             "-e", 'display dialog (item 1 of argv) with title "Mesclador" buttons {"OK"} '
+             "-e", 'display dialog (item 1 of argv) with title "Área de trabalho" buttons {"OK"} '
                    'default button "OK" with icon caution giving up after 120',
              "-e", "end run",
              mensagem],

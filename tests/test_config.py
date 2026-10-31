@@ -36,7 +36,7 @@ def test_codigo_padrao_usa_tres_primeiras_letras_maiusculas(tmp_path):
 
 def test_tipos_covid_do_exemplo_aparecem_na_tela(tmp_path):
     app = create_app(config.carregar(EXEMPLO), pasta_temp=tmp_path / "temp", versao="teste")
-    pagina = app.test_client().get("/").get_data(as_text=True)
+    pagina = app.test_client().get("/mesclar").get_data(as_text=True)
 
     assert "<option>ADULTO-PED COVID</option>" in pagina
     assert "<option>NEONATAL COVID</option>" in pagina

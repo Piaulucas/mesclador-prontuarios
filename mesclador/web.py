@@ -82,6 +82,12 @@ def create_app(config, pasta_temp=None, versao=None):
     def index():
         hoje = date.today()
         mes_padrao = max(f"{hoje.year}-{hoje.month:02d}", config.mes_inicial or "")
+        return render_template("inicio.html", pagina="inicio", mes_padrao=mes_padrao)
+
+    @app.get("/mesclar")
+    def mesclar():
+        hoje = date.today()
+        mes_padrao = max(f"{hoje.year}-{hoje.month:02d}", config.mes_inicial or "")
         return render_template("index.html", pagina="mesclar", empresas=list(config.empresas),
                                tipos=config.tipos, mes_padrao=mes_padrao, mes_minimo=config.mes_inicial)
 

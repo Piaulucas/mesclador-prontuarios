@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block titulo %}Mesclador{% endblock %}</title>
+<title>{% block titulo %}Área de trabalho{% endblock %}</title>
 <style>
   :root {
     color-scheme: light;
@@ -90,6 +90,18 @@
             text-decoration: none; font-weight: 650; white-space: nowrap; }
   .abas a:hover { color: var(--texto); background: var(--painel-suave); }
   .abas a.ativa { color: var(--acento); border-bottom-color: var(--acento); }
+  .menu-ferramentas { position: relative; display: flex; align-items: stretch; }
+  .menu-ferramentas summary { display: flex; align-items: center; min-height: 40px; padding: 0 13px;
+    border-bottom: 3px solid transparent; color: var(--suave); font-weight: 650;
+    cursor: pointer; list-style: none; white-space: nowrap; }
+  .menu-ferramentas summary::-webkit-details-marker { display: none; }
+  .menu-ferramentas summary:hover, .menu-ferramentas[open] summary { color: var(--texto); background: var(--painel-suave); }
+  .menu-ferramentas summary.ativa { color: var(--acento); border-bottom-color: var(--acento); }
+  .menu-ferramentas summary:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+  .menu-opcoes { position: absolute; top: 100%; left: 0; min-width: 190px; padding: 5px;
+    background: var(--painel); border: 1px solid var(--borda); border-radius: 8px;
+    box-shadow: var(--sombra); z-index: 11; }
+  .menu-opcoes a { min-height: 38px; padding: 7px 10px; border: 0; border-radius: 5px; }
   .topo .encerrar { margin-left: auto; color: var(--suave); font-size: 12px;
                     background: transparent; border: 1px solid transparent; white-space: nowrap; }
   .topo .encerrar:hover { border-color: var(--borda); color: var(--texto); }
@@ -176,8 +188,9 @@
     .topo { flex-wrap: wrap; gap: 0 12px; padding: 9px 16px 0; }
     .marca { flex: 1 1 auto; min-height: 38px; }
     .topo .encerrar { order: 1; margin-left: 0; min-height: 32px; }
-    .abas { order: 2; width: 100%; overflow-x: auto; }
+    .abas { order: 2; width: 100%; flex-wrap: wrap; }
     .abas a { min-height: 40px; padding: 0 10px; font-size: 12px; }
+    .menu-ferramentas summary { padding: 0 10px; font-size: 12px; }
     .app { grid-template-columns: minmax(0, 1fr); }
     aside { border-right: 0; border-bottom: 1px solid var(--borda); padding: 20px 16px; }
     main { padding: 20px 16px; }
@@ -186,6 +199,7 @@
     .mini { height: 230px; }
   }
   @media (max-width: 430px) {
+    .marca-divisor, .marca-reserva { display: none; }
     .marca-local { font-size: 12px; }
     .marca-local img { width: 34px; height: 34px; }
     .marca-app { font-size: 17px; }
@@ -203,7 +217,7 @@
 <body>
 <nav class="topo" aria-label="Navegação principal">
   <div class="marca">
-    <span class="marca-app">Mesclador</span>
+    <span class="marca-app">Área de trabalho</span>
     <span class="marca-divisor" aria-hidden="true"></span>
     <span class="marca-local">
       <img src="/static/logo-local.png" alt=""
@@ -212,9 +226,15 @@
     </span>
   </div>
   <div class="abas">
-    <a href="/" class="{{ 'ativa' if pagina == 'mesclar' }}">Mesclar prontuário</a>
-    <a href="/converter" class="{{ 'ativa' if pagina == 'converter' }}">Converter em JPG</a>
-    <a href="/painel/" class="{{ 'ativa' if pagina == 'painel' }}">Painel da auditoria</a>
+    <a href="/" class="{{ 'ativa' if pagina == 'inicio' }}"{% if pagina == 'inicio' %} aria-current="page"{% endif %}>Início</a>
+    <a href="/painel/" class="{{ 'ativa' if pagina == 'painel' }}"{% if pagina == 'painel' %} aria-current="page"{% endif %}>Auditoria</a>
+    <details class="menu-ferramentas">
+      <summary class="{{ 'ativa' if pagina in ('mesclar', 'converter') }}">Ferramentas</summary>
+      <div class="menu-opcoes">
+        <a href="/mesclar"{% if pagina == 'mesclar' %} aria-current="page"{% endif %}>Mesclar prontuário</a>
+        <a href="/converter"{% if pagina == 'converter' %} aria-current="page"{% endif %}>Converter em JPG</a>
+      </div>
+    </details>
   </div>
   <button id="encerrar" class="encerrar" type="button" title="Fecha o app (os arquivos já salvos não são afetados)">Encerrar o app</button>
 </nav>
@@ -300,7 +320,7 @@ $("encerrar").onclick = async () => {
   // o app pede ao navegador para fechar esta aba; se não conseguir, fica a mensagem
   setTimeout(() => {
     document.body.innerHTML = '<div style="padding:40px;font:16px -apple-system,sans-serif">' +
-      "Mesclador encerrado. Pode fechar esta aba.<br><br>Para abrir de novo, use o ícone.</div>";
+      "Área de trabalho encerrada. Pode fechar esta aba.<br><br>Para abrir de novo, use o ícone.</div>";
   }, 300);
 };
 </script>

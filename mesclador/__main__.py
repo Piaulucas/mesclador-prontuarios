@@ -14,7 +14,7 @@ from . import navegador, versao
 from .web import IDENTIDADE, create_app
 
 ESPERA_PORTA_LIVRE = 10   # segundos esperando a instância antiga encerrar
-AVISO_VERSAO_ANTIGA = ("Uma versão antiga do Mesclador ainda está aberta. "
+AVISO_VERSAO_ANTIGA = ("Uma versão antiga da Área de trabalho ainda está aberta. "
                        "Clique em 'Encerrar o app' na tela e abra de novo.")
 
 
@@ -80,15 +80,15 @@ def main():
     # (a menos que ela rode um código diferente do da pasta: aí encerra a antiga e sobe a nova)
     if ja_esta_rodando(config.porta):
         if not instancia_desatualizada(config.porta, versao_atual):
-            print(f"O Mesclador já está aberto em {url}")
+            print(f"A Área de trabalho já está aberta em {url}")
             mostrar(url)
             return
-        print(f"O Mesclador aberto em {url} está desatualizado (código diferente do da pasta); reiniciando.")
+        print(f"A Área de trabalho em {url} está com código desatualizado (diferente do da pasta); reiniciando.")
         pedir_encerramento(config.porta)
         if not esperar_porta_livre(config.porta):
             mostrar(url)   # deixa a janela antiga à vista, com o botão Encerrar o app
             navegador.avisar(AVISO_VERSAO_ANTIGA)   # o app roda sem Terminal: o log ninguém vê
-            raise SystemExit(f"O Mesclador aberto em {url} está desatualizado e não encerrou sozinho. "
+            raise SystemExit(f"A Área de trabalho aberta em {url} está desatualizada e não encerrou sozinha. "
                              "Clique em 'Encerrar o app' na janela dele e abra de novo.")
     elif porta_ocupada(config.porta):
         raise SystemExit(f"A porta {config.porta} está sendo usada por outro programa. "
@@ -96,7 +96,7 @@ def main():
 
     app = create_app(config, versao=versao_atual)
     threading.Timer(1.0, lambda: mostrar(url)).start()
-    print(f"Mesclador aberto em {url}  (feche pelo botão Encerrar ou Ctrl+C)")
+    print(f"Área de trabalho aberta em {url}  (feche pelo botão Encerrar ou Ctrl+C)")
     try:
         # 127.0.0.1 = acessível só deste computador
         app.run(host="127.0.0.1", port=config.porta, debug=False)

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block titulo %}Painel da auditoria · Mesclador{% endblock %}
+{% block titulo %}Auditoria · Área de trabalho{% endblock %}
 
 {% block estilos %}
   .auditoria { max-width: 1280px; margin: auto; padding: 28px 24px 60px; }
@@ -74,6 +74,7 @@
 <div class="auditoria">
   <h1>Painel da auditoria</h1>
   <p class="auditoria-intro">Andamento das fichas do mês, lido da planilha e das pastas de prontuários e scanners.</p>
+  <p id="painelRecorte" class="auditoria-intro"></p>
   <div class="auditoria-filtros">
     <label>Mês <input id="painelMes" type="month" min="{{ mes_minimo }}" value="{{ mes_padrao }}"></label>
     <label>Empresa <select id="painelEmpresa"><option value="">Todas as empresas</option>
@@ -94,9 +95,16 @@
 {% block script %}
 <script>
 const mesPainel = $("painelMes"), empresaPainel = $("painelEmpresa");
+const parametrosPainel = new URLSearchParams(location.search);
+const focoPainel = ["atrasadas", "arquivos-novos", "sem-escaneamento"].includes(parametrosPainel.get("foco")) ? parametrosPainel.get("foco") : "";
+const rotulosFoco = {"atrasadas": "Com a equipe há mais de 10 dias", "arquivos-novos": "Arquivo novo após aviso",
+  "sem-escaneamento": "Por auditar sem escaneamento"};
+if (focoPainel) $("painelRecorte").textContent = "Recorte: " + rotulosFoco[focoPainel] + ".";
+const mesDaUrl = parametrosPainel.get("mes");
 const mesLembrado = lembrar("painelMes");
-if (mesLembrado && /^\d{4}-(0[1-9]|1[0-2])$/.test(mesLembrado) &&
-    (!mesPainel.min || mesLembrado >= mesPainel.min)) mesPainel.value = mesLembrado;
+const mesEscolhido = mesDaUrl || mesLembrado;
+if (mesEscolhido && /^\d{4}-(0[1-9]|1[0-2])$/.test(mesEscolhido) &&
+    (!mesPainel.min || mesEscolhido >= mesPainel.min)) mesPainel.value = mesEscolhido;
 let dadosPainel = null;
 const estadosEmpresas = new Map();
 
@@ -140,7 +148,13 @@ function listaPainel(pai, titulo, itens, mensagem, descrever) {
 
 function mostrarPainel() {
   if (!dadosPainel) return;
-  const empresas = dadosPainel.empresas.filter(e => !empresaPainel.value || e.empresa === empresaPainel.value);
+  const empresas = dadosPainel.empresas.filter(e => {
+    if (empresaPainel.value && e.empresa !== empresaPainel.value) return false;
+    if (focoPainel === "atrasadas") return e.pendencias.some(f => f.dias > 10);
+    if (focoPainel === "arquivos-novos") return e.pendencias.some(f => f.scanner === "arquivo_novo_apos_aviso");
+    if (focoPainel === "sem-escaneamento") return e.fichas.some(f => f.estado === "por_auditar" && f.scanner === "falta_escanear");
+    return true;
+  });
   const totais = {lancadas: 0, por_auditar: 0, com_equipe: 0, concluidas: 0,
     sem_devolucao: 0, falta_escanear: 0};
   empresas.forEach(e => {
@@ -163,7 +177,8 @@ function mostrarPainel() {
   });
   const area = $("painelEmpresas");
   area.replaceChildren();
-  if (!empresas.length) area.append(elemento("p", "Nenhuma empresa configurada.", "auditoria-vazio"));
+  if (!empresas.length) area.append(elemento("p", focoPainel ? "Nenhuma ficha neste recorte." :
+    "Nenhuma empresa configurada.", "auditoria-vazio"));
   empresas.forEach(e => {
     const cartao = elemento("details", undefined, "auditoria-empresa");
     const chave = chaveEstadoPainel(e.empresa);
@@ -210,7 +225,9 @@ function mostrarPainel() {
     resumo.append(selos);
     cartao.append(resumo, conteudo);
     const listas = elemento("div", undefined, "auditoria-listas");
-    listaPainel(listas, "Pendências com a equipe", e.pendencias, "Nenhuma pendência com a equipe.", f => {
+    const pendencias = focoPainel === "atrasadas" ? e.pendencias.filter(f => f.dias > 10) :
+      focoPainel === "arquivos-novos" ? e.pendencias.filter(f => f.scanner === "arquivo_novo_apos_aviso") : e.pendencias;
+    if (focoPainel !== "sem-escaneamento") listaPainel(listas, "Pendências com a equipe", pendencias, "Nenhuma pendência com a equipe.", f => {
       const li = elemento("li", `${f.ficha} · ${f.paciente}`);
       li.append(elemento("small", f.devolucao || "devolução não registrada",
         f.faixa ? `auditoria-prazo-${f.faixa}` : ""));
@@ -238,14 +255,15 @@ function mostrarPainel() {
       }
       return li;
     });
-    listaPainel(listas, "Scanners das fichas abertas", e.fichas.filter(f => f.scanner),
+    if (!focoPainel || focoPainel === "sem-escaneamento") listaPainel(listas, "Scanners das fichas abertas", e.fichas.filter(f =>
+      focoPainel === "sem-escaneamento" ? f.estado === "por_auditar" && f.scanner === "falta_escanear" : f.scanner),
       "Nenhuma ficha aberta com scanner disponível.", f =>
       elemento("li", `${f.ficha} · ${f.paciente} · ${textoScanner(f)}`));
-    listaPainel(listas, "Inconsistências", e.inconsistencias, "Nenhuma inconsistência.", i =>
+    if (!focoPainel) listaPainel(listas, "Inconsistências", e.inconsistencias, "Nenhuma inconsistência.", i =>
       elemento("li", `${i.ficha || i.numero || "PDF"} · ${i.motivo.replaceAll("_", " ")}`));
-    listaPainel(listas, "PDFs sem linha", e.pdfs_sem_linha, "Nenhum PDF sem linha.", p =>
+    if (!focoPainel) listaPainel(listas, "PDFs sem linha", e.pdfs_sem_linha, "Nenhum PDF sem linha.", p =>
       elemento("li", `${p.tipo} · ${p.arquivo}`));
-    listaPainel(listas, "Escaneados sem linha na planilha", e.escaneados_sem_linha,
+    if (!focoPainel) listaPainel(listas, "Escaneados sem linha na planilha", e.escaneados_sem_linha,
       "Nenhum escaneado sem linha.", p => elemento("li", p.entrada));
     conteudo.append(listas);
     area.append(cartao);

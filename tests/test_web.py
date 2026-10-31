@@ -148,10 +148,19 @@ def test_seletor_fora_do_mac_avisa(cliente, monkeypatch):
 
 
 def test_pagina_inicial(cliente):
-    assert cliente.get("/").status_code == 200
+    inicio = cliente.get("/")
+    assert inicio.status_code == 200
+    html = inicio.get_data(as_text=True)
+    assert "<title>Início · Área de trabalho</title>" in html
+    assert 'href="/"' in html and 'href="/painel/"' in html
+    assert 'href="/mesclar"' in html and 'href="/converter"' in html
+    assert "/painel/dados?mes=" in html
+    assert "ficha.paciente" not in html and "empresa.fichas" in html
+    assert "Área de trabalho" in html
+    assert '<h1 class="painel-titulo">Mesclar prontuário</h1>' in cliente.get("/mesclar").get_data(as_text=True)
 
 
-@pytest.mark.parametrize("rota", ["/", "/converter"])
+@pytest.mark.parametrize("rota", ["/mesclar", "/converter"])
 def test_ampliacao_tem_setas_e_indicador_nas_duas_telas(cliente, rota):
     class Elementos(HTMLParser):
         def __init__(self):
@@ -183,11 +192,11 @@ def test_telas_abrem_com_e_sem_logo_local(cliente):
     pasta_criada = not pasta_estatica.exists()
     pasta_estatica.mkdir(exist_ok=True)
     try:
-        for rota in ("/", "/converter"):
+        for rota in ("/mesclar", "/converter"):
             assert cliente.get(rota).status_code == 200
 
         logo.write_text('<svg xmlns="http://www.w3.org/2000/svg"></svg>', encoding="utf-8")
-        for rota in ("/", "/converter"):
+        for rota in ("/mesclar", "/converter"):
             assert cliente.get(rota).status_code == 200
     finally:
         logo.unlink(missing_ok=True)

@@ -1,8 +1,8 @@
 # Instruções para agentes neste repositório
 
-Mesclador de Prontuários: app Flask **local** (127.0.0.1) para macOS que junta folhas
-escaneadas em PDF, busca o nome do paciente na planilha de faturamento e converte páginas
-em JPG com ajuste de legibilidade. Leia o `README.md` para o contexto do usuário.
+Área de trabalho: app Flask **local** (127.0.0.1) para macOS. A Início acompanha a
+auditoria; Mesclar prontuário junta folhas escaneadas em PDF e busca o nome do paciente
+na planilha de faturamento; Converter em JPG ajusta a legibilidade. Leia o `README.md` para o contexto do usuário.
 
 ## Regras fixas
 
@@ -32,15 +32,17 @@ em JPG com ajuste de legibilidade. Leia o `README.md` para o contexto do usuári
 mesclador/
   __main__.py   ponto de entrada; detecta app já aberto
   config.py     leitura do config.toml
-  web.py        app Flask: tela de mesclar e rotas gerais
+  web.py        app Flask: Início (/), Mesclar (/mesclar) e rotas gerais
+  painel.py     Auditoria (/painel/) e dados do mês (/painel/dados)
   conversor.py  tela "Converter em JPG" (Blueprint /converter)
   imagens.py    renderização de páginas e ajustes de imagem
   pdfs.py       miniaturas, zip, mesclagem
   planilha.py   leitura da planilha de faturamento e conferência de nomes
   navegador.py  focar/fechar a aba no Chrome/Safari (AppleScript)
   seletor.py    seletor de pastas nativo do macOS
-  templates/    base.html (barra superior + JS comum), index.html, converter.html
-macos/          ícone e scripts do Mesclador.app
+  templates/    base.html (barra superior + JS comum), inicio.html, index.html,
+                painel.html, converter.html
+macos/          ícone e scripts da Área de trabalho.app
 tests/          pytest
 ```
 
