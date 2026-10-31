@@ -45,9 +45,12 @@
   .auditoria-equipe { background: var(--erro); }
   .auditoria-pendentes { background: #d9a232; }
   .auditoria-legenda { color: var(--suave); font-size: 12px; }
-  .auditoria-listas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 265px), 1fr)); gap: 18px; margin-top: 20px; }
-  .auditoria-listas > section { min-width: 0; }
-  .auditoria-listas h3 { margin: 0 0 8px; font-size: 14px; }
+  .auditoria-listas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 20px; }
+  .auditoria-listas > section, .auditoria-listas > details { min-width: 0; }
+  .auditoria-listas > .auditoria-largura-total { grid-column: 1 / -1; }
+  .auditoria-listas h3, .auditoria-listas summary { margin: 0 0 8px; font-size: 14px; font-weight: 700; }
+  .auditoria-listas summary { cursor: pointer; width: fit-content; }
+  .auditoria-listas summary:focus-visible { outline: 3px solid var(--acento); outline-offset: 3px; }
   .auditoria-listas ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 7px; }
   .auditoria-listas li { padding: 9px 10px; border: 1px solid var(--borda); border-radius: 7px;
     background: var(--painel-suave); overflow-wrap: anywhere; }
@@ -66,6 +69,7 @@
   .auditoria-prazo-laranja { color: #d87930; }
   .auditoria-prazo-vermelho { color: var(--erro); }
   @media (max-width: 600px) {
+    .auditoria-listas { grid-template-columns: minmax(0, 1fr); }
     .auditoria { padding: 20px 16px 40px; }
     .auditoria-resumo { padding: 16px 14px 16px 34px; }
     .auditoria-resumo::before { left: 14px; top: 18px; }
@@ -141,7 +145,7 @@ function textoScanner(ficha) {
 
 function listaPainel(pai, titulo, itens, mensagem, descrever) {
   const secao = elemento("section");
-  secao.append(elemento("h3", titulo));
+  secao.append(elemento("h3", `${titulo} (${itens.length})`));
   if (!itens.length) secao.append(elemento("p", mensagem, "auditoria-vazio"));
   else {
     const lista = elemento("ul");
@@ -149,6 +153,7 @@ function listaPainel(pai, titulo, itens, mensagem, descrever) {
     secao.append(lista);
   }
   pai.append(secao);
+  return secao;
 }
 
 function mostrarPainel() {
@@ -213,7 +218,11 @@ function mostrarPainel() {
     resumo.append(barra, elemento("p",
       `${e.contagem.concluidas} aprovadas · ${e.contagem.com_equipe} com a equipe · ${e.contagem.por_auditar} por auditar`,
       "auditoria-legenda"));
+    const faltaEscanear = e.fichas.filter(f =>
+      (f.estado === "por_auditar" || f.estado === "com_equipe") && f.scanner === "falta_escanear");
     const selos = elemento("div", undefined, "auditoria-selos");
+    if (faltaEscanear.length) selos.append(elemento("span",
+      `${faltaEscanear.length} falta escanear`, "auditoria-selo auditoria-selo-aviso"));
     if (e.pendencias.length) {
       const semDevolucao = e.contagem.sem_devolucao ?? e.pendencias.filter(f => !f.ultimo_envio).length;
       selos.append(elemento("span", `${e.pendencias.length} pendência${e.pendencias.length === 1 ? "" : "s"}` +
@@ -232,7 +241,10 @@ function mostrarPainel() {
     const listas = elemento("div", undefined, "auditoria-listas");
     const pendencias = focoPainel === "atrasadas" ? e.pendencias.filter(f => f.dias > 10) :
       focoPainel === "arquivos-novos" ? e.pendencias.filter(f => f.scanner === "arquivo_novo_apos_aviso") : e.pendencias;
-    if (focoPainel !== "sem-escaneamento") listaPainel(listas, "Pendências com a equipe", pendencias, "Nenhuma pendência com a equipe.", f => {
+    listaPainel(listas, "Falta escanear", focoPainel === "sem-escaneamento" ?
+      faltaEscanear.filter(f => f.estado === "por_auditar") : faltaEscanear,
+      "Nada faltando escanear.", f => elemento("li", `${f.ficha} · ${f.paciente} · ${f.tipo}`));
+    listaPainel(listas, "Pendências com a equipe", pendencias, "Nenhuma pendência com a equipe.", f => {
       const li = elemento("li", `${f.ficha} · ${f.paciente}`);
       li.append(elemento("small", f.devolucao || "devolução não registrada",
         f.faixa ? `auditoria-prazo-${f.faixa}` : ""));
@@ -262,16 +274,25 @@ function mostrarPainel() {
       }
       return li;
     });
-    if (!focoPainel || focoPainel === "sem-escaneamento") listaPainel(listas, "Scanners das fichas abertas", e.fichas.filter(f =>
-      focoPainel === "sem-escaneamento" ? f.estado === "por_auditar" && f.scanner === "falta_escanear" : f.scanner),
-      "Nenhuma ficha aberta com scanner disponível.", f =>
-      elemento("li", `${f.ficha} · ${f.paciente} · ${textoScanner(f)}`));
-    if (!focoPainel) listaPainel(listas, "Inconsistências", e.inconsistencias, "Nenhuma inconsistência.", i =>
-      elemento("li", `${i.ficha || i.numero || "PDF"} · ${i.motivo.replaceAll("_", " ")}`));
-    if (!focoPainel) listaPainel(listas, "PDFs sem linha", e.pdfs_sem_linha, "Nenhum PDF sem linha.", p =>
-      elemento("li", `${p.tipo} · ${p.arquivo}`));
-    if (!focoPainel) listaPainel(listas, "Escaneados sem linha na planilha", e.escaneados_sem_linha,
-      "Nenhum escaneado sem linha.", p => elemento("li", p.entrada));
+    const semLinha = [
+      ...e.escaneados_sem_linha.map(item => ({origem: "escaneado no Drive", texto: item.entrada})),
+      ...e.pdfs_sem_linha.map(item => ({origem: "PDF já mesclado", texto: `${item.tipo} · ${item.arquivo}`}))
+    ];
+    listaPainel(listas, "Sem linha na planilha", semLinha, "Nenhum arquivo sem linha.", item => {
+      const li = elemento("li", item.texto);
+      li.append(elemento("small", item.origem));
+      return li;
+    }).classList.add("auditoria-largura-total");
+    const inconsistencias = elemento("details", undefined, "auditoria-largura-total");
+    inconsistencias.append(elemento("summary", `Inconsistências (${e.inconsistencias.length})`));
+    if (!e.inconsistencias.length) inconsistencias.append(elemento("p", "Nenhuma inconsistência.", "auditoria-vazio"));
+    else {
+      const lista = elemento("ul");
+      e.inconsistencias.forEach(i => lista.append(
+        elemento("li", `${i.ficha || i.numero || "PDF"} · ${i.motivo.replaceAll("_", " ")}`)));
+      inconsistencias.append(lista);
+    }
+    listas.append(inconsistencias);
     conteudo.append(listas);
     area.append(cartao);
   });
