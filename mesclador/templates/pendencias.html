@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+{% block titulo %}Pendências · Área de trabalho{% endblock %}
+
+{% block estilos %}
+  .pendencias { max-width: 1280px; margin: auto; padding: 28px 24px 60px; }
+  .pendencias h1 { margin: 0; font-size: 25px; letter-spacing: -.03em; }
+  .pendencias-intro, .pendencias-estado, .pendencias-vazio { color: var(--suave); }
+  .pendencias-intro { margin: 2px 0 18px; }
+  .pendencias-formularios { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); gap: 12px; margin-bottom: 22px; }
+  .pendencias-formulario, .pendencias-empresa { min-width: 0; background: var(--painel);
+    border: 1px solid var(--borda); border-radius: 11px; box-shadow: var(--sombra); }
+  .pendencias-formulario { padding: 16px; display: grid; gap: 10px; }
+  .pendencias-formulario h2 { margin: 0; font-size: 17px; }
+  .pendencias-formulario button { justify-self: start; }
+  .pendencias-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .pendencias-campos label, .pendencias-acao label { min-width: 0; }
+  .pendencias-empresas { display: grid; gap: 16px; }
+  .pendencias-resumo { display: block; padding: 18px 20px 18px 42px; position: relative;
+    cursor: pointer; list-style: none; }
+  .pendencias-resumo::-webkit-details-marker { display: none; }
+  .pendencias-resumo::before { content: "▸"; position: absolute; left: 20px; top: 20px; color: var(--suave); }
+  .pendencias-empresa[open] .pendencias-resumo::before { content: "▾"; }
+  .pendencias-resumo:focus-visible { outline: 3px solid var(--foco); outline-offset: 3px; }
+  .pendencias-resumo h2 { margin: 0; font-size: 19px; overflow-wrap: anywhere; }
+  .pendencias-selos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .pendencias-selo { padding: 3px 8px; border: 1px solid var(--borda); border-radius: 20px;
+    background: var(--painel-suave); font-size: 12px; }
+  .pendencias-selo-aviso { background: var(--aviso-fundo); border-color: var(--aviso-borda); }
+  .pendencias-conteudo { padding: 0 20px 20px; border-top: 1px solid var(--borda); }
+  .pendencias-grupos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 18px; margin-top: 18px; }
+  .pendencias-grupos section { min-width: 0; }
+  .pendencias-grupos h3 { margin: 0 0 8px; font-size: 14px; }
+  .pendencias-grupos ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .pendencias-grupos li { padding: 10px; border: 1px solid var(--borda); border-radius: 7px;
+    background: var(--painel-suave); overflow-wrap: anywhere; }
+  .pendencias-grupos li strong, .pendencias-grupos li small { display: block; }
+  .pendencias-grupos li small { color: var(--suave); }
+  .pendencias-acao { display: grid; gap: 6px; margin-top: 9px; }
+  .pendencias-acao button { justify-self: start; font-size: 12px; }
+  .pendencias-aviso { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 20;
+    max-width: calc(100vw - 32px); padding: 11px 18px; border-radius: 8px; font-weight: 650;
+    background: var(--texto); color: var(--painel); box-shadow: var(--sombra); }
+  .pendencias-aviso[hidden] { display: none; }
+  @media (max-width: 600px) {
+    .pendencias { padding: 20px 16px 40px; }
+    .pendencias-formularios, .pendencias-campos { grid-template-columns: 1fr; }
+    .pendencias-resumo { padding: 16px 14px 16px 34px; }
+    .pendencias-resumo::before { left: 14px; top: 18px; }
+    .pendencias-conteudo { padding: 0 14px 16px; }
+  }
+{% endblock %}
+
+{% block conteudo %}
+<main class="pendencias">
+  <h1>Pendências</h1>
+  <p class="pendencias-intro">Faturas, glosas, notas fiscais e tarefas por empresa.</p>
+  <div class="pendencias-formularios">
+    <form id="formFatura" class="pendencias-formulario">
+      <h2>Registrar fatura</h2>
+      <div class="pendencias-campos">
+        <label>Empresa <select name="empresa" required>{% for empresa in empresas %}<option value="{{ empresa }}">{{ empresa }}</option>{% endfor %}</select></label>
+        <label>Competência <input name="competencia" type="month" required></label>
+        <label>Referência (opcional) <input name="referencia" type="text"></label>
+      </div>
+      <button type="submit">Registrar fatura</button>
+    </form>
+    <form id="formTarefa" class="pendencias-formulario">
+      <h2>Nova tarefa</h2>
+      <div class="pendencias-campos">
+        <label>Empresa <select name="empresa" required>{% for empresa in empresas %}<option value="{{ empresa }}">{{ empresa }}</option>{% endfor %}</select></label>
+        <label>Prazo (opcional) <input name="prazo" type="date"></label>
+        <label>Descrição <input name="texto" type="text" required></label>
+      </div>
+      <button type="submit">Criar tarefa</button>
+    </form>
+    <form id="formNfEmitida" class="pendencias-formulario">
+      <h2>NF emitida</h2>
+      <label>Fatura com NF solicitada <select name="fatura" required><option value="">Lendo faturas…</option></select></label>
+      <label>Data da emissão <input name="data" type="date" required></label>
+      <button type="submit">Registrar emissão</button>
+    </form>
+  </div>
+  <p id="pendenciasEstado" class="pendencias-estado" role="status">Lendo pendências…</p>
+  <div id="pendenciasEmpresas" class="pendencias-empresas"></div>
+</main>
+<div id="pendenciasAviso" class="pendencias-aviso" role="status" aria-live="polite" hidden></div>
+{% endblock %}
+
+{% block script %}
+<script>
+const gruposPendencias = [
+  ["vencidas", "Vencidas"], ["vencendo", "Vencendo"], ["no_prazo", "No prazo"],
+  ["aguardando_terceiros", "Aguardando terceiros"], ["nf_a_solicitar", "NF a solicitar"],
+  ["tarefas", "Tarefas"]
+];
+const estadosPendencias = new Map();
+let temporizadorPendencias;
+function elementoPendencias(tag, texto, classe) {
+  const no = document.createElement(tag);
+  if (texto !== undefined) no.textContent = String(texto);
+  if (classe) no.className = classe;
+  return no;
+}
+function avisoPendencias(texto) {
+  const aviso = $("pendenciasAviso");
+  aviso.textContent = texto; aviso.hidden = false;
+  clearTimeout(temporizadorPendencias);
+  temporizadorPendencias = setTimeout(() => { aviso.hidden = true; }, 5000);
+}
+async function enviarPendencias(caminho, dados, botao, confirmacao) {
+  botao.disabled = true;
+  try {
+    const resposta = await fetch(caminho, {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(dados)});
+    const resultado = await resposta.json();
+    if (!resposta.ok) throw new Error(resultado.erro || "Não foi possível salvar.");
+    await lerPendencias();
+    avisoPendencias(confirmacao);
+    return true;
+  } catch (erro) {
+    avisoPendencias(erro.message);
+    return false;
+  } finally { botao.disabled = false; }
+}
+function campoDataPendencias(rotulo) {
+  const etiqueta = elementoPendencias("label", rotulo);
+  const campo = elementoPendencias("input");
+  campo.type = "date"; campo.required = true;
+  etiqueta.append(campo);
+  return [etiqueta, campo];
+}
+function acaoPendencias(pai, rotulo, campo, caminho, dados, mensagem) {
+  const formulario = elementoPendencias("form", undefined, "pendencias-acao");
+  if (campo) formulario.append(campo[0]);
+  const botao = elementoPendencias("button", rotulo);
+  botao.type = "submit";
+  formulario.append(botao);
+  formulario.addEventListener("submit", async evento => {
+    evento.preventDefault();
+    await enviarPendencias(caminho, {...dados, ...(campo ? {[campo[2]]: campo[1].value} : {})},
+      botao, mensagem);
+  });
+  pai.append(formulario);
+}
+function prazoPendencias(item, grupo) {
+  if (grupo === "aguardando_terceiros") return `${item.dias_de_espera} dia(s) de espera · Data-limite: aguardando ofício`;
+  if (grupo === "nf_a_solicitar") return "Data-limite: não definida";
+  if (!item.limite) return "Sem prazo · Data-limite: não definida";
+  const dias = item.dias_restantes;
+  const descricao = dias < 0 ? `${-dias} dia(s) de atraso` : `${dias} dia(s) restantes`;
+  return `${descricao} · Data-limite: ${item.limite}`;
+}
+function itemPendencias(item, grupo) {
+  const linha = elementoPendencias("li");
+  const titulo = grupo === "tarefas" ? item.texto :
+    `Competência ${item.competencia}${item.referencia ? " · " + item.referencia : ""}`;
+  linha.append(elementoPendencias("strong", titulo),
+    elementoPendencias("small", prazoPendencias(item, grupo)));
+  if (grupo === "aguardando_terceiros") {
+    const data = campoDataPendencias("Chegou o ofício de glosa em"); data[2] = "oficio_data";
+    acaoPendencias(linha, "Chegou o ofício de glosa", data,
+      `/pendencias/fatura/${item.id}`, {}, "Chegada do ofício registrada.");
+  } else if (["vencidas", "vencendo", "no_prazo"].includes(grupo)) {
+    const data = campoDataPendencias("Respondi a glosa em"); data[2] = "resposta_data";
+    acaoPendencias(linha, "Respondi a glosa", data,
+      `/pendencias/fatura/${item.id}`, {}, "Resposta à glosa registrada.");
+  } else if (grupo === "nf_a_solicitar") {
+    const data = campoDataPendencias("Data da NF"); data[2] = "nf_data";
+    acaoPendencias(linha, "NF solicitada", data,
+      `/pendencias/fatura/${item.id}`, {nf: "solicitada"}, "NF solicitada registrada.");
+    const emissao = campoDataPendencias("Data da emissão"); emissao[2] = "nf_data";
+    acaoPendencias(linha, "NF emitida", emissao,
+      `/pendencias/fatura/${item.id}`, {nf: "emitida"}, "NF emitida registrada.");
+  } else if (grupo === "tarefas") {
+    acaoPendencias(linha, "Concluir tarefa", null,
+      `/pendencias/tarefa/${item.id}`, {concluida: true}, "Tarefa concluída.");
+  }
+  return linha;
+}
+function mostrarPendencias(dados) {
+  const area = $("pendenciasEmpresas");
+  area.replaceChildren();
+  if (!dados.empresas.length) area.append(elementoPendencias("p", "Nenhuma empresa configurada.", "pendencias-vazio"));
+  dados.empresas.forEach(empresa => {
+    const cartao = elementoPendencias("details", undefined, "pendencias-empresa");
+    const chave = `pendenciasAberta:${empresa.empresa}`;
+    cartao.open = estadosPendencias.has(chave) ? estadosPendencias.get(chave) : lembrar(chave) === "aberta";
+    cartao.addEventListener("toggle", () => {
+      estadosPendencias.set(chave, cartao.open);
+      guardar(chave, cartao.open ? "aberta" : "fechada");
+    });
+    const resumo = elementoPendencias("summary", undefined, "pendencias-resumo");
+    resumo.append(elementoPendencias("h2", empresa.empresa));
+    const selos = elementoPendencias("div", undefined, "pendencias-selos");
+    [["vencidas", "vencidas"], ["vencendo", "vencendo"],
+      ["aguardando_terceiros", "aguardando"], ["nf_a_solicitar", "NF a solicitar"]]
+      .forEach(([chaveGrupo, rotulo]) => selos.append(elementoPendencias("span",
+        `${empresa.contagens[chaveGrupo]} ${rotulo}`,
+        "pendencias-selo" + (chaveGrupo === "vencidas" && empresa.contagens[chaveGrupo] ? " pendencias-selo-aviso" : ""))));
+    resumo.append(selos); cartao.append(resumo);
+    const conteudo = elementoPendencias("div", undefined, "pendencias-conteudo");
+    const grupos = elementoPendencias("div", undefined, "pendencias-grupos");
+    gruposPendencias.forEach(([chaveGrupo, rotulo]) => {
+      const secao = elementoPendencias("section");
+      secao.append(elementoPendencias("h3", `${rotulo} (${empresa.contagens[chaveGrupo]})`));
+      const itens = empresa.grupos[chaveGrupo];
+      if (!itens.length) secao.append(elementoPendencias("p", "Nenhum item.", "pendencias-vazio"));
+      else {
+        const lista = elementoPendencias("ul");
+        itens.forEach(item => lista.append(itemPendencias(item, chaveGrupo)));
+        secao.append(lista);
+      }
+      grupos.append(secao);
+    });
+    conteudo.append(grupos); cartao.append(conteudo); area.append(cartao);
+  });
+}
+async function lerPendencias() {
+  try {
+    const resposta = await fetch("/pendencias/dados");
+    const dados = await resposta.json();
+    if (!resposta.ok) throw new Error(dados.erro || "Não foi possível ler as pendências.");
+    mostrarPendencias(dados);
+    await lerNfsSolicitadas();
+    $("pendenciasEstado").textContent = "Atualizado em " + dados.hoje + ".";
+  } catch (erro) {
+    $("pendenciasEstado").textContent = erro.message;
+    throw erro;
+  }
+}
+async function lerNfsSolicitadas() {
+  const resposta = await fetch("/pendencias/nfs-solicitadas");
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados.erro || "Não foi possível ler as NFs solicitadas.");
+  const seletor = $("formNfEmitida").elements.fatura;
+  seletor.replaceChildren();
+  const vazio = elementoPendencias("option", dados.length ? "Escolha a fatura" : "Nenhuma NF solicitada");
+  vazio.value = ""; seletor.append(vazio);
+  dados.forEach(item => {
+    const opcao = elementoPendencias("option",
+      `${item.empresa} · ${item.competencia}${item.referencia ? " · " + item.referencia : ""}`);
+    opcao.value = String(item.id); seletor.append(opcao);
+  });
+}
+$("formFatura").addEventListener("submit", async evento => {
+  evento.preventDefault();
+  const formulario = evento.currentTarget, campos = formulario.elements;
+  const salvo = await enviarPendencias("/pendencias/fatura", {
+    empresa: campos.empresa.value, competencia: campos.competencia.value, referencia: campos.referencia.value
+  }, formulario.querySelector("button[type=submit]"), "Fatura registrada.");
+  if (salvo) { campos.competencia.value = ""; campos.referencia.value = ""; }
+});
+$("formTarefa").addEventListener("submit", async evento => {
+  evento.preventDefault();
+  const formulario = evento.currentTarget, campos = formulario.elements;
+  const salvo = await enviarPendencias("/pendencias/tarefa", {
+    empresa: campos.empresa.value, texto: campos.texto.value,
+    prazo: campos.prazo.value || null
+  }, formulario.querySelector("button[type=submit]"), "Tarefa criada.");
+  if (salvo) { campos.texto.value = ""; campos.prazo.value = ""; }
+});
+$("formNfEmitida").addEventListener("submit", async evento => {
+  evento.preventDefault();
+  const formulario = evento.currentTarget, campos = formulario.elements;
+  const salvo = await enviarPendencias(`/pendencias/fatura/${campos.fatura.value}`,
+    {nf: "emitida", nf_data: campos.data.value},
+    formulario.querySelector("button[type=submit]"), "NF emitida registrada.");
+  if (salvo) campos.data.value = "";
+});
+lerPendencias().catch(() => {});
+</script>
+{% endblock %}
