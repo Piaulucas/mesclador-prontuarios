@@ -30,7 +30,33 @@ def test_tela_e_link_do_painel(cliente):
     assert 'parametrosPainel.get("foco")' in html
     assert 'f.dias > 10' in html
     assert 'f.scanner === "arquivo_novo_apos_aviso"' in html
-    assert 'f.estado === "por_auditar" && f.scanner === "falta_escanear"' in html
+    assert '(f.estado === "por_auditar" || f.estado === "com_equipe") && f.scanner === "falta_escanear"' in html
+
+
+def test_painel_organiza_as_quatro_secoes_na_ordem(cliente):
+    html = cliente.get("/painel/").get_data(as_text=True)
+    secoes = [
+        'listaPainel(listas, "Falta escanear"',
+        'listaPainel(listas, "Pendências com a equipe"',
+        'listaPainel(listas, "Sem linha na planilha"',
+        'elemento("summary", `Inconsistências (${e.inconsistencias.length})`)',
+    ]
+    posicoes = [html.index(secao) for secao in secoes]
+    assert posicoes == sorted(posicoes)
+    assert "Scanners das fichas abertas" not in html
+    assert '`${titulo} (${itens.length})`' in html
+    assert 'faltaEscanear.filter(f => f.estado === "por_auditar")' in html
+    assert '`${f.ficha} · ${f.paciente} · ${f.tipo}`' in html
+    assert '`${faltaEscanear.length} falta escanear`' in html
+    assert 'origem: "escaneado no Drive"' in html
+    assert 'origem: "PDF já mesclado"' in html
+    assert 'li.append(elemento("small", item.origem))' in html
+    assert 'listaPainel(listas, "Sem linha na planilha", semLinha' in html
+    assert 'const inconsistencias = elemento("details"' in html
+    assert 'inconsistencias.open =' not in html
+    assert 'grid-template-columns: repeat(2, minmax(0, 1fr))' in html
+    assert 'grid-template-columns: minmax(0, 1fr)' in html
+    assert 'grid-column: 1 / -1' in html
 
 
 def test_painel_tem_caixas_recolhiveis_e_lembra_o_estado(cliente):
@@ -250,5 +276,5 @@ def test_painel_mostra_scanners_e_escaneados_sem_linha(config, pasta_planilhas, 
     assert [n["entrada"] for n in empresa["escaneados_sem_linha"]] == ["Pessoa Sem Linha"]
     assert "Pasta de scanners" in dados["empresas"][1]["aviso"]
     html = cliente.get("/painel/").get_data(as_text=True)
-    assert "Escaneados sem linha na planilha" in html
+    assert "Sem linha na planilha" in html
     assert "Falta a equipe escanear" in html
