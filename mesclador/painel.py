@@ -111,8 +111,8 @@ def criar_blueprint(config):
             return jsonify(erro="Mês, empresa, ficha ou paciente inválido."), 400
         if envio is not None:
             if (not isinstance(envio, dict) or not data_valida(envio.get("data"))
-                    or not isinstance(envio.get("pedido"), str) or not envio["pedido"].strip()):
-                return jsonify(erro="Data ou pedido inválido."), 400
+                    or not isinstance(envio.get("pedido", ""), str)):
+                return jsonify(erro="Data ou nota inválida."), 400
         elif (not isinstance(correcao, dict) or not data_valida(correcao.get("data"))
               or correcao.get("situacao") not in ("nao_recebida", "parcial", "recebida")):
             return jsonify(erro="Data ou situação inválida."), 400
@@ -136,7 +136,7 @@ def criar_blueprint(config):
         atual = registros["fichas"].setdefault(ficha, {"paciente": planilha.normalizar(linha["paciente"]),
                                                   "envios": []})
         if envio is not None:
-            atual["envios"].append({"data": envio["data"], "pedido": envio["pedido"].strip()})
+            atual["envios"].append({"data": envio["data"], "pedido": envio.get("pedido", "").strip()})
         else:
             atual["correcao"] = {"situacao": correcao["situacao"], "data": correcao["data"]}
         auditoria.salvar_registros(config, empresa, mes, registros)

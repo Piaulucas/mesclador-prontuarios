@@ -150,22 +150,35 @@ def listar_scanners(local, ano, mes):
     nomes = []
     try:
         def visitar(diretorio):
+            modificacao_mais_recente = None
             with os.scandir(diretorio) as entradas:
                 for entrada in entradas:
                     if entrada.is_dir():
                         if formato == "pastas_por_paciente":
                             nome = planilha.nome_do_arquivo(entrada.name)
+                            modificacao = visitar(entrada.path)
                             if nome:
-                                nomes.append({"nome": nome, "entrada": entrada.name})
-                            visitar(entrada.path)
+                                nomes.append({"nome": nome, "entrada": entrada.name,
+                                              "modificado": modificacao.date().isoformat() if modificacao else None})
+                            if modificacao and (modificacao_mais_recente is None or
+                                                modificacao > modificacao_mais_recente):
+                                modificacao_mais_recente = modificacao
                     elif entrada.is_file():
+                        modificacao = datetime.fromtimestamp(entrada.stat().st_mtime)
                         if formato == "arquivos_soltos":
-                            modificacao = datetime.fromtimestamp(entrada.stat().st_mtime)
-                            if (modificacao.year, modificacao.month) != (ano, mes):
-                                continue
-                        nome = planilha.nome_do_arquivo(entrada.name)
-                        if nome:
-                            nomes.append({"nome": nome, "entrada": entrada.name})
+                            nome = planilha.nome_do_arquivo(entrada.name)
+                            if nome:
+                                nomes.append({"nome": nome, "entrada": entrada.name,
+                                              "modificado": modificacao.date().isoformat(),
+                                              "do_mes": (modificacao.year, modificacao.month) == (ano, mes)})
+                        else:
+                            nome = planilha.nome_do_arquivo(entrada.name)
+                            if nome:
+                                nomes.append({"nome": nome, "entrada": entrada.name,
+                                              "modificado": modificacao.date().isoformat()})
+                            if modificacao_mais_recente is None or modificacao > modificacao_mais_recente:
+                                modificacao_mais_recente = modificacao
+            return modificacao_mais_recente
         visitar(pasta)
     except OSError as erro:
         return [], f"Não foi possível listar scanners: {erro}"
@@ -179,12 +192,23 @@ def conferir_scanners(fichas, nomes, disponivel=True):
         item = dict(ficha)
         if disponivel and ficha["estado"] in {"por_auditar", "com_equipe"}:
             item["scanner"] = ("escaneada_aguardando_auditoria" if any(
-                planilha.nomes_conferem(nome["nome"], ficha["paciente"]) for nome in nomes)
+                nome.get("do_mes", True) and planilha.nomes_conferem(nome["nome"], ficha["paciente"])
+                for nome in nomes)
                 else "falta_escanear")
+            if ficha["estado"] == "com_equipe" and ficha.get("ultimo_envio"):
+                posteriores = [nome["modificado"] for nome in nomes
+                               if nome.get("modificado") and
+                               nome["modificado"] > ficha["ultimo_envio"]["data"] and
+                               planilha.nomes_conferem(nome["nome"], ficha["paciente"])]
+                if posteriores:
+                    item["scanner"] = "arquivo_novo_apos_aviso"
+                    item["arquivo_novo_em"] = max(posteriores)
         resultado.append(item)
     sem_linha = []
     vistos = set()
     for nome in nomes:
+        if not nome.get("do_mes", True):
+            continue
         if (not any(planilha.nomes_conferem(nome["nome"], ficha["paciente"]) for ficha in fichas)
                 and nome["nome"] not in vistos):
             sem_linha.append(nome)
