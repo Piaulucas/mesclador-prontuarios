@@ -150,6 +150,8 @@ def nome_do_arquivo(nome_arquivo):
     nome = re.sub(r"\([^)]*\)|\[[^]]*\]", " ", nome)
     nome = re.sub(r"(?:[_\s-]\d+)+$", "", nome)
     nome = normalizar(nome.replace("_", " ").replace("-", " "))
+    if not re.search(r"[A-Z]", nome):   # só números (ex.: 2026-10-30_002): nome automático do scanner
+        return None
     if len(_tokens(nome)) < 2 or _tokens(nome)[0] in {"SCAN", "IMG", "FORMULARIO", "BDV", "FDR", "BOLETIM", "FICHA"}:
         return None
     return nome

@@ -77,6 +77,11 @@ def test_nome_do_arquivo_remove_tipo_e_pagina():
     assert planilha.nome_do_arquivo("Maria_Teste [BDV]_1.pdf") == "MARIA TESTE"
     assert planilha.nome_do_arquivo("Maria Teste (FDR) 2.jpg") == "MARIA TESTE"
     assert planilha.nome_do_arquivo("José da Silva [FDR].jpg") == "JOSE DA SILVA"
+
+
+def test_nome_do_arquivo_ignora_nome_automatico_do_scanner():
+    assert planilha.nome_do_arquivo("2026-10-30_002 (1).pdf") is None
+    assert planilha.nome_do_arquivo("20261030 002.pdf") is None
     for nome in ("scan_1.jpg", "IMG_0001.jpg", "Formulario.jpg", "Maria.jpg", "Boletim de Viagem.pdf"):
         assert planilha.nome_do_arquivo(nome) is None
 
