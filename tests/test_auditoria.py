@@ -233,6 +233,20 @@ def test_scanners_arquivos_soltos_filtram_mes_e_extraem_nome(tmp_path):
     assert [n["nome"] for n in sem_linha] == ["PESSOA SEM LINHA"]
 
 
+
+@pytest.mark.parametrize("formato", ["arquivos_soltos", "pastas_por_paciente"])
+def test_scanners_ignoram_arquivos_ocultos_do_macos(tmp_path, formato):
+    (tmp_path / ".DS_Store").write_bytes(b"x")
+    (tmp_path / "._Ana Exemplo (BDV).pdf").write_bytes(b"x")
+    (tmp_path / ".pasta_oculta").mkdir()
+    (tmp_path / "Ana Exemplo").mkdir()
+    (tmp_path / "Ana Exemplo" / ".DS_Store").write_bytes(b"x")
+    (tmp_path / "Ana Exemplo (BDV).pdf").touch()
+    nomes, aviso = auditoria.listar_scanners({"pasta": tmp_path, "formato": formato}, 2026, 10)
+    assert aviso is None
+    assert all(not n["entrada"].startswith(".") for n in nomes)
+    assert {n["nome"] for n in nomes} == {"ANA EXEMPLO"}
+
 def test_scanners_em_pasta_usam_data_do_arquivo_mais_recente(tmp_path):
     pasta = tmp_path / "Ana Exemplo"
     (pasta / "folhas").mkdir(parents=True)
