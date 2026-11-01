@@ -26,7 +26,9 @@ def test_tela_e_link_do_painel(cliente):
     assert "Avisei a equipe" in html
     assert "Parcial, reenviei" in html
     assert "if (!f.pode_avisar)" in html
-    assert "Equipe já avisada · aguardando o reenvio" in html
+    assert "Equipe avisada em ${dia}/${mes}/${ano.slice(2)} · aguardando o reenvio" in html
+    assert "com a equipe`" in html and "auditoria-pendencia-dias" in html
+    assert "Nota do último aviso: " in html and "auditoria-nota" in html
     assert "Situação da correção" not in html
     assert "chegou arquivo novo em" in html
     assert 'parametrosPainel.get("foco")' in html
