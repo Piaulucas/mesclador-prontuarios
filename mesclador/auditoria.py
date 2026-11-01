@@ -153,6 +153,8 @@ def listar_scanners(local, ano, mes):
             modificacao_mais_recente = None
             with os.scandir(diretorio) as entradas:
                 for entrada in entradas:
+                    if entrada.name.startswith("."):
+                        continue  # .DS_Store, ._* e outros ocultos do macOS
                     if entrada.is_dir():
                         if formato == "pastas_por_paciente":
                             nome = planilha.nome_do_arquivo(entrada.name)
