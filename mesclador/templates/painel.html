@@ -56,6 +56,7 @@
     background: var(--painel-suave); overflow-wrap: anywhere; }
   .auditoria-listas li small { display: block; color: var(--suave); }
   .auditoria-vazio { color: var(--suave); }
+  .auditoria-aguardando { display: block; margin-top: 6px; font-style: italic; }
   .auditoria-registro { display: grid; gap: 6px; margin-top: 9px; }
   .auditoria-registro input { min-width: 0; width: 100%; }
   .auditoria-registro button { width: fit-content; }
@@ -252,6 +253,11 @@ function mostrarPainel() {
       if (f.comentario) li.append(elemento("small", f.comentario));
       if (f.scanner === "arquivo_novo_apos_aviso") li.append(elemento("small", textoScanner(f),
         "auditoria-arquivo-novo"));
+      if (!f.pode_avisar) {
+        // Prazo da equipe já está correndo: novo aviso só quando chegar arquivo novo.
+        li.append(elemento("small", "Equipe já avisada · aguardando o reenvio", "auditoria-aguardando"));
+        return li;
+      }
       const formulario = elemento("form", undefined, "auditoria-registro");
       const data = elemento("input"); data.type = "date"; data.required = true;
       data.value = dadosPainel.hoje; data.setAttribute("aria-label", `Data do aviso de ${f.ficha}`);

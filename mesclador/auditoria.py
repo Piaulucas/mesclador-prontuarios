@@ -218,6 +218,16 @@ def conferir_scanners(fichas, nomes, disponivel=True):
     return resultado, sem_linha
 
 
+def pode_avisar(ficha):
+    """Novo aviso à equipe só sem aviso anterior ou quando chegou arquivo novo depois dele.
+
+    Depois do aviso o prazo da equipe já está correndo; outro aviso só faz sentido quando a
+    equipe reenviou e a revisão achou nova pendência. Sem leitura dos scanners não há como
+    saber se a equipe reenviou, então o aviso continua liberado.
+    """
+    return ("ultimo_envio" not in ficha or ficha.get("scanner") is None
+            or ficha["scanner"] == "arquivo_novo_apos_aviso")
+
 def _cor_da_celula(celula):
     preenchimento = celula.fill
     if preenchimento.patternType is None:
