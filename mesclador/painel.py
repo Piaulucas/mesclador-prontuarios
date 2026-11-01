@@ -8,6 +8,29 @@ from flask import Blueprint, jsonify, render_template, request
 from . import auditoria, planilha
 
 
+def mes_padrao(config, hoje=None):
+    """Mês que as telas abrem: o atual, ou o anterior enquanto o atual ainda não tem planilha
+    em nenhuma empresa (virada do mês, com o anterior ainda em andamento)."""
+    hoje = hoje or date.today()
+    atual = (hoje.year, hoje.month)
+    anterior = (hoje.year - (hoje.month == 1), 12 if hoje.month == 1 else hoje.month - 1)
+
+    def tem_planilha(ano_mes):
+        for base in config.empresas.values():
+            try:
+                if planilha.listar_planilhas(base, *ano_mes, somente_do_mes=True):
+                    return True
+            except OSError:
+                continue
+        return False
+
+    texto = lambda ano_mes: f"{ano_mes[0]}-{ano_mes[1]:02d}"
+    if (not tem_planilha(atual) and tem_planilha(anterior)
+            and texto(anterior) >= (config.mes_inicial or "")):
+        return texto(anterior)
+    return max(texto(atual), config.mes_inicial or "")
+
+
 def criar_blueprint(config):
     bp = Blueprint("painel", __name__, url_prefix="/painel")
 
@@ -27,10 +50,8 @@ def criar_blueprint(config):
 
     @bp.get("/")
     def inicio():
-        hoje = date.today()
-        mes_padrao = max(f"{hoje.year}-{hoje.month:02d}", config.mes_inicial or "")
         return render_template("painel.html", pagina="painel", empresas=list(config.empresas),
-                               mes_padrao=mes_padrao, mes_minimo=config.mes_inicial)
+                               mes_padrao=mes_padrao(config), mes_minimo=config.mes_inicial)
 
     @bp.get("/dados")
     def dados():

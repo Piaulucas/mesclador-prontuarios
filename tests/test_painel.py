@@ -278,3 +278,32 @@ def test_painel_mostra_scanners_e_escaneados_sem_linha(config, pasta_planilhas, 
     html = cliente.get("/painel/").get_data(as_text=True)
     assert "Sem linha na planilha" in html
     assert "Falta a equipe escanear" in html
+
+
+def test_mes_padrao_abre_o_anterior_ate_o_atual_ter_planilha(tmp_path):
+    from datetime import date
+    from types import SimpleNamespace
+    from mesclador.painel import mes_padrao
+    base = tmp_path / "empresa"
+    (base / "2026").mkdir(parents=True)
+    (base / "2026" / "OUTUBRO.xlsx").write_bytes(b"")
+    config = SimpleNamespace(empresas={"A": base, "B": ""}, mes_inicial="2026-10")
+    assert mes_padrao(config, date(2026, 11, 1)) == "2026-10"
+    (base / "2026" / "NOVEMBRO.xlsx").write_bytes(b"")
+    assert mes_padrao(config, date(2026, 11, 1)) == "2026-11"
+    assert mes_padrao(config, date(2026, 10, 15)) == "2026-10"
+
+
+def test_mes_padrao_respeita_mes_inicial_e_virada_de_ano(tmp_path):
+    from datetime import date
+    from types import SimpleNamespace
+    from mesclador.painel import mes_padrao
+    base = tmp_path / "empresa"
+    (base / "2026").mkdir(parents=True)
+    (base / "2026" / "DEZEMBRO.xlsx").write_bytes(b"")
+    config = SimpleNamespace(empresas={"A": base}, mes_inicial="2026-10")
+    assert mes_padrao(config, date(2027, 1, 3)) == "2026-12"
+    config.mes_inicial = "2027-01"
+    assert mes_padrao(config, date(2027, 1, 3)) == "2027-01"
+    config.empresas = {"A": tmp_path / "nao_existe"}
+    assert mes_padrao(config, date(2027, 1, 3)) == "2027-01"
