@@ -6,7 +6,6 @@ import shutil
 import tempfile
 import threading
 import uuid
-from datetime import date
 from pathlib import Path
 
 from flask import Flask, abort, jsonify, render_template, request, send_file
@@ -80,17 +79,14 @@ def create_app(config, pasta_temp=None, versao=None):
 
     @app.get("/")
     def index():
-        hoje = date.today()
-        mes_padrao = max(f"{hoje.year}-{hoje.month:02d}", config.mes_inicial or "")
-        return render_template("inicio.html", pagina="inicio", mes_padrao=mes_padrao,
+        return render_template("inicio.html", pagina="inicio", mes_padrao=painel.mes_padrao(config),
                                mes_minimo=config.mes_inicial)
 
     @app.get("/mesclar")
     def mesclar():
-        hoje = date.today()
-        mes_padrao = max(f"{hoje.year}-{hoje.month:02d}", config.mes_inicial or "")
         return render_template("index.html", pagina="mesclar", empresas=list(config.empresas),
-                               tipos=config.tipos, mes_padrao=mes_padrao, mes_minimo=config.mes_inicial)
+                               tipos=config.tipos, mes_padrao=painel.mes_padrao(config),
+                               mes_minimo=config.mes_inicial)
 
     @app.get("/converter")
     def converter():
