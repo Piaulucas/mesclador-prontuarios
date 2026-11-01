@@ -97,7 +97,8 @@ def criar_blueprint(config):
                     item["contagem"] = auditoria.contar(item["fichas"])
                     item["contagem"]["falta_escanear"] = sum(
                         ficha.get("scanner") == "falta_escanear" for ficha in item["fichas"])
-                    item["pendencias"] = auditoria.pendencias(item["fichas"])
+                    item["pendencias"] = [{**ficha, "pode_avisar": auditoria.pode_avisar(ficha)}
+                                          for ficha in auditoria.pendencias(item["fichas"])]
                     item["contagem"]["sem_devolucao"] = sum(
                         "ultimo_envio" not in ficha for ficha in item["pendencias"])
                 else:
@@ -154,6 +155,14 @@ def criar_blueprint(config):
         atual = registros.setdefault("fichas", {}).get(ficha)
         if atual and not planilha.nomes_conferem(atual.get("paciente", ""), linha["paciente"]):
             return jsonify(erro="Há registro de outro paciente para esta ficha."), 409
+        if envio is not None:
+            conferida, _ = auditoria.aplicar_registros([linha], registros, date.today())
+            scanners = auditoria.localizar_scanners(config, empresa, ano, numero_mes)
+            nomes, aviso_scanners = auditoria.listar_scanners(scanners, ano, numero_mes)
+            conferida, _ = auditoria.conferir_scanners(
+                conferida, nomes, scanners["pasta"] is not None and not aviso_scanners)
+            if not auditoria.pode_avisar(conferida[0]):
+                return jsonify(erro="A equipe já foi avisada. Novo aviso só depois que ela reenviar."), 409
         atual = registros["fichas"].setdefault(ficha, {"paciente": planilha.normalizar(linha["paciente"]),
                                                   "envios": []})
         if envio is not None:

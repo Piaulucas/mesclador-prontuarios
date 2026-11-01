@@ -25,6 +25,8 @@ def test_tela_e_link_do_painel(cliente):
     assert "textContent" in html
     assert "Avisei a equipe" in html
     assert "Parcial, reenviei" in html
+    assert "if (!f.pode_avisar)" in html
+    assert "Equipe já avisada · aguardando o reenvio" in html
     assert "Situação da correção" not in html
     assert "chegou arquivo novo em" in html
     assert 'parametrosPainel.get("foco")' in html
@@ -307,3 +309,48 @@ def test_mes_padrao_respeita_mes_inicial_e_virada_de_ano(tmp_path):
     assert mes_padrao(config, date(2027, 1, 3)) == "2027-01"
     config.empresas = {"A": tmp_path / "nao_existe"}
     assert mes_padrao(config, date(2027, 1, 3)) == "2027-01"
+
+
+def test_segundo_aviso_so_depois_de_arquivo_novo_da_equipe(config, pasta_planilhas, tmp_path):
+    caminho = pasta_planilhas / "2026" / "10_Planilha_de_Faturamento_Exemplo_Outubro_26.xlsx"
+    livro = load_workbook(caminho)
+    livro["Remoção ADULTO-PED"]["E16"].fill = PatternFill(fill_type="solid", fgColor="FFFF0000")
+    livro.save(caminho)
+    livro.close()
+    raiz = tmp_path / "scanners_ficticios"
+    raiz.mkdir()
+    arquivo = raiz / "Jose da Silva (BDV).pdf"
+    arquivo.touch()
+    os.utime(arquivo, (datetime(2026, 10, 10, 12).timestamp(),) * 2)
+    config.auditoria_scanners = {"EMPRESA A": {"pasta": str(raiz), "formato": "arquivos_soltos"}}
+    cliente = create_app(config, pasta_temp=tmp_path / "temporarios").test_client()
+    base = {"mes": "2026-10", "empresa": "EMPRESA A", "ficha": "ADU45", "paciente": "José da Silva"}
+
+    def pendencia():
+        return cliente.get("/painel/dados?mes=2026-10").get_json()["empresas"][0]["pendencias"][0]
+
+    assert pendencia()["pode_avisar"] is True
+    assert cliente.post("/painel/registro", json={**base,
+        "envio": {"data": "2026-10-20", "pedido": "BDV fictício"}}).status_code == 200
+    assert pendencia()["pode_avisar"] is False
+    resposta = cliente.post("/painel/registro", json={**base,
+        "envio": {"data": "2026-10-22", "pedido": "de novo"}})
+    assert resposta.status_code == 409
+    assert "já foi avisada" in resposta.get_json()["erro"]
+    # A equipe reenviou: arquivo novo depois do aviso libera um novo aviso.
+    os.utime(arquivo, (datetime(2026, 10, 27, 12).timestamp(),) * 2)
+    assert pendencia()["pode_avisar"] is True
+    assert cliente.post("/painel/registro", json={**base,
+        "envio": {"data": "2026-10-28", "pedido": "nova pendência"}}).status_code == 200
+    assert pendencia()["pode_avisar"] is False
+    registro = auditoria.ler_registros(config, "EMPRESA A", "2026-10")["fichas"]["ADU45"]
+    assert [e["data"] for e in registro["envios"]] == ["2026-10-20", "2026-10-28"]
+
+
+def test_pode_avisar():
+    assert auditoria.pode_avisar({"scanner": "falta_escanear"})
+    avisada = {"ultimo_envio": {"data": "2026-10-20", "pedido": ""}}
+    assert auditoria.pode_avisar(avisada)  # sem leitura dos scanners
+    for scanner, esperado in [("falta_escanear", False), ("escaneada_aguardando_auditoria", False),
+                              ("arquivo_novo_apos_aviso", True)]:
+        assert auditoria.pode_avisar({**avisada, "scanner": scanner}) is esperado
