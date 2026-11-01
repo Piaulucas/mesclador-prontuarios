@@ -551,3 +551,11 @@ def test_indicador_de_horas_mostra_empresa_e_tempo_em_caixa_com_borda(cliente):
     assert '${horasEmpresa || "Sem empresa"} · ${tempo}' in html
     assert '● ${horasTipo}' not in html
     assert 'indicador.title = horasDescricao' in html
+
+
+def test_inicio_tem_seletor_de_mes_compartilhado_com_a_auditoria(cliente):
+    html = cliente.get("/").get_data(as_text=True)
+    assert 'id="inicioMes" type="month"' in html
+    assert 'lembrar("painelMes")' in html
+    assert 'guardar("painelMes", campoMes.value)' in html
+    assert 'encodeURIComponent(campoMes.value)' in html

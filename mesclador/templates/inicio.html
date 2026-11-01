@@ -6,6 +6,8 @@
   .inicio h1 { margin: 0; font-size: 28px; letter-spacing: -.03em; }
   .inicio h2 { margin: 0 0 14px; font-size: 19px; letter-spacing: -.02em; }
   .inicio-secao { margin-top: 30px; }
+  .inicio-cabecalho { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+  .inicio-mes { color: var(--suave); font-size: 13px; }
   .inicio-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; }
   .inicio-cartao, .inicio-empresa, .inicio-reserva { min-width: 0; padding: 17px;
     background: var(--painel); border: 1px solid var(--borda); border-radius: 11px;
@@ -41,7 +43,10 @@
 <main class="inicio">
   <h1>Início</h1>
   <section class="inicio-secao" aria-labelledby="inicioAndamento">
-    <h2 id="inicioAndamento">Hoje</h2>
+    <div class="inicio-cabecalho">
+      <h2 id="inicioAndamento">Hoje</h2>
+      <label class="inicio-mes">Mês <input id="inicioMes" type="month" min="{{ mes_minimo }}" value="{{ mes_padrao }}"></label>
+    </div>
     <p id="inicioEstado" class="inicio-estado" role="status">Lendo andamento do mês…</p>
     <div id="inicioTotais" class="inicio-grade"></div>
     <div id="inicioEmpresas" class="inicio-empresas"></div>
@@ -67,7 +72,11 @@
 
 {% block script %}
 <script>
-const mesInicio = {{ mes_padrao|tojson }};
+const campoMes = $("inicioMes");
+// o mês escolhido vale também para a Auditoria (mesma chave lembrada)
+const mesGuardado = lembrar("painelMes");
+if (mesGuardado && /^\d{4}-(0[1-9]|1[0-2])$/.test(mesGuardado) &&
+    (!campoMes.min || mesGuardado >= campoMes.min)) campoMes.value = mesGuardado;
 function dataHoraAtual() {
   const agora = new Date();
   const dois = valor => String(valor).padStart(2, "0");
@@ -141,7 +150,7 @@ function mostrarInicio(dados) {
 }
 async function lerInicio() {
   try {
-    const resposta = await fetch("/painel/dados?mes=" + encodeURIComponent(mesInicio));
+    const resposta = await fetch("/painel/dados?mes=" + encodeURIComponent(campoMes.value));
     const dados = await resposta.json();
     if (!resposta.ok) throw new Error(dados.erro || "Não foi possível ler o mês.");
     mostrarInicio(dados);
@@ -151,6 +160,11 @@ async function lerInicio() {
     $("inicioEstado").textContent = erro.message;
   }
 }
+campoMes.addEventListener("change", () => {
+  if (!campoMes.value) return;
+  guardar("painelMes", campoMes.value);
+  lerInicio();
+});
 lerInicio();
 async function lerPendenciasInicio() {
   try {
