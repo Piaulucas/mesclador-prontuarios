@@ -57,6 +57,12 @@
   .auditoria-listas li small { display: block; color: var(--suave); }
   .auditoria-vazio { color: var(--suave); }
   .auditoria-aguardando { display: block; margin-top: 6px; font-style: italic; }
+  .auditoria-pendencia-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .auditoria-pendencia-nome { min-width: 0; }
+  .auditoria-pendencia-dias { flex-shrink: 0; font-size: 15px; font-weight: 700; text-align: right; }
+  .auditoria-sem-devolucao { color: var(--suave); font-size: 13px; font-weight: 600; }
+  .auditoria-nota { margin: 8px 0 2px; padding: 6px 9px; font-size: 14px; line-height: 1.4;
+    color: var(--texto); background: var(--painel); border-left: 3px solid var(--acento); border-radius: 4px; }
   .auditoria-registro { display: grid; gap: 6px; margin-top: 9px; }
   .auditoria-registro input { min-width: 0; width: 100%; }
   .auditoria-registro button { width: fit-content; }
@@ -246,16 +252,27 @@ function mostrarPainel() {
       faltaEscanear.filter(f => f.estado === "por_auditar") : faltaEscanear,
       "Nada faltando escanear.", f => elemento("li", `${f.ficha} · ${f.paciente} · ${f.tipo}`));
     listaPainel(listas, "Pendências com a equipe", pendencias, "Nenhuma pendência com a equipe.", f => {
-      const li = elemento("li", `${f.ficha} · ${f.paciente}`);
-      li.append(elemento("small", f.devolucao || "devolução não registrada",
-        f.faixa ? `auditoria-prazo-${f.faixa}` : ""));
-      if (f.ultimo_envio?.pedido) li.append(elemento("small", `Nota do último aviso: ${f.ultimo_envio.pedido}`));
+      const li = elemento("li");
+      const topo = elemento("div", undefined, "auditoria-pendencia-topo");
+      topo.append(elemento("span", `${f.ficha} · ${f.paciente}`, "auditoria-pendencia-nome"));
+      topo.append(f.ultimo_envio ?
+        elemento("span", `${f.dias} dia${f.dias === 1 ? "" : "s"} com a equipe`,
+          `auditoria-pendencia-dias auditoria-prazo-${f.faixa}`) :
+        elemento("span", "devolução não registrada", "auditoria-pendencia-dias auditoria-sem-devolucao"));
+      li.append(topo);
+      if (f.ultimo_envio?.pedido) {
+        const nota = elemento("p", undefined, "auditoria-nota");
+        nota.append(elemento("strong", "Nota do último aviso: "), document.createTextNode(f.ultimo_envio.pedido));
+        li.append(nota);
+      }
       if (f.comentario) li.append(elemento("small", f.comentario));
       if (f.scanner === "arquivo_novo_apos_aviso") li.append(elemento("small", textoScanner(f),
         "auditoria-arquivo-novo"));
       if (!f.pode_avisar) {
         // Prazo da equipe já está correndo: novo aviso só quando chegar arquivo novo.
-        li.append(elemento("small", "Equipe já avisada · aguardando o reenvio", "auditoria-aguardando"));
+        const [ano, mes, dia] = f.ultimo_envio.data.split("-");
+        li.append(elemento("small", `Equipe avisada em ${dia}/${mes}/${ano.slice(2)} · aguardando o reenvio`,
+          "auditoria-aguardando"));
         return li;
       }
       const formulario = elemento("form", undefined, "auditoria-registro");
