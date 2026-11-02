@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from mesclador import config
 from mesclador.web import create_app
 
@@ -21,7 +23,7 @@ def test_config_de_exemplo_e_valido():
     assert c.auditoria_scanners["EMPRESA EXEMPLO A"]["pasta"].endswith("SCANNERS/EMPRESA A")
     assert c.pasta_registros == Path("~/Library/Application Support/Mesclador/auditoria").expanduser()
     assert c.trabalho_arquivo == Path("~/Library/Application Support/Mesclador/trabalho.db").expanduser()
-    assert (c.prazo_glosa_dias, c.alerta_dias) == (60, 10)
+    assert (c.prazo_glosa_dias, c.alerta_dias, c.dia_envio_fatura) == (60, 10, 5)
     assert c.abas[0].nomes == ["ADULTO-PED", "Remoção ADULTO-PED"] and c.abas[0].primeira_linha == 16
 
 
@@ -54,3 +56,15 @@ def test_tipos_covid_do_exemplo_aparecem_na_tela(tmp_path):
 
     assert "<option>ADULTO-PED COVID</option>" in pagina
     assert "<option>NEONATAL COVID</option>" in pagina
+
+
+def test_dia_de_envio_da_fatura_padrao_personalizado_e_invalido(tmp_path):
+    caminho = tmp_path / "config.toml"
+    base = '[abas."ADULTO"]\ncol_numero = "B"\ncol_nome = "D"\n'
+    caminho.write_text(base, encoding="utf-8")
+    assert config.carregar(caminho).dia_envio_fatura == 5
+    caminho.write_text(base + "[prazos]\nfatura_dia = 10\n", encoding="utf-8")
+    assert config.carregar(caminho).dia_envio_fatura == 10
+    caminho.write_text(base + "[prazos]\nfatura_dia = 40\n", encoding="utf-8")
+    with pytest.raises(SystemExit, match="fatura_dia"):
+        config.carregar(caminho)

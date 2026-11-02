@@ -55,6 +55,9 @@
   .inicio-bloco-vencidas { border-top-color: var(--faixa-vermelho); }
   .inicio-bloco-vencidas strong { color: var(--estado-equipe); }
   .inicio-bloco-vencendo { border-top-color: var(--faixa-laranja); }
+  .inicio-bloco small { color: var(--suave); font-size: 13px; }
+  .inicio-bloco-dinheiro { border-top-color: var(--acento); }
+  .inicio-bloco-dinheiro strong { font-size: 20px; letter-spacing: -.02em; overflow-wrap: anywhere; }
   @media (prefers-reduced-motion: reduce) {
     .inicio-empresa, .inicio-bloco { transition: none; }
     .inicio-empresa:hover, .inicio-bloco:hover { transform: none; }
@@ -207,15 +210,26 @@ async function lerPendenciasInicio() {
     const resposta = await fetch("/pendencias/dados");
     const dados = await resposta.json();
     if (!resposta.ok) throw new Error(dados.erro || "Não foi possível ler as pendências.");
-    const area = $("inicioPendencias");
+    const totais = dados.totais, area = $("inicioPendencias");
+    const reais = centavos => (centavos / 100).toLocaleString("pt-BR", {style: "currency", currency: "BRL"});
     area.replaceChildren();
-    [["Vencidas", dados.totais.vencidas, "vencidas"], ["Vencendo", dados.totais.vencendo, "vencendo"],
-      ["Aguardando terceiros", dados.totais.aguardando_terceiros, ""],
-      ["NF a solicitar", dados.totais.nf_a_solicitar, ""]].forEach(([rotulo, quantidade, gravidade]) => {
+    // [rótulo, valor mostrado, gravidade, nota]
+    [["Faturas a enviar", totais.a_enviar,
+      totais.a_enviar_vencidas ? "vencidas" : totais.a_enviar_vencendo ? "vencendo" : "",
+      totais.a_enviar_vencidas ? plural(totais.a_enviar_vencidas, "vencida", "vencidas") + ` (prazo: dia ${dados.prazos.dia_envio_fatura})`
+        : `prazo: dia ${dados.prazos.dia_envio_fatura} do mês seguinte`],
+     ["Glosas vencidas", totais.glosas_vencidas, totais.glosas_vencidas ? "vencidas" : "", "prazo do recurso passou"],
+     ["Glosas vencendo", totais.glosas_vencendo, totais.glosas_vencendo ? "vencendo" : "", `até ${dados.prazos.alerta_dias} dias para o recurso`],
+     ["Recursos aguardando resposta", totais.aguardando_resposta, "", ""],
+     ["NF a solicitar", totais.nf_a_solicitar, "", "inclui a NF do recurso"],
+     ["A receber", reais(totais.a_receber), "dinheiro",
+      plural(totais.nf_emitidas_sem_pagamento, "NF emitida sem pagamento", "NFs emitidas sem pagamento")]
+    ].forEach(([rotulo, valor, gravidade, nota]) => {
       const cartao = noInicio("a", "", "inicio-bloco" + (gravidade ? " inicio-bloco-" + gravidade : ""));
       cartao.href = "/pendencias/";
-      cartao.append(noInicio("strong", quantidade), noInicio("span", rotulo),
-        noInicio("em", "Ver Pendências →"));
+      cartao.append(noInicio("strong", valor), noInicio("span", rotulo));
+      if (nota) cartao.append(noInicio("small", nota));
+      cartao.append(noInicio("em", "Ver Pendências →"));
       area.append(cartao);
     });
     $("inicioPendenciasEstado").textContent = "Atualizado em " + dataBR(dados.hoje) + ".";
