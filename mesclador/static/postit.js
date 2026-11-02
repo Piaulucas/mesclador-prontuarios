@@ -7,7 +7,7 @@
   const lista = document.getElementById("postitTarefas");
   const aviso = document.getElementById("postitAviso");
   const campos = formulario.elements;
-  let empresas = [];
+  let empresas = [], tarefasAbertas = [];
   let enviando = false;
 
   function lembrar(chave) {
@@ -36,29 +36,29 @@
   }
   function opcoes(seletor, nomes, selecionado, todas = false) {
     seletor.replaceChildren();
-    if (todas) {
-      const opcao = elemento("option", "Todas");
-      opcao.value = "";
-      seletor.append(opcao);
-    }
+    const primeira = elemento("option", todas ? "Todas" : "Sem empresa");
+    primeira.value = "";
+    seletor.append(primeira);
     nomes.forEach(nome => {
       const opcao = elemento("option", nome);
       opcao.value = nome;
       seletor.append(opcao);
     });
-    if (nomes.includes(selecionado) || (todas && selecionado === "")) seletor.value = selecionado;
+    if (nomes.includes(selecionado) || selecionado === "") seletor.value = selecionado;
   }
   function desenhar() {
     lista.replaceChildren();
     let totalVisivel = 0;
-    empresas.forEach(empresa => {
+    // tarefas sem empresa ficam no grupo "Sem empresa"
+    const grupos = [...empresas, ""].map(nome => ({empresa: nome, tarefas: tarefasAbertas.filter(t => (t.empresa || "") === nome)}));
+    grupos.forEach(empresa => {
       if (filtro.value && empresa.empresa !== filtro.value) return;
-      const tarefas = empresa.grupos.tarefas;
+      const tarefas = empresa.tarefas;
       if (!tarefas.length) return;
       totalVisivel += tarefas.length;
       const grupo = elemento("section");
       grupo.className = "postit-grupo";
-      grupo.append(elemento("h3", empresa.empresa));
+      grupo.append(elemento("h3", empresa.empresa || "Sem empresa"));
       const itens = elemento("ul");
       itens.className = "postit-lista";
       tarefas.forEach(tarefa => {
@@ -74,7 +74,7 @@
         if (tarefa.prazo) {
           const prazo = elemento("small", `Prazo: ${dataBR(tarefa.prazo)}`);
           prazo.className = "postit-prazo";
-          if (["vencida", "vencendo"].includes(tarefa.situacao)) prazo.classList.add(tarefa.situacao);
+          if (["vencida", "vencendo"].includes(tarefa.faixa)) prazo.classList.add(tarefa.faixa);
           item.append(prazo);
         }
         itens.append(item);
@@ -85,12 +85,13 @@
     if (!totalVisivel) lista.append(elemento("p", "Nenhuma tarefa aberta."));
   }
   async function atualizar() {
-    const resposta = await fetch("/pendencias/dados");
+    const resposta = await fetch("/pendencias/tarefas");
     const dados = await resposta.json();
     if (!resposta.ok) throw new Error(dados.erro || "Não foi possível ler as tarefas.");
     empresas = dados.empresas;
-    botao.textContent = `Tarefas (${dados.totais.tarefas})`;
-    const nomes = empresas.map(empresa => empresa.empresa);
+    tarefasAbertas = dados.tarefas;
+    botao.textContent = `Tarefas (${tarefasAbertas.length})`;
+    const nomes = empresas;
     const empresaAtual = campos.empresa.value || lembrar("postitEmpresa") || "";
     const filtroAtual = filtro.value || lembrar("postitFiltro") || "";
     opcoes(campos.empresa, nomes, empresaAtual);
@@ -131,7 +132,7 @@
     salvar.disabled = true;
     try {
       await enviar("/pendencias/tarefa", {
-        empresa: campos.empresa.value, texto: campos.texto.value, prazo: campos.prazo.value || null
+        empresa: campos.empresa.value || null, texto: campos.texto.value, prazo: campos.prazo.value || null
       });
       campos.texto.value = "";
       campos.prazo.value = "";

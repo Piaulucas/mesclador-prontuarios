@@ -56,9 +56,30 @@ Na barra superior, **Auditoria** mostra o andamento do mês. Escolha o mês e a 
 
 Na aba **Horas**, inicie e pare sessões manuais com tipo, tarefa opcional e empresa opcional. Iniciar outra sessão encerra a anterior. A tela mostra totais do dia, da semana (segunda a domingo) e do mês; o indicador da barra acompanha a sessão em qualquer aba. Os registros ficam no mesmo SQLite de `[trabalho].arquivo`, sem dados de pacientes.
 
-## Pendências de faturas e tarefas
+## Pendências: faturas, glosas e notas fiscais
 
-A API local em `/pendencias/dados` acompanha, por empresa, ofícios de glosa ainda não recebidos, respostas pendentes, NFs ainda não solicitadas e tarefas livres. O prazo da resposta começa na chegada do ofício (60 dias por padrão). Os registros ficam no SQLite indicado em `[trabalho].arquivo`; `[prazos]` ajusta os dias de glosa e de alerta. Não registre nomes de pacientes. A interface visual virá em outra etapa.
+A aba **Pendências** (`/pendencias/`) acompanha cada fatura pelo mês da competência:
+envio da fatura → ofício de glosa → recurso (ou “Não vou recorrer”) → resposta do recurso.
+No topo ficam os totais em R$ (a receber, recebido, em disputa, recuperado nos recursos),
+depois um bloco por empresa (abre e fecha; o estado fica lembrado) e os quadros de Glosas
+(aguardando ofício → prazo do recurso → aguardando resposta → encerradas) e de Notas fiscais
+(a solicitar → solicitada → emitida · a receber → paga). Os formulários abrem só ao clicar.
+
+- **Prazo de envio:** a fatura de cada competência vence no dia 5 do mês seguinte (dia fixo,
+  `[prazos].fatura_dia`) e aparece como pendência até ter a data de envio registrada.
+- **Glosa:** um ofício por fatura, com data e valor glosado. O recurso tem data e valor
+  (até o glosado); a resposta tem data e valor acatado (até o recursado). O prazo do recurso
+  conta da chegada do ofício (`[prazos].glosa_dias`, 60 por padrão). Em caso raro, “Novo recurso”
+  guarda o recurso anterior e a resposta dele no histórico.
+- **NF:** a NF principal nasce com a fatura e passa a valer apresentado − glosado quando chega o
+  ofício; o valor acatado vira uma “NF do recurso”. Cada NF guarda as datas de solicitação,
+  emissão e pagamento.
+- Valores em centavos no banco. Tudo é somado pela competência da fatura, nunca pela data do pagamento.
+
+Os registros ficam no SQLite indicado em `[trabalho].arquivo`. Ao abrir um banco da versão
+anterior, o app faz antes uma cópia `trabalho.db.v1-AAAAMMDD-HHMMSS.bak` na mesma pasta e migra
+tudo numa transação. Glosas antigas ficam com “valor não informado” até serem completadas.
+Não registre nomes de pacientes.
 
 ## Decisões de projeto
 

@@ -23,9 +23,12 @@ mes_inicial = "2026-10"
 arquivo = "~/Library/Application Support/Mesclador/trabalho.db"
 
 # Prazo após a chegada do ofício de glosa e janela de alerta, em dias corridos.
+# fatura_dia: a fatura de cada competência deve ser enviada até este dia do mês
+# seguinte (dia fixo, não é dia útil; vale para todas as empresas).
 [prazos]
 glosa_dias = 60
 alerta_dias = 10
+fatura_dia = 5
 
 # Registros manuais da auditoria, fora do projeto e das pastas das empresas.
 [auditoria]
