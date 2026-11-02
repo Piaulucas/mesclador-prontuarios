@@ -306,3 +306,24 @@ def test_scanners_pasta_ausente_e_duplicada(tmp_path):
     local = auditoria.localizar_scanners(config, "EMPRESA FICTÍCIA", 2026, 10)
     assert local["pasta"] == recente
     assert "Mais de uma" in local["aviso"]
+
+
+def test_subpasta_ilegivel_nao_derruba_os_scanners(tmp_path, monkeypatch):
+    for nome in ("Ana Exemplo", "Bruno Exemplo"):
+        (tmp_path / nome).mkdir()
+        (tmp_path / nome / "folha.pdf").touch()
+    original = os.scandir
+
+    def scandir_com_erro(caminho):
+        if str(caminho).endswith("Bruno Exemplo"):
+            raise OSError(11, "Resource deadlock avoided", str(caminho))
+        return original(caminho)
+
+    monkeypatch.setattr(auditoria.os, "scandir", scandir_com_erro)
+    ilegiveis = []
+    nomes, aviso = auditoria.listar_scanners(
+        {"pasta": tmp_path, "formato": "pastas_por_paciente"}, 2026, 10, ilegiveis)
+    assert aviso is None
+    assert ilegiveis == ["Bruno Exemplo"]
+    assert {n["nome"] for n in nomes} == {"ANA EXEMPLO", "BRUNO EXEMPLO"}
+    assert all(n["modificado"] for n in nomes)
