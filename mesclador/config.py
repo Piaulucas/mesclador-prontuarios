@@ -50,6 +50,7 @@ class Config:
         "~/Library/Application Support/Mesclador/trabalho.db").expanduser())
     prazo_glosa_dias: int = 60
     alerta_dias: int = 10
+    dia_envio_fatura: int = 5          # a fatura da competência vence neste dia do mês seguinte
 
     @property
     def tipos(self):
@@ -61,6 +62,13 @@ class Config:
 
 def _caminho(texto):
     return Path(texto).expanduser() if texto else None
+
+
+def _dia_do_mes(valor):
+    dia = int(valor)
+    if not 1 <= dia <= 31:
+        raise SystemExit("config.toml: [prazos].fatura_dia precisa ser um dia do mês (1 a 31).")
+    return dia
 
 
 def carregar(caminho=None):
@@ -99,4 +107,5 @@ def carregar(caminho=None):
                                   or "~/Library/Application Support/Mesclador/trabalho.db"),
         prazo_glosa_dias=int(dados.get("prazos", {}).get("glosa_dias", 60)),
         alerta_dias=int(dados.get("prazos", {}).get("alerta_dias", 10)),
+        dia_envio_fatura=_dia_do_mes(dados.get("prazos", {}).get("fatura_dia", 5)),
     )

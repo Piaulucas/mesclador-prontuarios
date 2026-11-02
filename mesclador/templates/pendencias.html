@@ -2,273 +2,782 @@
 {% block titulo %}Pendências · Área de trabalho{% endblock %}
 
 {% block estilos %}
-  .pendencias { max-width: 1280px; margin: auto; padding: 28px 24px 60px; }
-  .pendencias h1 { margin: 0; font-size: 25px; letter-spacing: -.03em; }
-  .pendencias-intro, .pendencias-estado, .pendencias-vazio { color: var(--suave); }
-  .pendencias-intro { margin: 2px 0 18px; }
-  .pendencias-formularios { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); gap: 12px; margin-bottom: 22px; }
-  .pendencias-formulario, .pendencias-empresa { min-width: 0; background: var(--painel);
-    border: 1px solid var(--borda); border-radius: 11px; box-shadow: var(--sombra); }
-  .pendencias-formulario { padding: 16px; display: grid; gap: 10px; }
-  .pendencias-formulario h2 { margin: 0; font-size: 17px; }
-  .pendencias-formulario button { justify-self: start; }
-  .pendencias-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .pendencias-campos label, .pendencias-acao label { min-width: 0; }
-  .pendencias-empresas { display: grid; gap: 16px; }
-  .pendencias-resumo { display: block; padding: 18px 20px 18px 42px; position: relative;
-    cursor: pointer; list-style: none; }
-  .pendencias-resumo::-webkit-details-marker { display: none; }
-  .pendencias-resumo::before { content: "▸"; position: absolute; left: 20px; top: 20px; color: var(--suave); }
-  .pendencias-empresa[open] .pendencias-resumo::before { content: "▾"; }
-  .pendencias-resumo:focus-visible { outline: 3px solid var(--foco); outline-offset: 3px; }
-  .pendencias-resumo h2 { margin: 0; font-size: 19px; overflow-wrap: anywhere; }
-  .pendencias-selos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-  .pendencias-selo { padding: 3px 8px; border: 1px solid var(--borda); border-radius: 20px;
-    background: var(--painel-suave); font-size: 12px; }
-  .pendencias-selo-aviso { background: var(--aviso-fundo); border-color: var(--aviso-borda); }
-  .pendencias-conteudo { padding: 0 20px 20px; border-top: 1px solid var(--borda); }
-  .pendencias-grupos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 18px; margin-top: 18px; }
-  .pendencias-grupos section { min-width: 0; }
-  .pendencias-grupos h3 { margin: 0 0 8px; font-size: 14px; }
-  .pendencias-grupos ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
-  .pendencias-grupos li { padding: 10px; border: 1px solid var(--borda); border-radius: 7px;
-    background: var(--painel-suave); overflow-wrap: anywhere; }
-  .pendencias-grupos li strong, .pendencias-grupos li small { display: block; }
-  .pendencias-grupos li small { color: var(--suave); }
-  .pendencias-acao { display: grid; gap: 6px; margin-top: 9px; }
-  .pendencias-acao button { justify-self: start; font-size: 12px; }
-  .pendencias-aviso { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 20;
-    max-width: calc(100vw - 32px); padding: 11px 18px; border-radius: 8px; font-weight: 650;
-    background: var(--texto); color: var(--painel); box-shadow: var(--sombra); }
-  .pendencias-aviso[hidden] { display: none; }
-  @media (max-width: 600px) {
-    .pendencias { padding: 20px 16px 40px; }
-    .pendencias-formularios, .pendencias-campos { grid-template-columns: 1fr; }
-    .pendencias-resumo { padding: 16px 14px 16px 34px; }
-    .pendencias-resumo::before { left: 14px; top: 18px; }
-    .pendencias-conteudo { padding: 0 14px 16px; }
+  .pend { max-width: 1280px; margin: auto; padding: 28px 20px 80px; font-size: 15px; }
+  .pend h1 { margin: 0; font-size: 28px; letter-spacing: -.03em; line-height: 1.2; }
+  .pend h2 { margin: 0; font-size: 18px; letter-spacing: -.01em; }
+  .pend h3 { margin: 0; font-size: 15px; }
+  .pend p { margin: 0; }
+  .pend-cabecalho { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between;
+    gap: 12px 16px; margin-bottom: 20px; }
+  .pend-estado { margin-top: 2px !important; color: var(--suave); }
+  .pend-acoes { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; }
+  .pend-acoes label { font-size: 13px; font-weight: 650; color: var(--suave); }
+  .pend-acoes select { min-height: 40px; border-radius: 12px; min-width: 150px; }
+  .pend-principal, .pend-leve { min-height: 40px; padding: 0 16px; border-radius: 12px; font-weight: 700; }
+  .pend-principal { background: var(--acento); border-color: var(--acento); color: var(--acento-txt); }
+  .pend-principal:hover:not(:disabled) { background: var(--acento); filter: brightness(.92); }
+  .pend-leve { background: var(--acento-fundo); border-color: transparent; color: var(--acento); }
+  .pend-leve:hover:not(:disabled) { background: var(--acento-fundo); border-color: var(--acento); }
+  .pend button.peq { min-height: 32px; padding: 3px 11px; font-size: 13px; border-radius: 10px; }
+  .pend-link { min-height: 28px; padding: 2px 4px; border: 0; background: transparent; color: var(--acento);
+    font-size: 13px; font-weight: 650; text-decoration: underline; text-underline-offset: 2px; }
+  .pend-link:hover:not(:disabled) { background: var(--acento-fundo); border: 0; }
+  .pend-cartao { min-width: 0; padding: 18px 20px; background: var(--painel); border-radius: 18px; box-shadow: var(--sombra); }
+  .pend-secao { margin-top: 30px; }
+  .pend-secao-cab { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+    gap: 6px 14px; margin-bottom: 12px; }
+  .pend-secao-cab p { color: var(--suave); font-size: 14px; }
+  .suave { color: var(--suave); }
+  .num { font-variant-numeric: tabular-nums; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 10px; border-radius: 999px;
+    background: var(--painel-suave); border: 1px solid var(--borda); color: var(--suave);
+    font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .chip-empresa { background: var(--acento-fundo); border-color: transparent; color: var(--acento); }
+  .chip-ok { background: var(--ok-fundo); border-color: var(--ok-borda); color: var(--ok); }
+  .chip-vencida { background: var(--faixa-vermelho); border-color: transparent; color: var(--faixa-vermelho-txt); }
+  .chip-vencendo { background: var(--faixa-laranja); border-color: transparent; color: var(--faixa-laranja-txt); }
+  .chip-aviso { background: var(--aviso-fundo); border-color: var(--aviso-borda); color: var(--texto); }
+  /* dias em destaque, como no cartão da Auditoria */
+  .pend-dias { flex: none; display: grid; place-items: center; min-width: 54px; padding: 7px 8px; border-radius: 12px;
+    font-size: 20px; font-weight: 800; line-height: 1; text-align: center; font-variant-numeric: tabular-nums;
+    background: var(--estado-vazio); color: var(--suave); }
+  .pend-dias small { display: block; margin-top: 3px; font-size: 10px; font-weight: 700; }
+  .pend-dias.vencida { background: var(--faixa-vermelho); color: var(--faixa-vermelho-txt); }
+  .pend-dias.vencendo { background: var(--faixa-laranja); color: var(--faixa-laranja-txt); }
+  .pend-dias.no_prazo { background: var(--ok-fundo); color: var(--ok); }
+  /* resumo em R$ */
+  .pend-resumo { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  .pend-resumo .pend-cartao { display: flex; flex-direction: column; gap: 3px; padding: 16px 18px; }
+  .pend-rotulo { display: flex; align-items: center; gap: 7px; color: var(--suave); font-size: 13px; font-weight: 700; }
+  .pend-rotulo i { flex: none; width: 10px; height: 10px; border-radius: 50%; }
+  .pend-valor { font-size: 24px; font-weight: 800; letter-spacing: -.02em; line-height: 1.2; font-variant-numeric: tabular-nums; }
+  .pend-resumo small { color: var(--suave); font-size: 13px; }
+  .pend-resumo-rodape { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 18px; color: var(--suave); font-size: 13px; }
+  .pend-resumo-rodape b { color: var(--texto); font-variant-numeric: tabular-nums; }
+  /* barra de saldo */
+  .saldo { display: flex; gap: 2px; height: 8px; border-radius: 999px; overflow: hidden; background: var(--painel-suave); }
+  .saldo span { display: block; min-width: 3px; }
+  .s-recebido { background: var(--estado-aprovadas); }
+  .s-receber { background: var(--acento); }
+  .s-disputa { background: var(--estado-auditar); }
+  .s-mantida { background: var(--estado-equipe); }
+  .s-analise { background: var(--estado-vazio); }
+  .legenda { display: flex; flex-wrap: wrap; gap: 3px 14px; margin: 0; padding: 0; list-style: none; color: var(--suave); font-size: 13px; }
+  .legenda li { display: flex; align-items: center; gap: 6px; }
+  .legenda i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  /* por empresa (colapsável) */
+  .pend-empresas { display: grid; gap: 12px; }
+  .pend-empresa { padding: 0; }
+  .pend-empresa > summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+    padding: 16px 20px 16px 42px; position: relative; cursor: pointer; list-style: none; border-radius: 18px; }
+  .pend-empresa > summary::-webkit-details-marker { display: none; }
+  .pend-empresa > summary::before { content: "▸"; position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+    color: var(--suave); font-size: 13px; }
+  .pend-empresa[open] > summary::before { content: "▾"; }
+  .pend-empresa > summary:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+  .pend-empresa > summary h3 { font-size: 18px; letter-spacing: -.02em; overflow-wrap: anywhere; }
+  .pend-empresa-numeros { display: flex; flex-wrap: wrap; gap: 2px 16px; font-size: 14px; color: var(--suave); }
+  .pend-empresa-numeros b { color: var(--texto); font-variant-numeric: tabular-nums; }
+  .pend-empresa-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-left: auto; }
+  .pend-empresa-corpo { padding: 2px 20px 20px; display: grid; gap: 12px; }
+  .pend-faturas { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 12px; }
+  .pend-fat { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 12px; border-radius: 14px;
+    background: var(--painel-suave); border: 1px solid var(--borda); }
+  .pend-fat.virtual { border-style: dashed; }
+  .pend-fat header { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+  .pend-fat header b { font-size: 15px; overflow-wrap: anywhere; }
+  .pend-fat-valor { font-size: 12px; color: var(--suave); }
+  .pend-fat-valor b { display: block; font-size: 18px; color: var(--texto); font-variant-numeric: tabular-nums; }
+  .passos { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 12px; }
+  .passos li { display: flex; gap: 6px; align-items: baseline; min-width: 0; }
+  .passos li i { flex: none; width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--borda); transform: translateY(1px); }
+  .passos li.feito i { background: var(--estado-aprovadas); border-color: var(--estado-aprovadas); }
+  .passos li.atual i { border-color: var(--acento); background: var(--acento-fundo); }
+  .passos li span { flex: 1; min-width: 0; color: var(--suave); }
+  .passos li em { font-style: normal; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .pend-fat-nfs { display: flex; flex-wrap: wrap; gap: 4px; }
+  .pend-fat-acoes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+  /* quadros */
+  .pend-abas { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pend-abas [role=tab] { min-height: 38px; border-radius: 999px; padding: 0 16px; background: var(--painel);
+    border-color: transparent; box-shadow: var(--sombra); color: var(--suave); font-weight: 700; }
+  .pend-abas [role=tab][aria-selected=true] { background: var(--acento); color: var(--acento-txt); }
+  .pend-abas [role=tab][aria-selected=true]:hover:not(:disabled) { background: var(--acento); }
+  .pend-envio { display: grid; gap: 10px; margin-bottom: 16px; padding: 14px; border-radius: 18px;
+    background: var(--aviso-fundo); border: 1px solid var(--aviso-borda); }
+  .pend-envio[hidden] { display: none; }
+  .pend-envio h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+  .pend-envio h3 small { color: var(--suave); font-size: 13px; font-weight: 600; }
+  .pend-envio-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 10px; }
+  .pend-quadro { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: start; }
+  .pend-coluna { min-width: 0; display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 18px;
+    background: var(--painel-suave); border: 1px solid var(--borda); border-top: 5px solid var(--cor, var(--borda)); }
+  .pend-coluna > header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 2px 4px; }
+  .pend-coluna > header h3 { display: flex; align-items: center; gap: 7px; }
+  .pend-coluna > header small { color: var(--suave); font-size: 12px; font-weight: 650; text-align: right; font-variant-numeric: tabular-nums; }
+  .pend-coluna-vazia { padding: 2px 4px; color: var(--suave); font-size: 13px; }
+  .pend-item { display: grid; gap: 6px; min-width: 0; padding: 12px; border-radius: 14px; background: var(--painel);
+    box-shadow: var(--sombra); font-size: 14px; border: 2px solid transparent; cursor: pointer; overflow-wrap: anywhere; }
+  .pend-item:hover { border-color: var(--acento); }
+  .pend-item:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+  .pend-item-topo { display: flex; gap: 10px; align-items: flex-start; }
+  .pend-item-topo > div { min-width: 0; flex: 1; display: grid; gap: 3px; justify-items: start; }
+  .pend-item .pend-dias { min-width: 48px; font-size: 18px; padding: 6px; }
+  .pend-item b.v { font-size: 16px; font-variant-numeric: tabular-nums; }
+  .pend-item-acoes { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pend-mais { align-self: flex-start; }
+  /* formulários e gaveta */
+  .pend dialog, dialog.pend-dialogo { border: 0; border-radius: 20px; padding: 0; background: var(--painel); color: var(--texto);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .3); width: min(520px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); }
+  dialog.pend-dialogo::backdrop, dialog.pend-gaveta::backdrop { background: rgba(15, 20, 35, .42); }
+  .pend-dialogo form { display: grid; gap: 14px; padding: 22px; }
+  .pend-dialogo h2 { margin: 0; font-size: 19px; }
+  .pend-dialogo-sub { margin: -8px 0 0; color: var(--suave); font-size: 14px; }
+  .pend-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .pend-campos .todo { grid-column: 1 / -1; }
+  .pend-campos label { font-size: 13px; font-weight: 650; color: var(--suave); min-width: 0; }
+  .pend-campos input, .pend-campos select, .pend-campos textarea { min-height: 40px; border-radius: 12px; }
+  .pend-campos textarea { width: 100%; min-height: 64px; padding: 8px 10px; resize: vertical; font: inherit;
+    color: var(--texto); background: var(--painel); border: 1px solid var(--borda); }
+  .pend-campos label.linha { flex-direction: row; align-items: center; gap: 8px; color: var(--texto); }
+  .pend-dica { padding: 8px 12px; border-radius: 10px; background: var(--painel-suave); color: var(--suave); font-size: 13px; }
+  .pend-erro { margin: 0; color: var(--erro); font-size: 13px; font-weight: 650; }
+  .pend-erro:empty { display: none; }
+  .pend-dialogo-acoes { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+  .pend-dialogo-acoes button { min-height: 40px; border-radius: 12px; padding: 0 16px; }
+  dialog.pend-gaveta { margin: 0 0 0 auto; height: 100dvh; max-height: 100dvh; width: min(580px, 100vw);
+    border: 0; border-radius: 22px 0 0 22px; padding: 0; background: var(--painel); color: var(--texto); }
+  .pend-gaveta-dentro { display: grid; gap: 16px; padding: 22px; }
+  .pend-gaveta-dentro > header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .pend-gaveta-dentro h2 { margin: 6px 0 2px; font-size: 21px; }
+  .pend-gaveta-dentro h4 { margin: 0 0 10px; font-size: 14px; }
+  .pend-bloco { padding: 16px; border-radius: 16px; background: var(--painel-suave); }
+  .pend-fechar { width: 38px; min-height: 38px; padding: 0; border-radius: 50%; }
+  .tempo { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+  .tempo li { position: relative; padding: 0 0 14px 28px; min-width: 0; }
+  .tempo li::before { content: ""; position: absolute; left: 6px; top: 16px; bottom: 0; width: 3px; background: var(--borda); }
+  .tempo li:last-child::before { display: none; }
+  .tempo li.feito::before { background: var(--estado-aprovadas); }
+  .tempo li::after { content: ""; position: absolute; left: 0; top: 2px; width: 15px; height: 15px; border-radius: 50%;
+    background: var(--painel); border: 3px solid var(--borda); }
+  .tempo li.feito::after { background: var(--estado-aprovadas); border-color: var(--estado-aprovadas); }
+  .tempo li.atual::after { border-color: var(--acento); background: var(--acento-fundo); }
+  .tempo li.pulado::after { border-style: dashed; }
+  .tempo b { display: block; font-size: 14px; }
+  .tempo .v { display: block; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .tempo small { display: block; color: var(--suave); font-size: 13px; line-height: 1.4; }
+  .tempo .pend-link { margin-left: -4px; }
+  .tempo .pend-link + .pend-link { margin-left: 6px; }
+  .contas { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 14px; margin: 0; font-size: 14px; }
+  .contas dt { color: var(--suave); }
+  .contas dd { margin: 0; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .contas .total { border-top: 1px solid var(--borda); padding-top: 4px; margin-top: 2px; }
+  .nf-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .nf-lista li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px;
+    padding: 10px 12px; border-radius: 12px; background: var(--painel); }
+  .nf-lista small { display: block; color: var(--suave); font-size: 12px; }
+  .pend-aviso { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 40;
+    max-width: calc(100vw - 32px); padding: 11px 18px; border-radius: 12px; font-weight: 650;
+    background: var(--texto); color: var(--painel); box-shadow: var(--sombra-alta); }
+  .pend-aviso[hidden] { display: none; }
+  @media (max-width: 1050px) {
+    .pend-resumo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .pend-quadro { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 760px) {
+    .pend { padding: 20px 16px 80px; }
+    .pend h1 { font-size: 24px; }
+    .pend-acoes { width: 100%; }
+    .pend-acoes label { flex: 1 1 100%; }
+    .pend-acoes select { width: 100%; }
+    .pend-acoes button { flex: 1 1 auto; }
+    .pend-empresa > summary { padding: 14px 14px 14px 34px; }
+    .pend-empresa > summary::before { left: 14px; }
+    .pend-empresa-chips { margin-left: 0; }
+    .pend-empresa-corpo { padding: 2px 12px 14px; }
+  }
+  @media (max-width: 560px) {
+    .pend-resumo, .pend-quadro { grid-template-columns: minmax(0, 1fr); }
+    .pend-valor { font-size: 21px; }
+    .pend-campos { grid-template-columns: minmax(0, 1fr); }
+    .pend-dialogo form { padding: 18px; }
+    dialog.pend-gaveta { border-radius: 0; width: 100vw; }
+    .pend-gaveta-dentro { padding: 16px; }
   }
 {% endblock %}
 
 {% block conteudo %}
-<main class="pendencias">
-  <h1>Pendências</h1>
-  <p class="pendencias-intro">Faturas, glosas, notas fiscais e tarefas por empresa.</p>
-  <div class="pendencias-formularios">
-    <form id="formFatura" class="pendencias-formulario">
-      <h2>Registrar fatura</h2>
-      <div class="pendencias-campos">
-        <label>Empresa <select name="empresa" required>{% for empresa in empresas %}<option value="{{ empresa }}">{{ empresa }}</option>{% endfor %}</select></label>
-        <label>Competência <input name="competencia" type="month" required></label>
-        <label>Referência (opcional) <input name="referencia" type="text"></label>
-      </div>
-      <button type="submit">Registrar fatura</button>
-    </form>
-    <form id="formTarefa" class="pendencias-formulario">
-      <h2>Nova tarefa</h2>
-      <div class="pendencias-campos">
-        <label>Empresa <select name="empresa" required>{% for empresa in empresas %}<option value="{{ empresa }}">{{ empresa }}</option>{% endfor %}</select></label>
-        <label>Prazo (opcional) <input name="prazo" type="date"></label>
-        <label>Descrição <input name="texto" type="text" required></label>
-      </div>
-      <button type="submit">Criar tarefa</button>
-    </form>
-    <form id="formNfEmitida" class="pendencias-formulario">
-      <h2>NF emitida</h2>
-      <label>Fatura com NF solicitada <select name="fatura" required><option value="">Lendo faturas…</option></select></label>
-      <label>Data da emissão <input name="data" type="date" required></label>
-      <button type="submit">Registrar emissão</button>
-    </form>
+<main class="pend">
+  <div class="pend-cabecalho">
+    <div>
+      <h1>Pendências</h1>
+      <p id="pendEstado" class="pend-estado" role="status">Lendo pendências…</p>
+    </div>
+    <div class="pend-acoes">
+      <label>Competência <select id="pendCompetencia"><option value="">Todas</option></select></label>
+      <button type="button" class="pend-leve" data-acao="oficio">+ Chegou o ofício de glosa</button>
+      <button type="button" class="pend-principal" data-acao="fatura">+ Registrar fatura</button>
+    </div>
   </div>
-  <p id="pendenciasEstado" class="pendencias-estado" role="status">Lendo pendências…</p>
-  <div id="pendenciasEmpresas" class="pendencias-empresas"></div>
+
+  <section aria-label="Resumo em R$">
+    <div id="pendResumo" class="pend-resumo"></div>
+  </section>
+
+  <section class="pend-secao" aria-labelledby="pendEmpresasTitulo">
+    <div class="pend-secao-cab">
+      <h2 id="pendEmpresasTitulo">Por empresa</h2>
+      <p>Clique no nome para abrir ou fechar. Valor de cada competência: o que ainda falta receber.</p>
+    </div>
+    <div id="pendEmpresas" class="pend-empresas"></div>
+  </section>
+
+  <section class="pend-secao" aria-labelledby="pendQuadrosTitulo">
+    <div class="pend-secao-cab">
+      <h2 id="pendQuadrosTitulo">Quadros</h2>
+      <div class="pend-abas" role="tablist" aria-label="Quadro">
+        <button type="button" role="tab" id="pendAbaGlosas" aria-controls="pendQuadro" aria-selected="true">Glosas</button>
+        <button type="button" role="tab" id="pendAbaNfs" aria-controls="pendQuadro" aria-selected="false">Notas fiscais</button>
+      </div>
+    </div>
+    <div id="pendEnvio" class="pend-envio" hidden></div>
+    <div id="pendQuadro" class="pend-quadro" role="tabpanel"></div>
+  </section>
 </main>
-<div id="pendenciasAviso" class="pendencias-aviso" role="status" aria-live="polite" hidden></div>
+<dialog id="pendDialogo" class="pend-dialogo" aria-label="Registro"></dialog>
+<dialog id="pendGaveta" class="pend-gaveta" aria-labelledby="pendGavetaTitulo"></dialog>
+<div id="pendenciasAviso" class="pend-aviso" role="status" aria-live="polite" hidden></div>
 {% endblock %}
 
 {% block script %}
 <script>
-const gruposPendencias = [
-  ["vencidas", "Vencidas"], ["vencendo", "Vencendo"], ["no_prazo", "No prazo"],
-  ["aguardando_terceiros", "Aguardando terceiros"], ["nf_a_solicitar", "NF a solicitar"],
-  ["tarefas", "Tarefas"]
-];
-const estadosPendencias = new Map();
-let temporizadorPendencias;
-function elementoPendencias(tag, texto, classe) {
-  const no = document.createElement(tag);
-  if (texto !== undefined) no.textContent = String(texto);
-  if (classe) no.className = classe;
-  return no;
+// ================= Pendências: faturas, glosas e NFs =================
+// O servidor manda valores em centavos e datas AAAA-MM-DD; aqui vira R$ e dd/mm/aaaa.
+let pend = null;                       // último /pendencias/dados
+let pendAba = lembrar("pendenciasQuadro") === "nfs" ? "nfs" : "glosas";
+let pendGavetaId = null;
+const pendMais = new Set();            // colunas com "mostrar todas"
+const brl = c => c == null ? "—" : (c / 100).toLocaleString("pt-BR", {style: "currency", currency: "BRL"});
+const valorCampo = c => c == null ? "" : (c / 100).toLocaleString("pt-BR", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const compBR = c => c ? c.slice(5, 7) + "/" + c.slice(0, 4) : "";
+const pendPlural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
+const rotuloFatura = f => compBR(f.competencia) + (f.referencia ? " · " + f.referencia : "");
+// "12.345,67" (ou "12345,6") -> centavos; vazio -> null; formato errado -> NaN
+function lerValor(texto) {
+  const limpo = String(texto ?? "").trim().replace(/^R\$\s*/, "");
+  if (!limpo) return null;
+  if (!/^\d{1,3}(\.\d{3})*(,\d{1,2})?$|^\d+(,\d{1,2})?$/.test(limpo)) return NaN;
+  const [inteiro, decimais = ""] = limpo.replace(/\./g, "").split(",");
+  return Number(inteiro) * 100 + Number(decimais.padEnd(2, "0"));
 }
+const NF_ROTULO = {nao_solicitada: "A solicitar", solicitada: "Solicitada", emitida: "Emitida"};
+const nfRotulo = n => n.paga_em ? "Paga" : NF_ROTULO[n.situacao];
+const nfTipo = n => n.origem === "principal" ? "NF principal" : (n.rodada > 1 ? `NF do ${n.rodada}º recurso` : "NF do recurso");
+
+// ---------- filtros e somas ----------
+const pendCompetencia = () => $("pendCompetencia").value;
+const todasFaturas = () => pend.empresas.flatMap(e => e.faturas);
+const faturasVisiveis = () => todasFaturas().filter(f => !pendCompetencia() || f.competencia === pendCompetencia());
+const acharFatura = (id, empresa, competencia) => todasFaturas().find(f =>
+  id ? f.id === id : f.virtual && f.empresa === empresa && f.competencia === competencia);
+function somar(lista) {
+  const total = {apresentado: 0, a_receber: 0, recebido: 0, em_disputa: 0, glosa_mantida: 0, em_analise: 0, acatado: 0, incompletas: 0};
+  lista.forEach(f => {
+    for (const chave of Object.keys(total)) if (chave !== "incompletas") total[chave] += f.valores[chave] || 0;
+    if (!f.virtual && f.valores.incompleto) total.incompletas += 1;
+  });
+  return total;
+}
+
+// ---------- textos de situação ----------
+function textoSituacao(f) {
+  const s = f.situacao;
+  if (s.etapa === "a_enviar") return (s.dias_restantes < 0 ? pendPlural(-s.dias_restantes, "dia", "dias") + " de atraso"
+    : s.dias_restantes === 0 ? "vence hoje" : pendPlural(s.dias_restantes, "dia restante", "dias restantes")) +
+    " · enviar até " + dataBR(s.limite);
+  if (s.etapa === "aguardando_oficio") return pendPlural(s.dias_de_espera, "dia", "dias") + " aguardando o ofício";
+  if (s.etapa === "aguardando_resposta") return pendPlural(s.dias_de_espera, "dia", "dias") + " aguardando a resposta";
+  if (s.etapa === "prazo") return (s.dias_restantes < 0 ? pendPlural(-s.dias_restantes, "dia", "dias") + " de atraso"
+    : s.dias_restantes === 0 ? "vence hoje" : pendPlural(s.dias_restantes, "dia restante", "dias restantes")) +
+    " · recurso até " + dataBR(s.limite);
+  return {sem_glosa: "Ofício sem glosa", respondida: "Recurso respondido", sem_recurso: "Glosa aceita, sem recurso"}[s.motivo];
+}
+function seloDias(f) {
+  const s = f.situacao;
+  if (s.faixa) {
+    const n = Math.abs(s.dias_restantes);
+    return `<span class="pend-dias ${s.faixa}" aria-label="${esc(textoSituacao(f))}">${n}<small>${s.dias_restantes < 0 ? "atraso" : n === 1 ? "dia" : "dias"}</small></span>`;
+  }
+  if (s.dias_de_espera !== undefined) return `<span class="pend-dias" aria-label="${esc(textoSituacao(f))}">${s.dias_de_espera}<small>espera</small></span>`;
+  return "";
+}
+function chipEtapa(f) {
+  const s = f.situacao;
+  if (s.etapa === "a_enviar") return `<span class="chip chip-${s.faixa === "no_prazo" ? "aviso" : s.faixa}">a enviar</span>`;
+  if (s.etapa === "prazo") return `<span class="chip ${s.faixa === "no_prazo" ? "chip-ok" : "chip-" + s.faixa}">${s.dias_restantes < 0 ? -s.dias_restantes + " d de atraso" : s.dias_restantes + " d"}</span>`;
+  if (s.etapa === "aguardando_oficio") return `<span class="chip">sem ofício</span>`;
+  if (s.etapa === "aguardando_resposta") return `<span class="chip">aguarda resposta</span>`;
+  return `<span class="chip chip-ok">encerrada</span>`;
+}
+const valorGlosado = g => g.valor_glosado == null ? "valor não informado" : g.valor_glosado === 0 ? "sem glosa" : brl(g.valor_glosado);
+const acatadoAnterior = g => (g.historico || []).reduce((t, h) => t + (h.valor_acatado || 0), 0);
+
+// barra de saldo: recebido + a receber + em disputa + glosa mantida + em análise
+function barraSaldo(v) {
+  const partes = [["s-recebido", v.recebido, "Recebido"], ["s-receber", v.a_receber, "A receber"],
+    ["s-disputa", v.em_disputa, "Em disputa"], ["s-mantida", v.glosa_mantida, "Glosa mantida"],
+    ["s-analise", v.em_analise, "Em análise na SESAB"]];
+  const total = partes.reduce((t, p) => t + p[1], 0);
+  if (!total) return "";
+  const descricao = partes.filter(p => p[1]).map(p => p[2] + " " + brl(p[1])).join("; ");
+  return `<div class="saldo" role="img" aria-label="${esc(descricao)}" title="${esc(descricao)}">` +
+    partes.filter(p => p[1] > 0).map(p => `<span class="${p[0]}" style="width:${(p[1] / total * 100).toFixed(2)}%"></span>`).join("") + "</div>";
+}
+const LEGENDA = `<ul class="legenda"><li><i class="s-recebido"></i>Recebido</li><li><i class="s-receber"></i>A receber</li>` +
+  `<li><i class="s-disputa"></i>Em disputa</li><li><i class="s-mantida"></i>Glosa mantida</li><li><i class="s-analise"></i>Em análise na SESAB</li></ul>`;
+
+// ---------- resumo em R$ ----------
+function desenharResumo(lista) {
+  const t = somar(lista);
+  const nfsAbertas = lista.flatMap(f => f.nfs).filter(n => n.situacao === "emitida" && !n.paga_em).length;
+  const cartoes = [
+    ["A receber", t.a_receber, "s-receber", pendPlural(nfsAbertas, "NF emitida", "NFs emitidas") + " sem pagamento"],
+    ["Recebido", t.recebido, "s-recebido", "NFs pagas das faturas" + (pendCompetencia() ? " desta competência" : "")],
+    ["Em disputa", t.em_disputa, "s-disputa", "glosa no prazo ou recurso sem resposta"],
+    ["Recuperado nos recursos", t.acatado, "s-recebido", "valor acatado nas respostas"]
+  ].map(([rotulo, valor, cor, nota]) => `<div class="pend-cartao"><span class="pend-rotulo"><i class="${cor}"></i>${rotulo}</span>` +
+    `<span class="pend-valor">${brl(valor)}</span><small>${esc(nota)}</small></div>`).join("");
+  const rodape = `<p class="pend-resumo-rodape"><span>Apresentado <b>${brl(t.apresentado)}</b></span>` +
+    `<span>Glosa mantida <b>${brl(t.glosa_mantida)}</b></span><span>Em análise na SESAB <b>${brl(t.em_analise)}</b></span>` +
+    (t.incompletas ? `<span>${pendPlural(t.incompletas, "fatura", "faturas")} com valor não informado: os totais ficam aproximados.</span>` : "") + "</p>";
+  $("pendResumo").innerHTML = cartoes + rodape;
+}
+
+// ---------- por empresa ----------
+function passos(f) {
+  const g = f.glosa, s = f.situacao;
+  const p = (classe, rotulo, valor) => `<li class="${classe}"><i></i><span>${rotulo}</span><em>${valor}</em></li>`;
+  if (s.etapa === "a_enviar") return p("atual", "Envio", "até " + dataBR(s.limite).slice(0, 5)) + p("", "Ofício", "—") + p("", "Recurso", "—");
+  let html = p("feito", "Envio " + dataBR(f.enviada_em).slice(0, 5), f.valor_apresentado == null ? "valor não informado" : brl(f.valor_apresentado));
+  if (!g) return html + p("atual", "Ofício", "aguardando") + p("", "Recurso", "—");
+  html += p("feito", "Ofício " + dataBR(g.oficio_data).slice(0, 5), valorGlosado(g));
+  if (g.valor_glosado === 0) return html;
+  if (g.sem_recurso_data) return html + p("feito", "Sem recurso", "aceita");
+  if (!g.recurso_data) return html + p("atual", "Recurso", "até " + dataBR(s.limite).slice(0, 5));
+  html += p("feito", "Recurso " + dataBR(g.recurso_data).slice(0, 5), g.valor_recursado == null ? "valor não informado" : brl(g.valor_recursado));
+  return html + (g.resposta_data ? p("feito", "Resposta " + dataBR(g.resposta_data).slice(0, 5), g.valor_acatado == null ? "não informado" : brl(g.valor_acatado) + " acat.")
+    : p("atual", "Resposta", "aguardando"));
+}
+// botão do próximo passo, igual nos cartões e no quadro
+function proximoPasso(f, principal = false) {
+  const classe = "peq" + (principal ? " pend-principal" : "");
+  const dados = f.id ? `data-fatura="${f.id}"` : `data-empresa="${esc(f.empresa)}" data-competencia="${f.competencia}"`;
+  const b = (acao, texto, extra = "") => `<button type="button" class="${classe}" data-acao="${acao}" ${dados} ${extra}>${texto}</button>`;
+  const s = f.situacao, g = f.glosa;
+  if (s.etapa === "a_enviar") return b("fatura", f.id ? "Registrar envio" : "Registrar fatura enviada");
+  if (s.etapa === "aguardando_oficio") return b("oficio", "Chegou o ofício");
+  if (s.etapa === "prazo") return b("recurso", "Recurso enviado") + `<button type="button" class="peq" data-acao="semrecurso" ${dados}>Não vou recorrer</button>`;
+  if (s.etapa === "aguardando_resposta") return b("resposta", "Chegou a resposta");
+  if (g && g.valor_glosado == null) return b("oficio", "Completar valor");
+  return "";
+}
+function cartaoFatura(f) {
+  const v = f.valores, s = f.situacao;
+  const valor = s.etapa === "a_enviar" ? ["Fatura a enviar", "até " + dataBR(s.limite)]
+    : s.etapa === "aguardando_oficio" ? ["Apresentado", f.valor_apresentado == null ? "valor não informado" : brl(f.valor_apresentado)]
+    : ["A receber", brl(v.a_receber)];
+  const nfs = f.nfs.map(n => `<span class="chip ${n.paga_em ? "chip-ok" : n.situacao === "nao_solicitada" && n.pronta ? "chip-aviso" : ""}" title="${esc(nfTipo(n))}">` +
+    `${n.origem === "principal" ? "NF" : "NF rec."} · ${nfRotulo(n)}</span>`).join("");
+  return `<article class="pend-fat${f.virtual ? " virtual" : ""}"><header><b>${esc(rotuloFatura(f))}</b>${chipEtapa(f)}</header>` +
+    `<div class="pend-fat-valor">${valor[0]}<b>${esc(valor[1])}</b></div>${barraSaldo(v)}<ul class="passos">${passos(f)}</ul>` +
+    (nfs ? `<div class="pend-fat-nfs">${nfs}</div>` : "") +
+    `<div class="pend-fat-acoes">${proximoPasso(f)}${f.id ? `<button type="button" class="peq pend-leve" data-detalhes="${f.id}">Detalhes</button>` : ""}</div></article>`;
+}
+function desenharEmpresas() {
+  const area = $("pendEmpresas");
+  area.replaceChildren();
+  if (!pend.empresas.length) { area.innerHTML = `<p class="suave">Nenhuma empresa configurada.</p>`; return; }
+  pend.empresas.forEach(empresa => {
+    const lista = empresa.faturas.filter(f => !pendCompetencia() || f.competencia === pendCompetencia());
+    const t = somar(lista);
+    const conta = (filtro) => lista.filter(filtro).length;
+    const chips = [
+      [conta(f => f.situacao.etapa === "a_enviar"), n => `${n} a enviar`,
+        lista.some(f => f.situacao.etapa === "a_enviar" && f.situacao.faixa === "vencida") ? "chip-vencida" : "chip-aviso"],
+      [conta(f => f.situacao.etapa === "prazo" && f.situacao.faixa === "vencida"), n => pendPlural(n, "glosa vencida", "glosas vencidas"), "chip-vencida"],
+      [conta(f => f.situacao.etapa === "prazo" && f.situacao.faixa === "vencendo"), n => `${n} vencendo`, "chip-vencendo"],
+      [conta(f => f.situacao.etapa === "aguardando_resposta"), n => pendPlural(n, "recurso aguardando", "recursos aguardando"), ""],
+      [lista.flatMap(f => f.nfs).filter(n => n.situacao === "nao_solicitada" && n.pronta).length, n => `${n} NF a solicitar`, ""]
+    ].filter(([n]) => n).map(([n, texto, classe]) => `<span class="chip ${classe}">${texto(n)}</span>`).join("");
+    const cartao = document.createElement("details");
+    cartao.className = "pend-cartao pend-empresa";
+    const chave = `pendenciasAberta:${empresa.empresa}`;
+    cartao.open = lembrar(chave) === "aberta";
+    cartao.addEventListener("toggle", () => guardar(chave, cartao.open ? "aberta" : "fechada"));
+    cartao.innerHTML = `<summary><h3>${esc(empresa.empresa)}</h3><span class="pend-empresa-numeros">` +
+      `<span>A receber <b>${brl(t.a_receber)}</b></span><span>Em disputa <b>${brl(t.em_disputa)}</b></span>` +
+      `<span>Recebido <b>${brl(t.recebido)}</b></span></span><span class="pend-empresa-chips">${chips}</span></summary>` +
+      `<div class="pend-empresa-corpo">${barraSaldo(t)}<div class="pend-faturas">` +
+      (lista.length ? lista.slice().reverse().map(cartaoFatura).join("") : `<p class="suave">Nenhuma fatura registrada${pendCompetencia() ? " nesta competência" : ""}.</p>`) +
+      `</div>${lista.length ? LEGENDA : ""}</div>`;
+    area.append(cartao);
+  });
+}
+
+// ---------- quadros (kanban) ----------
+function coluna(chave, titulo, cor, cartoes, resumo, vazio) {
+  const limite = 8, todas = pendMais.has(chave);
+  const visiveis = todas ? cartoes : cartoes.slice(0, limite);
+  const mais = cartoes.length > limite ? `<button type="button" class="pend-link pend-mais" data-mais="${chave}">` +
+    (todas ? "Mostrar menos" : `Mostrar mais ${cartoes.length - limite}`) + "</button>" : "";
+  return `<section class="pend-coluna" style="--cor:${cor}"><header><h3>${titulo} <span class="chip">${cartoes.length}</span></h3>` +
+    `<small>${resumo}</small></header>${cartoes.length ? visiveis.join("") + mais : `<p class="pend-coluna-vazia">${vazio}</p>`}</section>`;
+}
+function itemGlosa(f, rotulo, valor, botoes) {
+  return `<article class="pend-item" data-detalhes="${f.id}" tabindex="0" aria-label="${esc(f.empresa + " " + rotuloFatura(f))}: abrir detalhes">` +
+    `<div class="pend-item-topo">${seloDias(f)}<div><span class="chip chip-empresa">${esc(f.empresa)}</span><b>Competência ${esc(rotuloFatura(f))}</b></div></div>` +
+    `<span class="suave">${esc(rotulo)}</span><b class="v">${esc(valor)}</b><span class="suave">${esc(textoSituacao(f))}</span>` +
+    (botoes ? `<div class="pend-item-acoes">${botoes}</div>` : "") + "</article>";
+}
+function quadroGlosas(lista) {
+  const reais = lista.filter(f => !f.virtual);
+  const de = etapa => reais.filter(f => f.situacao.etapa === etapa);
+  const oficio = de("aguardando_oficio").sort((a, b) => b.situacao.dias_de_espera - a.situacao.dias_de_espera);
+  const prazo = de("prazo").sort((a, b) => a.situacao.dias_restantes - b.situacao.dias_restantes);
+  const resposta = de("aguardando_resposta").sort((a, b) => b.situacao.dias_de_espera - a.situacao.dias_de_espera);
+  const encerradas = de("encerrada").sort((a, b) => b.competencia.localeCompare(a.competencia));
+  const soma = (arr, fn) => brl(arr.reduce((t, f) => t + (fn(f) || 0), 0));
+  return coluna("oficio", "Aguardando ofício", "var(--estado-vazio)",
+      oficio.map(f => itemGlosa(f, "Apresentado em " + dataBR(f.enviada_em), f.valor_apresentado == null ? "valor não informado" : brl(f.valor_apresentado), proximoPasso(f))),
+      soma(oficio, f => f.valor_apresentado) + " em análise", "Nenhuma fatura esperando ofício.")
+    + coluna("prazo", "Prazo do recurso", "var(--faixa-laranja)",
+      prazo.map(f => itemGlosa(f, "Glosado · ofício de " + dataBR(f.glosa.oficio_data), valorGlosado(f.glosa), proximoPasso(f, true))),
+      soma(prazo, f => f.glosa.valor_glosado) + " glosados", "Nenhuma glosa no prazo de recurso.")
+    + coluna("resposta", "Aguardando resposta", "var(--acento)",
+      resposta.map(f => itemGlosa(f, "Recursado em " + dataBR(f.glosa.recurso_data) + ((f.glosa.historico || []).length ? ` (${f.glosa.historico.length + 1}º recurso)` : ""),
+        f.glosa.valor_recursado == null ? "valor não informado" : brl(f.glosa.valor_recursado), proximoPasso(f))),
+      soma(resposta, f => f.glosa.valor_recursado) + " recursados", "Nenhum recurso esperando resposta.")
+    + coluna("encerradas", "Encerradas", "var(--estado-aprovadas)",
+      encerradas.map(f => itemGlosa(f, f.situacao.motivo === "respondida" ? "Glosado " + valorGlosado(f.glosa) + " · mantido " + brl(f.valores.glosa_mantida)
+        : "Ofício de " + dataBR(f.glosa.oficio_data), f.situacao.motivo === "respondida" ? brl(f.valores.acatado) + " recuperados"
+        : f.situacao.motivo === "sem_glosa" ? "Sem glosa" : valorGlosado(f.glosa) + " aceitos", proximoPasso(f))),
+      soma(encerradas, f => f.valores.acatado) + " recuperados", "Nenhuma glosa encerrada.");
+}
+function quadroNfs(lista) {
+  const nfs = lista.flatMap(f => f.nfs.map(n => ({f, n})));
+  const botao = (n, preset, texto, principal) => `<button type="button" class="peq${principal ? " pend-principal" : ""}" data-acao="nf" data-nf="${n.id}" data-preset="${preset}">${texto}</button>`;
+  const item = ({f, n}, botoes) => `<article class="pend-item" data-detalhes="${f.id}" tabindex="0" aria-label="${esc(f.empresa + " " + rotuloFatura(f))}: abrir detalhes">` +
+    `<div class="pend-item-topo"><div><span class="chip chip-empresa">${esc(f.empresa)}</span><b>${nfTipo(n)} · ${esc(rotuloFatura(f))}</b></div></div>` +
+    `<b class="v">${n.valor == null ? (n.pronta ? "valor não informado" : "valor depois do ofício") : brl(n.valor)}</b>` +
+    `<span class="suave">${esc([n.numero && "nº " + n.numero, n.solicitada_em && "solicitada " + dataBR(n.solicitada_em),
+      n.emitida_em && "emitida " + dataBR(n.emitida_em), n.paga_em && "paga " + dataBR(n.paga_em)].filter(Boolean).join(" · ") ||
+      (n.pronta ? "pode ser solicitada" : "aguardando o ofício de glosa"))}</span>` +
+    (botoes ? `<div class="pend-item-acoes">${botoes}</div>` : "") + "</article>";
+  const total = arr => brl(arr.reduce((t, x) => t + (x.n.valor || 0), 0));
+  const solicitar = nfs.filter(x => x.n.situacao === "nao_solicitada").sort((a, b) => b.n.pronta - a.n.pronta || a.f.competencia.localeCompare(b.f.competencia));
+  const solicitadas = nfs.filter(x => x.n.situacao === "solicitada");
+  const emitidas = nfs.filter(x => x.n.situacao === "emitida" && !x.n.paga_em);
+  // tudo pela competência: a data de pagamento só aparece no cartão, não filtra
+  const pagas = nfs.filter(x => x.n.paga_em).sort((a, b) => b.f.competencia.localeCompare(a.f.competencia));
+  return coluna("nf-solicitar", "A solicitar", "var(--faixa-laranja)", solicitar.map(x => item(x, x.n.pronta ? botao(x.n, "solicitada", "Marcar solicitada", true) : "")),
+      total(solicitar), "Nada a solicitar.")
+    + coluna("nf-solicitada", "Solicitada", "var(--acento)", solicitadas.map(x => item(x, botao(x.n, "emitida", "Marcar emitida"))), total(solicitadas), "Nenhuma NF solicitada.")
+    + coluna("nf-emitida", "Emitida · a receber", "var(--estado-auditar)", emitidas.map(x => item(x, botao(x.n, "paga", "Registrar pagamento"))), total(emitidas), "Nenhuma NF emitida sem pagamento.")
+    + coluna("nf-paga", "Paga", "var(--estado-aprovadas)", pagas.map(x => item(x, "")), total(pagas), "Nenhuma NF paga.");
+}
+function desenharEnvio(lista) {
+  const aEnviar = lista.filter(f => f.situacao.etapa === "a_enviar").sort((a, b) => a.situacao.dias_restantes - b.situacao.dias_restantes);
+  const area = $("pendEnvio");
+  area.hidden = !aEnviar.length;
+  if (!aEnviar.length) return;
+  area.innerHTML = `<h3>Fatura a enviar <small>prazo: dia ${pend.prazos.dia_envio_fatura} do mês seguinte à competência</small></h3>` +
+    `<div class="pend-envio-lista">${aEnviar.map(f => `<article class="pend-item"><div class="pend-item-topo">${seloDias(f)}<div>` +
+    `<span class="chip chip-empresa">${esc(f.empresa)}</span><b>Competência ${esc(rotuloFatura(f))}</b>` +
+    `<span class="suave">${esc(textoSituacao(f))}</span></div></div><div class="pend-item-acoes">${proximoPasso(f, true)}</div></article>`).join("")}</div>`;
+}
+function desenharQuadro(lista) {
+  $("pendAbaGlosas").setAttribute("aria-selected", String(pendAba === "glosas"));
+  $("pendAbaNfs").setAttribute("aria-selected", String(pendAba === "nfs"));
+  const reais = lista.filter(f => !f.virtual);
+  $("pendAbaGlosas").textContent = `Glosas (${reais.filter(f => ["aguardando_oficio", "prazo", "aguardando_resposta"].includes(f.situacao.etapa)).length} abertas)`;
+  $("pendAbaNfs").textContent = `Notas fiscais (${reais.flatMap(f => f.nfs).filter(n => !n.paga_em).length} sem pagamento)`;
+  $("pendQuadro").innerHTML = pendAba === "glosas" ? quadroGlosas(lista) : quadroNfs(lista);
+}
+
+// ---------- gaveta de detalhes ----------
+function linhaTempo(f) {
+  const g = f.glosa, s = f.situacao;
+  const link = (acao, texto) => `<button type="button" class="pend-link" data-acao="${acao}" data-fatura="${f.id}">${texto}</button>`;
+  const li = (classe, titulo, valor, detalhe, botoes = "") => `<li class="${classe}"><b>${titulo}</b>${valor ? `<span class="v">${esc(valor)}</span>` : ""}` +
+    `<small>${esc(detalhe)}</small>${botoes}</li>`;
+  let html = f.enviada_em ? li("feito", "Fatura enviada", f.valor_apresentado == null ? "valor não informado" : brl(f.valor_apresentado),
+    "em " + dataBR(f.enviada_em), link("fatura", "Editar"))
+    : li("atual", "Envio da fatura", "", textoSituacao(f), link("fatura", "Registrar envio"));
+  if (!f.enviada_em) return `<ol class="tempo">${html}</ol>`;
+  if (!g) return `<ol class="tempo">${html}${li("atual", "Ofício de glosa", "", textoSituacao(f), link("oficio", "Registrar ofício"))}</ol>`;
+  html += li("feito", "Ofício" + (g.oficio_numero ? " nº " + esc(g.oficio_numero) : ""), valorGlosado(g), "chegou em " + dataBR(g.oficio_data),
+    link("oficio", g.valor_glosado == null ? "Completar valor" : "Editar") + link("excluir", "Excluir ofício"));
+  (g.historico || []).forEach((h, i) => {
+    html += li("feito", `${i + 1}º recurso`, h.valor_recursado == null ? "valor não informado" : brl(h.valor_recursado), "enviado em " + dataBR(h.recurso_data));
+    html += li("feito", `Resposta do ${i + 1}º recurso`, h.valor_acatado == null ? "não informado" : brl(h.valor_acatado) + " acatado", "em " + dataBR(h.resposta_data));
+  });
+  if (g.valor_glosado === 0) return `<ol class="tempo">${html}</ol>`;
+  const ordem = (g.historico || []).length ? `${g.historico.length + 1}º recurso` : "Recurso";
+  if (g.sem_recurso_data) html += li("feito pulado", "Sem recurso", "", "glosa aceita em " + dataBR(g.sem_recurso_data), link("semrecurso", "Desfazer"));
+  else if (g.recurso_data) {
+    html += li("feito", ordem + " enviado", g.valor_recursado == null ? "valor não informado" : brl(g.valor_recursado), "em " + dataBR(g.recurso_data), link("recurso", "Editar"));
+    html += g.resposta_data ? li("feito", "Resposta", g.valor_acatado == null ? "não informado" : brl(g.valor_acatado) + " acatado",
+        "em " + dataBR(g.resposta_data), link("resposta", "Editar") + link("novorecurso", "Novo recurso"))
+      : li("atual", "Resposta", "", textoSituacao(f), link("resposta", "Registrar resposta"));
+  } else html += li("atual", "Recurso", "", textoSituacao(f), link("recurso", "Recurso enviado") + link("semrecurso", "Não vou recorrer"));
+  return `<ol class="tempo">${html}</ol>`;
+}
+function contas(f) {
+  const v = f.valores, g = f.glosa;
+  let html = `<dl class="contas"><dt>Apresentado</dt><dd>${f.valor_apresentado == null ? "não informado" : brl(f.valor_apresentado)}</dd>`;
+  if (g) {
+    html += `<dt>Glosado</dt><dd>${g.valor_glosado == null ? "não informado" : "− " + brl(g.valor_glosado)}</dd>`;
+    if (v.acatado) html += `<dt>Recuperado nos recursos</dt><dd>+ ${brl(v.acatado)}</dd>`;
+    if (v.em_disputa) html += `<dt>Em disputa</dt><dd>${brl(v.em_disputa)}</dd>`;
+    if (v.glosa_mantida) html += `<dt>Glosa mantida</dt><dd>${brl(v.glosa_mantida)}</dd>`;
+    html += `<dt class="total">Previsto para receber</dt><dd class="total">${brl(v.previsto)}</dd>`;
+  } else if (f.enviada_em) html += `<dt>Situação</dt><dd>em análise na SESAB</dd>`;
+  return html + `<dt>Recebido</dt><dd>${brl(v.recebido)}</dd><dt><b>A receber</b></dt><dd>${brl(v.a_receber)}</dd></dl>`;
+}
+function listaNfs(f) {
+  if (!f.nfs.length) return `<p class="suave">Nenhuma NF.</p>`;
+  return `<ul class="nf-lista">${f.nfs.map(n => {
+    const proximo = n.paga_em ? "" : n.situacao === "nao_solicitada" ? "solicitada" : n.situacao === "solicitada" ? "emitida" : "paga";
+    const texto = {solicitada: "Marcar solicitada", emitida: "Marcar emitida", paga: "Registrar pagamento"}[proximo];
+    const datas = [n.solicitada_em && "solicitada " + dataBR(n.solicitada_em), n.emitida_em && "emitida " + dataBR(n.emitida_em),
+      n.paga_em && "paga " + dataBR(n.paga_em)].filter(Boolean).join(" · ");
+    return `<li><div><b>${nfTipo(n)}${n.numero ? " nº " + esc(n.numero) : ""} · ${nfRotulo(n)}</b>` +
+      `<small>${n.valor == null ? (n.pronta ? "valor não informado" : "valor depois do ofício") : brl(n.valor)}${datas ? " · " + datas : ""}</small></div>` +
+      `<span>${proximo && (n.pronta || proximo !== "solicitada") ? `<button type="button" class="peq" data-acao="nf" data-nf="${n.id}" data-preset="${proximo}">${texto}</button>` : ""}` +
+      ` <button type="button" class="pend-link" data-acao="nf" data-nf="${n.id}">Editar</button></span></li>`;
+  }).join("")}</ul>`;
+}
+function desenharGaveta() {
+  const f = acharFatura(pendGavetaId), gaveta = $("pendGaveta");
+  if (!f) { if (gaveta.open) gaveta.close(); return; }
+  gaveta.innerHTML = `<div class="pend-gaveta-dentro"><header><div><span class="chip chip-empresa">${esc(f.empresa)}</span>` +
+    `<h2 id="pendGavetaTitulo">Competência ${esc(rotuloFatura(f))}</h2><span class="suave">${esc(textoSituacao(f))}</span></div>` +
+    `<button type="button" class="pend-fechar" data-fechar aria-label="Fechar">✕</button></header>` +
+    `<div class="pend-bloco"><h4>Fatura e glosa</h4>${linhaTempo(f)}</div>` +
+    `<div class="pend-bloco"><h4>Contas</h4>${barraSaldo(f.valores)}<div style="height:10px"></div>${contas(f)}</div>` +
+    `<div class="pend-bloco"><h4>Notas fiscais</h4>${listaNfs(f)}</div>` +
+    (f.nota ? `<p class="pend-dica">Nota: ${esc(f.nota)}</p>` : "") + `</div>`;
+}
+function abrirGaveta(id) {
+  pendGavetaId = id; desenharGaveta();
+  if (!$("pendGaveta").open) $("pendGaveta").showModal();
+}
+
+// ---------- formulários sob demanda ----------
+function campo(rotulo, nome, tipo = "text", valor = "", extra = "") {
+  const dinheiro = nome.startsWith("v_");
+  return `<label${extra.includes("todo") ? ' class="todo"' : ""}>${rotulo}<input name="${nome}" type="${tipo}" value="${esc(valor ?? "")}"` +
+    `${dinheiro ? ' inputmode="decimal" placeholder="0,00" autocomplete="off"' : ""}${extra.includes("obrigatorio") ? " required" : ""}></label>`;
+}
+function abrirFormulario(acao, botao) {
+  const dados = botao.dataset, hoje = pend.hoje;
+  const nf = dados.nf ? todasFaturas().flatMap(f => f.nfs.map(n => ({f, n}))).find(x => x.n.id === Number(dados.nf)) : null;
+  const f = nf ? nf.f : dados.fatura ? acharFatura(Number(dados.fatura)) : dados.empresa ? acharFatura(null, dados.empresa, dados.competencia) : null;
+  const g = f && f.glosa;
+  let titulo = "", sub = f ? `${f.empresa} · competência ${rotuloFatura(f)}` : "", corpo = "", rotuloSalvar = "Salvar";
+  if (acao === "fatura") {
+    const nova = !f || f.virtual;
+    titulo = nova ? "Registrar fatura" : f.enviada_em ? "Editar fatura" : "Registrar envio da fatura";
+    corpo = `<div class="pend-campos">` + (nova ? `<label>Empresa<select name="empresa">${pend.empresas.map(e =>
+      `<option${f && f.empresa === e.empresa ? " selected" : ""}>${esc(e.empresa)}</option>`).join("")}</select></label>` +
+      campo("Competência", "competencia", "month", f ? f.competencia : "", "obrigatorio") : "") +
+      campo("Enviada em", "enviada_em", "date", f && !f.virtual ? (f.enviada_em || hoje) : hoje) +
+      campo("Valor apresentado", "v_apresentado", "text", f ? valorCampo(f.valor_apresentado) : "") +
+      campo("Referência (opcional)", "referencia", "text", f ? f.referencia : "", nova ? "" : "todo") +
+      `<label class="todo">Nota (opcional)<textarea name="nota">${esc(f && !f.virtual ? f.nota : "")}</textarea></label></div>` +
+      `<p class="pend-dica">Prazo de envio: dia ${pend.prazos.dia_envio_fatura} do mês seguinte à competência. A NF principal é criada junto.</p>`;
+  } else if (acao === "oficio") {
+    titulo = g ? "Editar ofício de glosa" : "Chegou o ofício de glosa";
+    const opcoes = f ? "" : todasFaturas().filter(x => x.id && x.enviada_em && !x.glosa);
+    const escolha = f ? "" : `<label class="todo">Fatura<select name="fatura" required><option value="">${opcoes.length ? "Escolha a fatura" : "Nenhuma fatura enviada sem ofício"}</option>` +
+      opcoes.map(x => `<option value="${x.id}">${esc(x.empresa)} · ${esc(rotuloFatura(x))}</option>`).join("") + "</select></label>";
+    corpo = `<div class="pend-campos">${escolha}${campo("Chegou em", "oficio_data", "date", g ? g.oficio_data : hoje, "obrigatorio")}` +
+      campo("Nº do ofício (opcional)", "oficio_numero", "text", g ? g.oficio_numero : "") +
+      campo("Valor glosado", "v_glosado", "text", g ? valorCampo(g.valor_glosado) : "", "todo") +
+      `<label class="linha todo"><input type="checkbox" name="sem_glosa"${g && g.valor_glosado === 0 ? " checked" : ""}> Ofício sem glosa (fatura aprovada inteira)</label></div>` +
+      `<p class="pend-dica">O prazo de ${pend.prazos.glosa_dias} dias para o recurso conta a partir desta data.</p>`;
+  } else if (acao === "recurso") {
+    titulo = g.recurso_data ? "Editar recurso" : "Recurso enviado";
+    const disponivel = g.valor_glosado == null ? null : g.valor_glosado - acatadoAnterior(g);
+    sub += ` · glosado ${valorGlosado(g)}`;
+    corpo = `<div class="pend-campos">${campo("Enviado em", "recurso_data", "date", g.recurso_data || hoje, "obrigatorio")}` +
+      campo("Valor recursado", "v_recursado", "text", valorCampo(g.valor_recursado ?? disponivel), "obrigatorio") + `</div>` +
+      `<p class="pend-dica">Se recorrer de menos que o glosado, a diferença conta como glosa aceita.</p>`;
+  } else if (acao === "resposta") {
+    titulo = g.resposta_data ? "Editar resposta do recurso" : "Chegou a resposta do recurso";
+    sub += ` · recursado ${g.valor_recursado == null ? "valor não informado" : brl(g.valor_recursado)}`;
+    corpo = `<div class="pend-campos">${campo("Chegou em", "resposta_data", "date", g.resposta_data || hoje, "obrigatorio")}` +
+      campo("Valor acatado", "v_acatado", "text", valorCampo(g.valor_acatado), "obrigatorio") + `</div>` +
+      `<p class="pend-dica">O valor acatado vira a “NF do recurso”, em NF a solicitar.</p>`;
+  } else if (acao === "novorecurso") {
+    titulo = "Novo recurso";
+    const disponivel = g.valor_glosado == null ? null : g.valor_glosado - acatadoAnterior(g) - (g.valor_acatado || 0);
+    sub += disponivel == null ? "" : ` · ainda mantido ${brl(disponivel)}`;
+    corpo = `<div class="pend-campos">${campo("Enviado em", "recurso_data", "date", hoje, "obrigatorio")}` +
+      campo("Valor recursado", "v_recursado", "text", valorCampo(disponivel), "obrigatorio") + `</div>` +
+      `<p class="pend-dica">Caso raro. O recurso anterior e a resposta dele ficam no histórico; a glosa volta para “Aguardando resposta”.</p>`;
+  } else if (acao === "semrecurso") {
+    titulo = g.sem_recurso_data ? "Voltar a contar o prazo?" : "Não vou recorrer";
+    rotuloSalvar = g.sem_recurso_data ? "Voltar ao prazo" : "Salvar";
+    corpo = g.sem_recurso_data ? `<p class="pend-dica">A glosa volta para o prazo do recurso.</p>`
+      : `<div class="pend-campos">${campo("Decidido em", "sem_recurso_data", "date", hoje, "obrigatorio")}</div>` +
+        `<p class="pend-dica">A glosa de ${valorGlosado(g)} fica registrada como aceita e sai dos prazos.</p>`;
+  } else if (acao === "excluir") {
+    titulo = "Excluir o ofício de glosa?";
+    rotuloSalvar = "Excluir ofício";
+    corpo = `<p class="pend-dica">Use só para desfazer um registro feito por engano. O recurso e a resposta registrados também saem; ` +
+      `a NF do recurso ainda não solicitada é apagada.</p>`;
+  } else if (acao === "nf") {
+    const n = {...nf.n}, preset = dados.preset;
+    if (preset === "solicitada") { n.situacao = "solicitada"; n.solicitada_em = n.solicitada_em || hoje; }
+    if (preset === "emitida") { n.situacao = "emitida"; n.emitida_em = n.emitida_em || hoje; }
+    if (preset === "paga") n.paga_em = n.paga_em || hoje;
+    titulo = nfTipo(n) + (preset === "paga" ? " · registrar pagamento" : "");
+    corpo = `<div class="pend-campos"><label>Situação<select name="situacao">${Object.entries(NF_ROTULO).map(([chave, rotulo]) =>
+      `<option value="${chave}"${n.situacao === chave ? " selected" : ""}>${rotulo}</option>`).join("")}</select></label>` +
+      campo("Valor", "v_valor", "text", valorCampo(n.valor)) + campo("Solicitada em", "solicitada_em", "date", n.solicitada_em || "") +
+      campo("Emitida em", "emitida_em", "date", n.emitida_em || "") + campo("Nº da NF (opcional)", "numero", "text", n.numero) +
+      campo("Paga em", "paga_em", "date", n.paga_em || "") + `</div>`;
+  }
+  const dialogo = $("pendDialogo");
+  dialogo.innerHTML = `<form method="dialog" novalidate><h2>${titulo}</h2>${sub ? `<p class="pend-dialogo-sub">${esc(sub)}</p>` : ""}${corpo}` +
+    `<p class="pend-erro" role="alert"></p><div class="pend-dialogo-acoes"><button type="button" data-fechar>Cancelar</button>` +
+    `<button type="submit" class="pend-principal">${rotuloSalvar}</button></div></form>`;
+  const formulario = dialogo.querySelector("form"), campos = formulario.elements;
+  if (campos.sem_glosa) {
+    const alternar = () => { campos.v_glosado.disabled = campos.sem_glosa.checked; };
+    campos.sem_glosa.addEventListener("change", alternar); alternar();
+  }
+  formulario.addEventListener("submit", async evento => {
+    evento.preventDefault();
+    const erro = formulario.querySelector(".pend-erro");
+    try {
+      const [caminho, corpoEnvio] = montarEnvio(acao, campos, f, g, nf);
+      formulario.querySelector("[type=submit]").disabled = true;
+      await enviar(caminho, corpoEnvio);
+      dialogo.close();
+      avisoPendencias("Registrado.");
+    } catch (falha) {
+      erro.textContent = falha.message;
+      formulario.querySelector("[type=submit]").disabled = false;
+    }
+  });
+  dialogo.showModal();
+  const primeiro = formulario.querySelector("select, input:not([type=checkbox]), textarea");
+  if (primeiro) primeiro.focus();
+}
+// valida no navegador o que dá para validar e monta a chamada; o servidor confere de novo
+function montarEnvio(acao, campos, f, g, nf) {
+  const dinheiro = (nome, obrigatorio) => {
+    const valor = lerValor(campos[nome].value);
+    if (Number.isNaN(valor)) throw new Error("Valor inválido: use o formato 12.345,67.");
+    if (obrigatorio && valor == null) throw new Error("Informe o valor.");
+    return valor;
+  };
+  const data = (nome, obrigatoria) => {
+    const valor = campos[nome].value || null;
+    if (obrigatoria && !valor) throw new Error("Informe a data.");
+    return valor;
+  };
+  if (acao === "fatura") {
+    const corpo = {referencia: campos.referencia.value, valor_apresentado: dinheiro("v_apresentado"),
+      enviada_em: data("enviada_em"), nota: campos.nota.value};
+    if (!f || f.virtual) {
+      if (!campos.competencia.value) throw new Error("Informe a competência.");
+      return ["/pendencias/fatura", {empresa: campos.empresa.value, competencia: campos.competencia.value, ...corpo}];
+    }
+    return [`/pendencias/fatura/${f.id}`, corpo];
+  }
+  if (acao === "oficio") {
+    const alvo = f || acharFatura(Number(campos.fatura.value));
+    if (!alvo) throw new Error("Escolha a fatura.");
+    const glosado = campos.sem_glosa.checked ? 0 : dinheiro("v_glosado", true);
+    if (alvo.valor_apresentado != null && glosado > alvo.valor_apresentado) throw new Error("O valor glosado passa do apresentado.");
+    return [`/pendencias/fatura/${alvo.id}/glosa`, {oficio_data: data("oficio_data", true), oficio_numero: campos.oficio_numero.value, valor_glosado: glosado}];
+  }
+  if (acao === "recurso" || acao === "novorecurso") {
+    const valor = dinheiro("v_recursado", true);
+    return [acao === "recurso" ? `/pendencias/glosa/${g.id}` : `/pendencias/glosa/${g.id}/novo-recurso`,
+      {recurso_data: data("recurso_data", true), valor_recursado: valor}];
+  }
+  if (acao === "resposta") {
+    const valor = dinheiro("v_acatado", true);
+    if (g.valor_recursado != null && valor > g.valor_recursado) throw new Error("O valor acatado não pode passar do recursado (" + brl(g.valor_recursado) + ").");
+    return [`/pendencias/glosa/${g.id}`, {resposta_data: data("resposta_data", true), valor_acatado: valor}];
+  }
+  if (acao === "semrecurso") return [`/pendencias/glosa/${g.id}`, {sem_recurso_data: g.sem_recurso_data ? null : data("sem_recurso_data", true)}];
+  if (acao === "excluir") return [`/pendencias/glosa/${g.id}/excluir`, {confirmar: true}];
+  return [`/pendencias/nf/${nf.n.id}`, {situacao: campos.situacao.value, valor: dinheiro("v_valor"), numero: campos.numero.value,
+    solicitada_em: data("solicitada_em"), emitida_em: data("emitida_em"), paga_em: data("paga_em")}];
+}
+async function enviar(caminho, corpo) {
+  const resposta = await fetch(caminho, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(corpo)});
+  const resultado = await resposta.json().catch(() => ({}));
+  if (!resposta.ok) throw new Error(resultado.erro || "Não foi possível salvar.");
+  await lerPendencias();
+}
+let temporizadorPendencias;
 function avisoPendencias(texto) {
   const aviso = $("pendenciasAviso");
   aviso.textContent = texto; aviso.hidden = false;
   clearTimeout(temporizadorPendencias);
-  temporizadorPendencias = setTimeout(() => { aviso.hidden = true; }, 5000);
+  temporizadorPendencias = setTimeout(() => { aviso.hidden = true; }, 4000);
 }
-async function enviarPendencias(caminho, dados, botao, confirmacao) {
-  botao.disabled = true;
-  try {
-    const resposta = await fetch(caminho, {method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(dados)});
-    const resultado = await resposta.json();
-    if (!resposta.ok) throw new Error(resultado.erro || "Não foi possível salvar.");
-    await lerPendencias();
-    if (caminho.startsWith("/pendencias/tarefa")) document.dispatchEvent(new Event("tarefasAtualizadas"));
-    avisoPendencias(confirmacao);
-    return true;
-  } catch (erro) {
-    avisoPendencias(erro.message);
-    return false;
-  } finally { botao.disabled = false; }
-}
-function campoDataPendencias(rotulo) {
-  const etiqueta = elementoPendencias("label", rotulo);
-  const campo = elementoPendencias("input");
-  campo.type = "date"; campo.required = true;
-  etiqueta.append(campo);
-  return [etiqueta, campo];
-}
-function acaoPendencias(pai, rotulo, campo, caminho, dados, mensagem) {
-  const formulario = elementoPendencias("form", undefined, "pendencias-acao");
-  if (campo) formulario.append(campo[0]);
-  const botao = elementoPendencias("button", rotulo);
-  botao.type = "submit";
-  formulario.append(botao);
-  formulario.addEventListener("submit", async evento => {
-    evento.preventDefault();
-    await enviarPendencias(caminho, {...dados, ...(campo ? {[campo[2]]: campo[1].value} : {})},
-      botao, mensagem);
-  });
-  pai.append(formulario);
-}
-function prazoPendencias(item, grupo) {
-  if (grupo === "aguardando_terceiros") return `${item.dias_de_espera} dia(s) de espera · Data-limite: aguardando ofício`;
-  if (grupo === "nf_a_solicitar") return "Data-limite: não definida";
-  if (!item.limite) return "Sem prazo · Data-limite: não definida";
-  const dias = item.dias_restantes;
-  const descricao = dias < 0 ? `${-dias} dia(s) de atraso` : `${dias} dia(s) restantes`;
-  return `${descricao} · Data-limite: ${dataBR(item.limite)}`;
-}
-function itemPendencias(item, grupo) {
-  const linha = elementoPendencias("li");
-  const titulo = grupo === "tarefas" ? item.texto :
-    `Competência ${item.competencia}${item.referencia ? " · " + item.referencia : ""}`;
-  linha.append(elementoPendencias("strong", titulo),
-    elementoPendencias("small", prazoPendencias(item, grupo)));
-  if (grupo === "aguardando_terceiros") {
-    const data = campoDataPendencias("Chegou o ofício de glosa em"); data[2] = "oficio_data";
-    acaoPendencias(linha, "Chegou o ofício de glosa", data,
-      `/pendencias/fatura/${item.id}`, {}, "Chegada do ofício registrada.");
-  } else if (["vencidas", "vencendo", "no_prazo"].includes(grupo)) {
-    const data = campoDataPendencias("Respondi a glosa em"); data[2] = "resposta_data";
-    acaoPendencias(linha, "Respondi a glosa", data,
-      `/pendencias/fatura/${item.id}`, {}, "Resposta à glosa registrada.");
-  } else if (grupo === "nf_a_solicitar") {
-    const data = campoDataPendencias("Data da NF"); data[2] = "nf_data";
-    acaoPendencias(linha, "NF solicitada", data,
-      `/pendencias/fatura/${item.id}`, {nf: "solicitada"}, "NF solicitada registrada.");
-    const emissao = campoDataPendencias("Data da emissão"); emissao[2] = "nf_data";
-    acaoPendencias(linha, "NF emitida", emissao,
-      `/pendencias/fatura/${item.id}`, {nf: "emitida"}, "NF emitida registrada.");
-  } else if (grupo === "tarefas") {
-    acaoPendencias(linha, "Concluir tarefa", null,
-      `/pendencias/tarefa/${item.id}`, {concluida: true}, "Tarefa concluída.");
-  }
-  return linha;
-}
-function mostrarPendencias(dados) {
-  const area = $("pendenciasEmpresas");
-  area.replaceChildren();
-  if (!dados.empresas.length) area.append(elementoPendencias("p", "Nenhuma empresa configurada.", "pendencias-vazio"));
-  dados.empresas.forEach(empresa => {
-    const cartao = elementoPendencias("details", undefined, "pendencias-empresa");
-    const chave = `pendenciasAberta:${empresa.empresa}`;
-    cartao.open = estadosPendencias.has(chave) ? estadosPendencias.get(chave) : lembrar(chave) === "aberta";
-    cartao.addEventListener("toggle", () => {
-      estadosPendencias.set(chave, cartao.open);
-      guardar(chave, cartao.open ? "aberta" : "fechada");
-    });
-    const resumo = elementoPendencias("summary", undefined, "pendencias-resumo");
-    resumo.append(elementoPendencias("h2", empresa.empresa));
-    const selos = elementoPendencias("div", undefined, "pendencias-selos");
-    [["vencidas", "vencidas"], ["vencendo", "vencendo"],
-      ["aguardando_terceiros", "aguardando"], ["nf_a_solicitar", "NF a solicitar"]]
-      .forEach(([chaveGrupo, rotulo]) => selos.append(elementoPendencias("span",
-        `${empresa.contagens[chaveGrupo]} ${rotulo}`,
-        "pendencias-selo" + (chaveGrupo === "vencidas" && empresa.contagens[chaveGrupo] ? " pendencias-selo-aviso" : ""))));
-    resumo.append(selos); cartao.append(resumo);
-    const conteudo = elementoPendencias("div", undefined, "pendencias-conteudo");
-    const grupos = elementoPendencias("div", undefined, "pendencias-grupos");
-    gruposPendencias.forEach(([chaveGrupo, rotulo]) => {
-      const secao = elementoPendencias("section");
-      secao.append(elementoPendencias("h3", `${rotulo} (${empresa.contagens[chaveGrupo]})`));
-      const itens = empresa.grupos[chaveGrupo];
-      if (!itens.length) secao.append(elementoPendencias("p", "Nenhum item.", "pendencias-vazio"));
-      else {
-        const lista = elementoPendencias("ul");
-        itens.forEach(item => lista.append(itemPendencias(item, chaveGrupo)));
-        secao.append(lista);
-      }
-      grupos.append(secao);
-    });
-    conteudo.append(grupos); cartao.append(conteudo); area.append(cartao);
-  });
+
+// ---------- leitura e eventos ----------
+function desenharTudo() {
+  const lista = faturasVisiveis();
+  desenharResumo(lista);
+  desenharEmpresas();
+  desenharEnvio(lista);
+  desenharQuadro(lista);
+  if ($("pendGaveta").open) desenharGaveta();
 }
 async function lerPendencias() {
   try {
     const resposta = await fetch("/pendencias/dados");
     const dados = await resposta.json();
     if (!resposta.ok) throw new Error(dados.erro || "Não foi possível ler as pendências.");
-    mostrarPendencias(dados);
-    await lerNfsSolicitadas();
-    $("pendenciasEstado").textContent = "Atualizado em " + dataBR(dados.hoje) + ".";
+    pend = dados;
+    const seletor = $("pendCompetencia"), escolhida = seletor.value || lembrar("pendenciasCompetencia") || "";
+    seletor.innerHTML = `<option value="">Todas</option>` + dados.competencias.slice().reverse()
+      .map(c => `<option value="${c}">${compBR(c)}</option>`).join("");
+    seletor.value = dados.competencias.includes(escolhida) ? escolhida : "";
+    desenharTudo();
+    $("pendEstado").textContent = "Glosas, notas fiscais e o que há para receber · atualizado em " + dataBR(dados.hoje) + ".";
   } catch (erro) {
-    $("pendenciasEstado").textContent = erro.message;
-    throw erro;
+    $("pendEstado").textContent = erro.message;
   }
 }
-async function lerNfsSolicitadas() {
-  const resposta = await fetch("/pendencias/nfs-solicitadas");
-  const dados = await resposta.json();
-  if (!resposta.ok) throw new Error(dados.erro || "Não foi possível ler as NFs solicitadas.");
-  const seletor = $("formNfEmitida").elements.fatura;
-  seletor.replaceChildren();
-  const vazio = elementoPendencias("option", dados.length ? "Escolha a fatura" : "Nenhuma NF solicitada");
-  vazio.value = ""; seletor.append(vazio);
-  dados.forEach(item => {
-    const opcao = elementoPendencias("option",
-      `${item.empresa} · ${item.competencia}${item.referencia ? " · " + item.referencia : ""}`);
-    opcao.value = String(item.id); seletor.append(opcao);
-  });
-}
-$("formFatura").addEventListener("submit", async evento => {
-  evento.preventDefault();
-  const formulario = evento.currentTarget, campos = formulario.elements;
-  const salvo = await enviarPendencias("/pendencias/fatura", {
-    empresa: campos.empresa.value, competencia: campos.competencia.value, referencia: campos.referencia.value
-  }, formulario.querySelector("button[type=submit]"), "Fatura registrada.");
-  if (salvo) { campos.competencia.value = ""; campos.referencia.value = ""; }
+$("pendCompetencia").addEventListener("change", () => { guardar("pendenciasCompetencia", $("pendCompetencia").value); desenharTudo(); });
+$("pendAbaGlosas").addEventListener("click", () => { pendAba = "glosas"; guardar("pendenciasQuadro", pendAba); desenharQuadro(faturasVisiveis()); });
+$("pendAbaNfs").addEventListener("click", () => { pendAba = "nfs"; guardar("pendenciasQuadro", pendAba); desenharQuadro(faturasVisiveis()); });
+document.addEventListener("click", evento => {
+  if (!pend) return;
+  const acao = evento.target.closest("[data-acao]");
+  if (acao) { evento.preventDefault(); abrirFormulario(acao.dataset.acao, acao); return; }
+  const mais = evento.target.closest("[data-mais]");
+  if (mais) { const chave = mais.dataset.mais; pendMais.has(chave) ? pendMais.delete(chave) : pendMais.add(chave); desenharQuadro(faturasVisiveis()); return; }
+  if (evento.target.closest("[data-fechar]")) { evento.target.closest("dialog").close(); return; }
+  const detalhes = evento.target.closest("[data-detalhes]");
+  if (detalhes && !evento.target.closest("button:not([data-detalhes])")) abrirGaveta(Number(detalhes.dataset.detalhes));
 });
-$("formTarefa").addEventListener("submit", async evento => {
-  evento.preventDefault();
-  const formulario = evento.currentTarget, campos = formulario.elements;
-  const salvo = await enviarPendencias("/pendencias/tarefa", {
-    empresa: campos.empresa.value, texto: campos.texto.value,
-    prazo: campos.prazo.value || null
-  }, formulario.querySelector("button[type=submit]"), "Tarefa criada.");
-  if (salvo) { campos.texto.value = ""; campos.prazo.value = ""; }
+document.addEventListener("keydown", evento => {
+  const item = evento.target.closest && evento.target.closest(".pend-item[data-detalhes]");
+  if (item && evento.target === item && (evento.key === "Enter" || evento.key === " ")) { evento.preventDefault(); abrirGaveta(Number(item.dataset.detalhes)); }
 });
-$("formNfEmitida").addEventListener("submit", async evento => {
-  evento.preventDefault();
-  const formulario = evento.currentTarget, campos = formulario.elements;
-  const salvo = await enviarPendencias(`/pendencias/fatura/${campos.fatura.value}`,
-    {nf: "emitida", nf_data: campos.data.value},
-    formulario.querySelector("button[type=submit]"), "NF emitida registrada.");
-  if (salvo) campos.data.value = "";
-});
-lerPendencias().catch(() => {});
-document.addEventListener("tarefasAtualizadas", () => lerPendencias().catch(() => {}));
+// clicar fora da gaveta fecha
+$("pendGaveta").addEventListener("click", evento => { if (evento.target.id === "pendGaveta") evento.target.close(); });
+lerPendencias();
 </script>
 {% endblock %}

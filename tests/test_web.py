@@ -219,8 +219,8 @@ def test_base_formata_datas_em_dd_mm_aaaa(cliente):
     assert "function dataBR(valor)" in html
     assert "`${partes[3]}/${partes[2]}/${partes[1]}`" in html
     pendencias = cliente.get("/pendencias/").get_data(as_text=True)
-    assert '"Atualizado em " + dataBR(dados.hoje)' in pendencias
-    assert "Data-limite: ${dataBR(item.limite)}" in pendencias
+    assert '"Glosas, notas fiscais e o que há para receber · atualizado em " + dataBR(dados.hoje)' in pendencias
+    assert '" · recurso até " + dataBR(s.limite)' in pendencias
     assert "Prazo: ${dataBR(tarefa.prazo)}" in cliente.get("/static/postit.js").get_data(as_text=True)
 
 

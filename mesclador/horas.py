@@ -11,24 +11,9 @@ TIPOS_INICIAIS = ("Auditoria", "Produtividade")
 
 
 def _abrir_banco(config):
+    """As tabelas do contador são criadas pela migração do banco (pendencias.abrir_banco)."""
     banco = abrir_banco(config)
     with banco:
-        banco.executescript("""
-            CREATE TABLE IF NOT EXISTS tipo_horas (
-                id INTEGER PRIMARY KEY,
-                nome TEXT NOT NULL UNIQUE COLLATE NOCASE
-            );
-            CREATE TABLE IF NOT EXISTS sessao (
-                id INTEGER PRIMARY KEY,
-                tipo_id INTEGER NOT NULL REFERENCES tipo_horas(id),
-                tarefa TEXT NOT NULL DEFAULT '',
-                empresa TEXT,
-                inicio TEXT NOT NULL,
-                fim TEXT
-            );
-            CREATE UNIQUE INDEX IF NOT EXISTS sessao_unica_aberta
-                ON sessao ((1)) WHERE fim IS NULL;
-        """)
         banco.executemany("INSERT OR IGNORE INTO tipo_horas (nome) VALUES (?)",
                           ((nome,) for nome in TIPOS_INICIAIS))
     return banco
