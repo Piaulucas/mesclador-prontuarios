@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block titulo %}Tarefas · Área de trabalho{% endblock %}
+{% block corpo_classe %}tarefas-janela{% endblock %}
+{% block topo %}{% endblock %}
+{% block conteudo %}
+{# Aba própria que nunca navega: daqui sai a janela por cima (Document Picture-in-Picture). #}
+<div id="tarefasMarcador" class="tarefas-marcador" role="status" hidden>
+  <b>As tarefas estão na janela por cima.</b>
+  Feche aquela janela, ou clique abaixo, para trazer o painel de volta.
+  <p><button type="button" id="tarefasTrazer" class="tp-leve">Trazer de volta</button></p>
+</div>
+{% include "_tarefas.html" %}
+{% endblock %}
+{% block tarefas %}{% endblock %}

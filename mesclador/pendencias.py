@@ -602,16 +602,72 @@ def listar(config, hoje):
                        "dia_envio_fatura": config.dia_envio_fatura}}
 
 
-def listar_tarefas(config, hoje):
+def _segundos(inicio, fim, agora):
+    comeco = datetime.fromisoformat(inicio)
+    termino = min(datetime.fromisoformat(fim), agora) if fim else agora
+    return max(0, int((termino - comeco).total_seconds()))
+
+
+def listar_tarefas(config, agora):
+    """Dados leves do painel de tarefas: abertas (com o tempo contado), concluídas hoje,
+    sessão de horas em andamento e prazos vencidos ou vencendo (só leitura)."""
+    hoje = agora.date()
     banco = abrir_banco(config)
     try:
         linhas = [dict(linha) for linha in banco.execute(
-            "SELECT * FROM tarefa WHERE concluida_em IS NULL ORDER BY prazo IS NULL, prazo, id")]
+            """SELECT * FROM tarefa WHERE concluida_em IS NULL OR concluida_em = ?
+               ORDER BY prazo IS NULL, prazo, id""", (hoje.isoformat(),))]
+        sessoes = [dict(linha) for linha in banco.execute(
+            "SELECT tarefa_id, inicio, fim FROM sessao WHERE tarefa_id IS NOT NULL")]
+        ativa = banco.execute("""SELECT sessao.id, tipo_horas.nome AS tipo, sessao.tarefa, sessao.empresa,
+                                 sessao.tarefa_id, sessao.inicio FROM sessao
+                                 JOIN tipo_horas ON tipo_horas.id = sessao.tipo_id
+                                 WHERE sessao.fim IS NULL""").fetchone()
+        faturas, glosas, nfs = _ler_tudo(banco)
     finally:
         banco.close()
-    tarefas = [{**tarefa, **avaliar_tarefa(tarefa, hoje, config.alerta_dias)} for tarefa in linhas
-               if tarefa["empresa"] is None or tarefa["empresa"] in config.empresas]
-    return {"hoje": hoje.isoformat(), "empresas": list(config.empresas), "tarefas": tarefas}
+    segundos = {}
+    for sessao in sessoes:
+        segundos[sessao["tarefa_id"]] = segundos.get(sessao["tarefa_id"], 0) + _segundos(sessao["inicio"], sessao["fim"], agora)
+    tarefas, concluidas = [], []
+    for tarefa in linhas:
+        if tarefa["empresa"] is not None and tarefa["empresa"] not in config.empresas:
+            continue
+        tarefa["segundos"] = segundos.get(tarefa["id"], 0)
+        if tarefa["concluida_em"]:
+            concluidas.append(tarefa)
+        else:
+            tarefas.append({**tarefa, **avaliar_tarefa(tarefa, hoje, config.alerta_dias)})
+    prazos = []
+    for fatura in faturas:
+        if fatura["empresa"] not in config.empresas:
+            continue
+        item = _montar_fatura(fatura, glosas.get(fatura["id"]), nfs.get(fatura["id"], []), hoje, config)
+        if item["situacao"]["etapa"] == "prazo" and item["situacao"]["faixa"] != "no_prazo":
+            prazos.append({"tipo": "glosa", "empresa": item["empresa"], "competencia": item["competencia"],
+                           "referencia": item["referencia"], **{chave: item["situacao"][chave]
+                                                               for chave in ("faixa", "limite", "dias_restantes")}})
+    prazos.sort(key=lambda item: item["dias_restantes"])
+    return {"hoje": hoje.isoformat(), "agora": agora.isoformat(timespec="seconds"),
+            "empresas": list(config.empresas), "tarefas": tarefas, "concluidas_hoje": concluidas,
+            "ativa": dict(ativa) if ativa else None, "prazos": prazos}
+
+
+def _ao_concluir(banco, tarefa_id, agora):
+    """Concluir a tarefa que está sendo contada encerra a sessão dela. Se ela tinha
+    interrompido outra atividade (sem tarefa), o contador volta para essa atividade."""
+    ativa = banco.execute("SELECT * FROM sessao WHERE fim IS NULL AND tarefa_id = ?", (tarefa_id,)).fetchone()
+    if ativa is None:
+        return None
+    momento = agora.isoformat(timespec="seconds")
+    banco.execute("UPDATE sessao SET fim = ? WHERE id = ?", (momento, ativa["id"]))
+    anterior = banco.execute("""SELECT * FROM sessao WHERE fim = ? AND id != ? ORDER BY id DESC LIMIT 1""",
+                             (ativa["inicio"], ativa["id"])).fetchone()
+    if anterior is None or anterior["tarefa_id"] is not None:
+        return "parado"
+    banco.execute("INSERT INTO sessao (tipo_id, tarefa, empresa, inicio) VALUES (?, ?, ?, ?)",
+                  (anterior["tipo_id"], anterior["tarefa"], anterior["empresa"], momento))
+    return "voltou"
 
 
 # ------------------------------------------------------------------ gravação
@@ -674,7 +730,7 @@ def _salvar_glosa(banco, fatura, glosa_atual, mudancas):
     return novo["id"]
 
 
-def criar_blueprint(config):
+def criar_blueprint(config, relogio=datetime.now):
     bp = Blueprint("pendencias", __name__, url_prefix="/pendencias")
 
     def resposta_de(acao):
@@ -686,9 +742,12 @@ def criar_blueprint(config):
                     numero = acao(banco)
             finally:
                 banco.close()
+            extra = {}
+            if isinstance(numero, tuple):
+                numero, extra = numero
             if numero is None:
                 return jsonify(erro="Registro não encontrado."), 404
-            return jsonify(ok=True, id=numero)
+            return jsonify(ok=True, id=numero, **extra)
         except ValueError as erro:
             return jsonify(erro=str(erro)), 400
         except sqlite3.IntegrityError as erro:
@@ -722,7 +781,7 @@ def criar_blueprint(config):
     @bp.get("/tarefas")
     def tarefas():
         try:
-            return jsonify(listar_tarefas(config, date.today()))
+            return jsonify(listar_tarefas(config, relogio()))
         except RuntimeError as erro:
             return jsonify(erro=str(erro)), 500
 
@@ -838,7 +897,10 @@ def criar_blueprint(config):
                 raise ValueError("Fatura inválida.")
             if id_ is None:
                 valores["criada_em"] = _agora()
-            return _gravar(banco, "tarefa", valores, id_)
+            numero = _gravar(banco, "tarefa", valores, id_)
+            if numero is not None and id_ is not None and valores.get("concluida_em"):
+                return numero, {"contador": _ao_concluir(banco, id_, relogio())}
+            return numero
         return resposta_de(acao)
 
     @bp.post("/tarefa")

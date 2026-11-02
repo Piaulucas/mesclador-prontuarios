@@ -81,6 +81,19 @@ anterior, o app faz antes uma cópia `trabalho.db.v1-AAAAMMDD-HHMMSS.bak` na mes
 tudo numa transação. Glosas antigas ficam com “valor não informado” até serem completadas.
 Não registre nomes de pacientes.
 
+## Tarefas
+
+O painel de tarefas fica no canto de todas as telas. Dá para arrastá-lo pelo título e minimizá-lo numa pílula com o relógio; a posição e o estado ficam lembrados. Ele mostra:
+
+- o contador de horas, com ■ Parar;
+- a criação rápida: Enter salva, e a empresa do contador já vem escolhida (pode ficar “Sem empresa”);
+- o filtro (empresa do contador, todas ou com prazo) e as tarefas abertas;
+- os prazos de recurso vencidos e vencendo, só para leitura.
+
+O ▶ numa tarefa conta o tempo dela: a sessão de horas guarda a tarefa, e o tempo aparece somado no painel. Concluir a tarefa que está sendo contada encerra a sessão; se ela tinha interrompido outra atividade, o contador volta para essa atividade.
+
+O botão “↗ Por cima” abre `/tarefas/janela`, uma janela pequena que não navega. No Chrome, o botão “Manter por cima” dessa janela usa a Document Picture-in-Picture API: as tarefas ficam por cima do Preview, da planilha e do Drive. Sem essa API, por exemplo no Safari, a janela pequena continua funcionando ao lado. As abas se atualizam entre si por `BroadcastChannel`.
+
 ## Decisões de projeto
 
 | Decisão                                           | Motivo                                                                                                                    |

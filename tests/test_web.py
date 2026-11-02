@@ -221,7 +221,8 @@ def test_base_formata_datas_em_dd_mm_aaaa(cliente):
     pendencias = cliente.get("/pendencias/").get_data(as_text=True)
     assert '"Glosas, notas fiscais e o que há para receber · atualizado em " + dataBR(dados.hoje)' in pendencias
     assert '" · recurso até " + dataBR(s.limite)' in pendencias
-    assert "Prazo: ${dataBR(tarefa.prazo)}" in cliente.get("/static/postit.js").get_data(as_text=True)
+    assert "const dataCurta = iso => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`" in cliente.get(
+        "/static/tarefas.js").get_data(as_text=True)
 
 
 @pytest.mark.parametrize("rota", ["/mesclar", "/converter"])
