@@ -123,6 +123,10 @@ if (mesEscolhido && /^\d{4}-(0[1-9]|1[0-2])$/.test(mesEscolhido) &&
     (!mesPainel.min || mesEscolhido >= mesPainel.min)) mesPainel.value = mesEscolhido;
 let dadosPainel = null;
 const estadosEmpresas = new Map();
+// vindo da Início (?empresa=): mostra só aquela empresa, já expandida
+const empresaDaUrl = parametrosPainel.get("empresa");
+if (empresaDaUrl && [...empresaPainel.options].some(opcao => opcao.value === empresaDaUrl))
+  empresaPainel.value = empresaDaUrl;
 
 function chaveEstadoPainel(empresa) {
   return `painelAberta:${mesPainel.value}:${empresa}`;
@@ -200,6 +204,7 @@ function mostrarPainel() {
     const cartao = elemento("details", undefined, "auditoria-empresa");
     const chave = chaveEstadoPainel(e.empresa);
     cartao.dataset.chaveEstado = chave;
+    if (e.empresa === empresaDaUrl && !estadosEmpresas.has(chave)) estadosEmpresas.set(chave, true);
     cartao.open = estadosEmpresas.has(chave) ? estadosEmpresas.get(chave) : lembrar(chave) === "aberta";
     cartao.addEventListener("toggle", () => guardarEstadoPainel(cartao, cartao.open));
     const resumo = elemento("summary", undefined, "auditoria-resumo");

@@ -80,3 +80,29 @@ def test_inicio_invalido_preserva_sessao_aberta(cliente):
     id_ = resposta.get_json()["id"]
     assert cliente.post("/horas/iniciar", json={"tipo": 999}).status_code == 400
     assert cliente.get("/horas/dados").get_json()["ativa"]["id"] == id_
+
+
+def test_clique_na_empresa_conta_auditoria_sem_reiniciar(config):
+    instante = [datetime(2026, 10, 5, 9)]
+    app = Flask(__name__)
+    app.register_blueprint(horas.criar_blueprint(config, relogio=lambda: instante[0]))
+    cliente = app.test_client()
+    assert cliente.post("/horas/iniciar", json={"tipo": 2, "tarefa": "Organizar agenda"}).status_code == 201
+    instante[0] = datetime(2026, 10, 5, 10)
+    resposta = cliente.post("/horas/auditoria", json={"empresa": "EMPRESA A"})
+    assert resposta.get_json() == {"ok": True, "iniciada": True}
+    ativa = cliente.get("/horas/dados").get_json()["ativa"]
+    assert (ativa["tipo"], ativa["empresa"], ativa["inicio"]) == ("Auditoria", "EMPRESA A", "2026-10-05T10:00:00")
+    # mesma empresa de novo: continua a mesma sessão
+    instante[0] = datetime(2026, 10, 5, 10, 30)
+    assert cliente.post("/horas/auditoria", json={"empresa": "EMPRESA A"}).get_json()["iniciada"] is False
+    assert cliente.get("/horas/dados").get_json()["ativa"]["id"] == ativa["id"]
+    # outra empresa: encerra a anterior e começa a nova
+    instante[0] = datetime(2026, 10, 5, 11)
+    assert cliente.post("/horas/auditoria", json={"empresa": "EMPRESA B"}).get_json()["iniciada"] is True
+    dados = cliente.get("/horas/dados").get_json()
+    assert dados["ativa"]["empresa"] == "EMPRESA B"
+    assert next(s for s in dados["sessoes"] if s["id"] == ativa["id"])["fim"] == "2026-10-05T11:00:00"
+    for corpo in ({"empresa": "EMPRESA INEXISTENTE"}, {"empresa": 1}, {}, {"empresa": "EMPRESA A", "x": 1}):
+        assert cliente.post("/horas/auditoria", json=corpo).status_code == 400
+    assert cliente.get("/horas/dados").get_json()["ativa"]["empresa"] == "EMPRESA B"

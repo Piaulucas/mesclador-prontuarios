@@ -26,6 +26,8 @@ def test_tela_e_link_do_painel(cliente):
     assert "Avisei a equipe" in html
     assert "Parcial, reenviei" in html
     assert "if (!f.pode_avisar)" in html
+    assert 'parametrosPainel.get("empresa")' in html
+    assert "e.empresa === empresaDaUrl" in html
     assert "Equipe avisada em ${dia}/${mes}/${ano.slice(2)} · aguardando o reenvio" in html
     assert "com a equipe`" in html and "auditoria-pendencia-dias" in html
     assert "Nota do último aviso: " in html and "auditoria-nota" in html

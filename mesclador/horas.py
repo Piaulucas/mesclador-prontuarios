@@ -101,6 +101,18 @@ def listar(config, agora):
             "totais": calcular_totais(sessoes, agora), "sessoes": sessoes[:30]}
 
 
+def parar_sessao_aberta(config, agora):
+    """Encerra a sessão em andamento, se houver. Devolve True quando havia uma."""
+    banco = _abrir_banco(config)
+    try:
+        with banco:
+            cursor = banco.execute("UPDATE sessao SET fim = ? WHERE fim IS NULL",
+                                   (agora.isoformat(timespec="seconds"),))
+        return bool(cursor.rowcount)
+    finally:
+        banco.close()
+
+
 def criar_blueprint(config, relogio=datetime.now):
     bp = Blueprint("horas", __name__, url_prefix="/horas")
 
@@ -156,20 +168,38 @@ def criar_blueprint(config, relogio=datetime.now):
         except sqlite3.IntegrityError:
             return jsonify(erro="Tipo inválido."), 400
 
+    @bp.post("/auditoria")
+    def iniciar_auditoria():
+        """Clique na empresa da Início: conta "Auditoria" dela, sem reiniciar se já estiver contando."""
+        try:
+            empresa = _entrada(("empresa",), ("empresa",))["empresa"]
+            if not isinstance(empresa, str) or empresa not in config.empresas:
+                raise ValueError("Empresa inválida.")
+            banco = _abrir_banco(config)
+            try:
+                with banco:
+                    tipo = banco.execute("SELECT id FROM tipo_horas WHERE nome = ?",
+                                         ("Auditoria",)).fetchone()["id"]
+                    ativa = banco.execute("SELECT tipo_id, empresa FROM sessao WHERE fim IS NULL").fetchone()
+                    if ativa and ativa["tipo_id"] == tipo and ativa["empresa"] == empresa:
+                        return jsonify(ok=True, iniciada=False)
+                    agora = relogio().isoformat(timespec="seconds")
+                    banco.execute("UPDATE sessao SET fim = ? WHERE fim IS NULL", (agora,))
+                    banco.execute("""INSERT INTO sessao (tipo_id, tarefa, empresa, inicio)
+                                  VALUES (?, '', ?, ?)""", (tipo, empresa, agora))
+                return jsonify(ok=True, iniciada=True)
+            finally:
+                banco.close()
+        except ValueError as erro:
+            return jsonify(erro=str(erro)), 400
+
     @bp.post("/parar")
     def parar():
         try:
             _entrada(())
-            banco = _abrir_banco(config)
-            try:
-                with banco:
-                    cursor = banco.execute("UPDATE sessao SET fim = ? WHERE fim IS NULL",
-                                           (relogio().isoformat(timespec="seconds"),))
-                if not cursor.rowcount:
-                    return jsonify(erro="Não há sessão em andamento."), 400
-                return jsonify(ok=True)
-            finally:
-                banco.close()
+            if not parar_sessao_aberta(config, relogio()):
+                return jsonify(erro="Não há sessão em andamento."), 400
+            return jsonify(ok=True)
         except ValueError as erro:
             return jsonify(erro=str(erro)), 400
 

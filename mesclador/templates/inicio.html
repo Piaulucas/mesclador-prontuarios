@@ -49,6 +49,7 @@
     </div>
     <p id="inicioEstado" class="inicio-estado" role="status">Lendo andamento do mês…</p>
     <div id="inicioTotais" class="inicio-grade"></div>
+    <p class="inicio-estado">Clique numa empresa para auditá-la; o tempo de Auditoria dela começa a contar.</p>
     <div id="inicioEmpresas" class="inicio-empresas"></div>
   </section>
   <section class="inicio-secao" aria-labelledby="inicioHoje">
@@ -105,7 +106,18 @@ function mostrarInicio(dados) {
   const empresas = $("inicioEmpresas");
   empresas.replaceChildren();
   dados.empresas.forEach(empresa => {
-    const linha = noInicio("div", "", "inicio-empresa");
+    // clicar na empresa começa a contar o tempo de Auditoria dela e abre só ela na Auditoria
+    const linha = noInicio("a", "", "inicio-empresa inicio-link");
+    linha.href = "/painel/?" + new URLSearchParams({mes: dados.mes, empresa: empresa.empresa}).toString();
+    linha.title = `Auditar ${empresa.empresa} e contar o tempo`;
+    linha.addEventListener("click", async evento => {
+      evento.preventDefault();
+      try {
+        await fetch("/horas/auditoria", {method: "POST", headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({empresa: empresa.empresa})});
+      } catch (erro) { /* abre a Auditoria mesmo se o contador não responder */ }
+      location.href = linha.href;
+    });
     const cabecalho = noInicio("div", "", "inicio-empresa-cabecalho");
     cabecalho.append(noInicio("strong", empresa.empresa),
       noInicio("span", Math.round(empresa.contagem.percentual_concluido) + "%"));

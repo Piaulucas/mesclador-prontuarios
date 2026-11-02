@@ -385,7 +385,9 @@ setInterval(atualizarIndicadorHoras, 1000);
 // ---------- encerrar o app ----------
 $("encerrar").onclick = async () => {
   if (temTrabalhoPendente() && !confirm("Há arquivos carregados que não foram salvos. Encerrar mesmo assim?")) return;
-  try { await fetch("/encerrar", { method: "POST" }); } catch (e) {}
+  // encerrar pelo botão também para o contador de horas, se ficou ligado
+  try { await fetch("/encerrar", { method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({parar_horas: true}) }); } catch (e) {}
   // o app pede ao navegador para fechar esta aba; se não conseguir, fica a mensagem
   setTimeout(() => {
     document.body.innerHTML = '<div style="padding:40px;font:16px -apple-system,sans-serif">' +
