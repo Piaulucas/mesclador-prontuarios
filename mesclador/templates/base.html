@@ -222,32 +222,73 @@
                 padding-top: 16px; border-top: 1px solid var(--borda);
                 color: var(--suave); font-size: 12px; }
   .assinatura strong { color: var(--texto); font-weight: 700; }
-  .postit-botao { position: fixed; right: 16px; bottom: 16px; z-index: 30; padding: 7px 16px;
-    background: var(--acento); border-color: var(--acento); color: var(--acento-txt);
-    border-radius: 999px; box-shadow: var(--sombra-alta); }
-  .postit-botao:hover:not(:disabled) { background: var(--acento); filter: brightness(.92); }
-  .postit-painel { position: fixed; right: 16px; bottom: 64px; z-index: 30;
-    width: 320px; max-height: min(560px, calc(100dvh - 80px)); overflow-y: auto;
-    padding: 15px; background: var(--painel); color: var(--texto);
-    border: 1px solid var(--borda); border-radius: 16px; box-shadow: var(--sombra-alta); }
-  .postit-painel[hidden] { display: none; }
-  .postit-painel h2 { margin: 0 0 10px; font-size: 17px; }
-  .postit-formulario { display: grid; gap: 8px; }
-  .postit-formulario button { justify-self: start; }
-  .postit-painel label { min-width: 0; }
-  .postit-filtro { margin: 14px 0 10px; padding-top: 12px; border-top: 1px solid var(--borda); }
-  .postit-grupo { margin: 0 0 12px; }
-  .postit-grupo h3 { margin: 0 0 5px; font-size: 13px; overflow-wrap: anywhere; }
-  .postit-lista { list-style: none; margin: 0; padding: 0; }
-  .postit-lista li { padding: 7px 0; border-top: 1px solid var(--borda); }
-  .postit-linha { display: flex; flex-direction: row; align-items: flex-start; gap: 8px;
-    font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
-  .postit-linha input { flex: none; margin: 2px 0 0; }
-  .postit-prazo { display: block; margin-left: 24px; color: var(--suave); font-size: 12px; }
-  .postit-prazo.vencida { color: var(--erro); }
-  .postit-prazo.vencendo { color: var(--texto); background: var(--aviso-fundo);
-    border-left: 3px solid var(--aviso-borda); padding-left: 5px; font-weight: 700; }
-  .postit-vazio { margin: 0; color: var(--suave); font-size: 12px; }
+  /* painel de tarefas: flutuante no app, ou a janela inteira em /tarefas/janela (e na janela por cima) */
+  .tp { position: fixed; right: 16px; bottom: 16px; z-index: 30; width: 340px;
+    max-height: min(640px, calc(100dvh - 32px)); display: flex; flex-direction: column;
+    background: var(--painel); color: var(--texto); border: 1px solid var(--borda); border-radius: 18px;
+    box-shadow: var(--sombra-alta); overflow: hidden; font-size: 14px; }
+  .tp[hidden], .tp-pilula[hidden], .tp-feitas[hidden] { display: none; }
+  .tp-cab { display: flex; align-items: center; gap: 6px; padding: 10px 10px 10px 14px; cursor: grab;
+    user-select: none; touch-action: none; border-bottom: 1px solid var(--borda); }
+  .tp-cab.arrastando { cursor: grabbing; }
+  .tp-cab h2 { flex: 1; margin: 0; font-size: 15px; }
+  .tp-cab button { min-height: 30px; padding: 0 10px; font-size: 12px; border-radius: 9px; }
+  .tp-leve { background: var(--acento-fundo); border-color: transparent; color: var(--acento); }
+  .tp-leve:hover:not(:disabled) { background: var(--acento-fundo); border-color: var(--acento); }
+  .tp-corpo { overflow-y: auto; padding: 12px 14px 14px; display: grid; gap: 12px; }
+  .tp-contador { display: grid; gap: 6px; padding: 10px 12px; border-radius: 14px; background: var(--acento-fundo); color: var(--acento); }
+  .tp-contador.parado { background: var(--painel-suave); color: var(--suave); }
+  .tp-l1 { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }
+  .tp-l1::before { content: ""; flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--ok); }
+  .tp-contador.parado .tp-l1::before { background: var(--estado-vazio); }
+  .tp-l2 { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .tp-l2 button { min-height: 32px; font-size: 13px; }
+  .tp-relogio { color: var(--texto); font-size: 24px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .tp-tarefa { color: var(--texto); font-size: 13px; overflow-wrap: anywhere; }
+  .tp-novo { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+  .tp-novo input, .tp-novo select { min-height: 36px; padding: 6px 10px; font-size: 14px; }
+  .tp-salvar { background: var(--acento); border-color: var(--acento); color: var(--acento-txt); }
+  .tp-salvar:hover:not(:disabled) { background: var(--acento); filter: brightness(.92); }
+  .tp-linha2 { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; }
+  .tp-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .tp-filtros { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tp-filtros button { min-height: 28px; padding: 0 10px; font-size: 12px; border-radius: 999px;
+    background: var(--painel-suave); border-color: transparent; color: var(--suave); }
+  .tp-filtros button[aria-pressed="true"] { background: var(--acento); color: var(--acento-txt); }
+  .tp-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .tp-lista li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 8px; align-items: start;
+    padding: 8px 8px 8px 10px; border-radius: 12px; background: var(--painel-suave); }
+  .tp-lista li.ativa { background: var(--acento-fundo); box-shadow: inset 3px 0 0 var(--acento); }
+  .tp-lista li.tp-vazio { display: block; color: var(--suave); font-size: 13px; }
+  .tp-lista input { margin-top: 2px; }
+  .tp-texto { overflow-wrap: anywhere; line-height: 1.35; }
+  .tp-meta { grid-column: 2 / 3; display: flex; flex-wrap: wrap; gap: 2px 8px; color: var(--suave); font-size: 12px; }
+  .tp-meta .vencida, .tp-prazos .vencida { color: var(--estado-equipe); font-weight: 700; }
+  .tp-meta .vencendo, .tp-prazos .vencendo { color: var(--estado-auditar-txt); font-weight: 700; }
+  .tp-play { grid-row: 1 / 3; grid-column: 3; width: 32px; min-height: 32px; padding: 0; border-radius: 50%; font-size: 12px; }
+  .tp-lista li.ativa .tp-play { background: var(--acento); border-color: var(--acento); color: var(--acento-txt); }
+  .tp-msg { margin: 0; color: var(--suave); font-size: 12px; }
+  .tp-msg:empty { display: none; }
+  .tp h3 { margin: 2px 0 6px; color: var(--suave); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .tp-prazos { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
+  .tp-prazos li { display: flex; justify-content: space-between; gap: 8px; }
+  .tp-prazos b { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tp-ver { display: inline-block; margin-top: 6px; color: var(--acento); font-size: 13px; font-weight: 700; text-decoration: none; }
+  .tp-feitas summary { cursor: pointer; color: var(--suave); font-size: 13px; font-weight: 650; }
+  .tp-feitas ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 3px; color: var(--suave); font-size: 13px; }
+  .tp-pilula { position: fixed; right: 16px; bottom: 16px; z-index: 30; min-height: 42px; padding: 0 16px;
+    border-radius: 999px; background: var(--acento); border-color: var(--acento); color: var(--acento-txt);
+    box-shadow: var(--sombra-alta); font-variant-numeric: tabular-nums; }
+  .tp-pilula:hover:not(:disabled) { background: var(--acento); filter: brightness(.92); }
+  body.tarefas-janela { min-width: 0; background: var(--painel); }
+  html:has(body.tarefas-janela) { min-width: 0; }
+  body.tarefas-janela .tp { position: static; width: 100%; height: 100vh; max-height: none; border: 0;
+    border-radius: 0; box-shadow: none; }
+  body.tarefas-janela .tp-cab { cursor: default; }
+  body.tarefas-janela [data-so-app] { display: none; }
+  .tarefas-marcador { max-width: 340px; margin: 40px auto; padding: 20px; text-align: center; color: var(--suave); }
+  .tarefas-marcador[hidden] { display: none; }
+  .tarefas-marcador b { display: block; margin-bottom: 6px; color: var(--texto); font-size: 15px; }
   @media (max-width: 760px) {
     .topo { flex-wrap: wrap; gap: 6px 10px; padding: 9px 16px; }
     .marca { flex: 1 1 auto; min-height: 38px; }
@@ -263,10 +304,11 @@
     .mini { height: 230px; }
   }
   @media (max-width: 600px) {
-    body { padding-bottom: 44px; }
-    .postit-botao { right: 8px; bottom: 8px; min-height: 32px; padding: 5px 9px; font-size: 12px; }
-    .postit-painel { right: 8px; bottom: 48px; width: calc(100vw - 16px);
-      max-height: min(480px, calc(100dvh - 60px)); }
+    body:not(.tarefas-janela) { padding-bottom: 56px; }
+  }
+  @media (max-width: 480px) {
+    body:not(.tarefas-janela) .tp { left: 8px; right: 8px; bottom: 8px; width: auto; max-height: calc(100dvh - 80px); }
+    .tp-pilula { right: 8px; bottom: 8px; min-height: 38px; padding: 0 13px; font-size: 13px; }
   }
   @media (max-width: 430px) {
     .marca-divisor, .marca-reserva { display: none; }
@@ -297,7 +339,8 @@
 {% block estilos %}{% endblock %}
 </style>
 </head>
-<body>
+<body class="{% block corpo_classe %}{% endblock %}">
+{% block topo %}
 <nav class="topo" aria-label="Navegação principal">
   <div class="marca">
     <span class="marca-app">Área de trabalho</span>
@@ -324,6 +367,7 @@
   <a id="horasIndicador" class="horas-indicador" href="/horas/" hidden></a>
   <button id="encerrar" class="encerrar" type="button" title="Fecha o app (os arquivos já salvos não são afetados)">Encerrar o app</button>
 </nav>
+{% endblock %}
 
 {% block conteudo %}{% endblock %}
 
@@ -434,6 +478,7 @@ let temTrabalhoPendente = () => false;
 let horasInicio = null, horasEmpresa = "", horasDescricao = "";
 function atualizarIndicadorHoras() {
   const indicador = $("horasIndicador");
+  if (!indicador) return;   // a janela de tarefas não tem a barra superior
   indicador.hidden = !horasInicio;
   if (!horasInicio) return;
   const segundos = Math.max(0, Math.floor((Date.now() - horasInicio) / 1000));
@@ -458,7 +503,7 @@ window.addEventListener("horasAlteradas", carregarIndicadorHoras);
 setInterval(atualizarIndicadorHoras, 1000);
 
 // ---------- encerrar o app ----------
-$("encerrar").onclick = async () => {
+if ($("encerrar")) $("encerrar").onclick = async () => {
   if (temTrabalhoPendente() && !confirm("Há arquivos carregados que não foram salvos. Encerrar mesmo assim?")) return;
   // encerrar pelo botão também para o contador de horas, se ficou ligado
   try { await fetch("/encerrar", { method: "POST", headers: {"Content-Type": "application/json"},
@@ -471,21 +516,7 @@ $("encerrar").onclick = async () => {
 };
 </script>
 {% block script %}{% endblock %}
-<button id="postitBotao" class="postit-botao" type="button" aria-controls="postitPainel" aria-expanded="false">Tarefas (0)</button>
-<section id="postitPainel" class="postit-painel" aria-label="Tarefas rápidas" hidden>
-  <h2>Nova tarefa</h2>
-  <form id="postitFormulario" class="postit-formulario">
-    <label>Descrição <input name="texto" type="text" required autocomplete="off"></label>
-    <label>Empresa <select name="empresa"></select></label>
-    <label>Prazo (opcional) <input name="prazo" type="date"></label>
-    <button type="submit">Salvar tarefa</button>
-  </form>
-  <p id="postitAviso" class="msg" role="status" aria-live="polite"></p>
-  <label class="postit-filtro">Mostrar empresa
-    <select id="postitFiltro"><option value="">Todas</option></select>
-  </label>
-  <div id="postitTarefas" aria-live="polite"></div>
-</section>
-<script src="{{ url_for('static', filename='postit.js') }}" defer></script>
+{% block tarefas %}{% include "_tarefas.html" %}{% endblock %}
+<script src="{{ url_for('static', filename='tarefas.js') }}" defer></script>
 </body>
 </html>

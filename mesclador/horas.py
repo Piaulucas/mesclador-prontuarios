@@ -75,7 +75,7 @@ def listar(config, agora):
         tipos = [dict(linha) for linha in banco.execute("SELECT id, nome FROM tipo_horas ORDER BY id")]
         sessoes = [dict(linha) for linha in banco.execute("""
             SELECT sessao.id, tipo_horas.nome AS tipo, sessao.tarefa, sessao.empresa,
-                   sessao.inicio, sessao.fim FROM sessao
+                   sessao.tarefa_id, sessao.inicio, sessao.fim FROM sessao
             JOIN tipo_horas ON tipo_horas.id = sessao.tipo_id
             ORDER BY sessao.inicio DESC, sessao.id DESC
         """)]
@@ -127,10 +127,17 @@ def criar_blueprint(config, relogio=datetime.now):
 
     @bp.post("/iniciar")
     def iniciar():
+        """Começa uma sessão. Com tarefa_id (▶ no painel de tarefas), a tarefa e a empresa vêm da
+        tarefa e o tipo, se não vier, é o da sessão em andamento (ou Auditoria)."""
         try:
-            entrada = _entrada(("tipo", "tarefa", "empresa"), ("tipo",))
-            tipo = entrada["tipo"]
-            if not isinstance(tipo, int) or isinstance(tipo, bool) or tipo <= 0:
+            entrada = _entrada(("tipo", "tarefa", "empresa", "tarefa_id"))
+            tarefa_id = entrada.get("tarefa_id")
+            if tarefa_id is not None and (not isinstance(tarefa_id, int) or isinstance(tarefa_id, bool) or tarefa_id <= 0):
+                raise ValueError("Tarefa inválida.")
+            if tarefa_id is None and "tipo" not in entrada:
+                raise ValueError("Campos inválidos ou ausentes.")
+            tipo = entrada.get("tipo")
+            if tipo is not None and (not isinstance(tipo, int) or isinstance(tipo, bool) or tipo <= 0):
                 raise ValueError("Tipo inválido.")
             tarefa = _texto(entrada.get("tarefa", ""), "Tarefa")
             empresa = entrada.get("empresa")
@@ -140,11 +147,21 @@ def criar_blueprint(config, relogio=datetime.now):
                 raise ValueError("Empresa inválida.")
             banco = _abrir_banco(config)
             try:
+                if tarefa_id is not None:
+                    linha = banco.execute("SELECT texto, empresa, concluida_em FROM tarefa WHERE id = ?",
+                                          (tarefa_id,)).fetchone()
+                    if linha is None or linha["concluida_em"]:
+                        raise ValueError("Tarefa não encontrada ou já concluída.")
+                    tarefa, empresa = linha["texto"][:200], linha["empresa"]
+                    if tipo is None:
+                        ativa = banco.execute("SELECT tipo_id FROM sessao WHERE fim IS NULL").fetchone()
+                        tipo = ativa["tipo_id"] if ativa else banco.execute(
+                            "SELECT id FROM tipo_horas WHERE nome = 'Auditoria'").fetchone()["id"]
                 agora = relogio().isoformat(timespec="seconds")
                 with banco:
                     banco.execute("UPDATE sessao SET fim = ? WHERE fim IS NULL", (agora,))
-                    cursor = banco.execute("""INSERT INTO sessao (tipo_id, tarefa, empresa, inicio)
-                                           VALUES (?, ?, ?, ?)""", (tipo, tarefa, empresa, agora))
+                    cursor = banco.execute("""INSERT INTO sessao (tipo_id, tarefa, empresa, inicio, tarefa_id)
+                                           VALUES (?, ?, ?, ?, ?)""", (tipo, tarefa, empresa, agora, tarefa_id))
                 return jsonify(ok=True, id=cursor.lastrowid), 201
             finally:
                 banco.close()

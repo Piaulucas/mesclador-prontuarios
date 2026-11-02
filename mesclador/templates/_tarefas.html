@@ -1,0 +1,28 @@
+<button id="tarefasPilula" class="tp-pilula" type="button" aria-controls="tarefasPainel" aria-expanded="false" data-so-app>Tarefas</button>
+<section id="tarefasPainel" class="tp" aria-label="Tarefas" hidden>
+  <div class="tp-cab" id="tarefasCab">
+    <h2>Tarefas</h2>
+    <button type="button" class="tp-leve" id="tarefasPorCima" data-so-app
+            title="Abre as tarefas numa janela pequena; no Chrome, ela pode ficar por cima dos outros programas">↗ Por cima</button>
+    <button type="button" class="tp-leve" id="tarefasManter" data-so-janela hidden
+            title="Mantém esta janela por cima do Preview, da planilha e do Drive">Manter por cima</button>
+    <button type="button" id="tarefasMinimizar" data-so-app aria-label="Minimizar o painel de tarefas" title="Minimizar">—</button>
+  </div>
+  <div class="tp-corpo">
+    <div class="tp-contador" id="tarefasContador"></div>
+    <form class="tp-novo" id="tarefasNova" autocomplete="off">
+      <label class="tp-sr" for="tarefasTexto">Nova tarefa</label>
+      <input id="tarefasTexto" placeholder="Nova tarefa… (Enter salva)" required maxlength="500">
+      <button type="submit" class="tp-salvar">Salvar</button>
+      <div class="tp-linha2">
+        <label class="tp-sr" for="tarefasEmpresa">Empresa</label><select id="tarefasEmpresa"></select>
+        <label class="tp-sr" for="tarefasPrazo">Prazo (opcional)</label><input id="tarefasPrazo" type="date" title="Prazo (opcional)">
+      </div>
+    </form>
+    <div class="tp-filtros" id="tarefasFiltros" role="group" aria-label="Mostrar"></div>
+    <ul class="tp-lista" id="tarefasLista" aria-live="polite"></ul>
+    <p class="tp-msg" id="tarefasMsg" role="status" aria-live="polite"></p>
+    <div id="tarefasPrazos"></div>
+    <details class="tp-feitas" id="tarefasFeitas"><summary>Concluídas hoje</summary><ul></ul></details>
+  </div>
+</section>

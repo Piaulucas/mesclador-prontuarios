@@ -93,6 +93,11 @@ def create_app(config, pasta_temp=None, versao=None):
     def converter():
         return render_template("converter.html", pagina="converter", dpi=imagens.DPI_EXPORTACAO)
 
+    @app.get("/tarefas/janela")
+    def tarefas_janela():
+        """Painel de tarefas sozinho, numa aba que não navega (a janela por cima sai dela)."""
+        return render_template("tarefas_janela.html", pagina="tarefas")
+
     app.register_blueprint(conversor.criar_blueprint(temp))
     app.register_blueprint(painel.criar_blueprint(config))
     app.register_blueprint(pendencias.criar_blueprint(config))

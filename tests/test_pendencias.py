@@ -2,7 +2,7 @@
 
 import json
 import sqlite3
-from datetime import date
+from datetime import date, datetime
 
 import pytest
 
@@ -386,7 +386,7 @@ def test_tarefas_com_e_sem_empresa(config, cliente):
                   {"empresa": "DESCONHECIDA", "texto": "x"}, {"texto": "x", "fatura_id": 99},
                   {"texto": "x", "fatura_id": "1"}):
         assert cliente.post("/pendencias/tarefa", json=corpo).status_code == 400
-    dados = pendencias.listar_tarefas(config, date(2026, 11, 2))
+    dados = pendencias.listar_tarefas(config, datetime(2026, 11, 2, 9))
     assert [(t["empresa"], t["faixa"]) for t in dados["tarefas"]] == [
         ("EMPRESA A", "vencendo"), (None, "sem_prazo"), (None, "sem_prazo")]
     assert cliente.post("/pendencias/tarefa/1", json={"concluida": True}).status_code == 200
@@ -437,12 +437,3 @@ def test_inicio_mostra_contadores_novos(cliente):
                    "Faturas a enviar", "Recursos aguardando resposta", "A receber"):
         assert trecho in html
     assert '"/pendencias/"' in html
-
-
-def test_postit_le_tarefas_da_rota_propria(cliente):
-    for rota in ("/", "/painel/", "/mesclar", "/pendencias/"):
-        html = cliente.get(rota).get_data(as_text=True)
-        assert 'id="postitBotao"' in html and 'src="/static/postit.js"' in html
-    codigo = cliente.get("/static/postit.js").get_data(as_text=True)
-    assert 'fetch("/pendencias/tarefas")' in codigo and '"Sem empresa"' in codigo
-    assert "campos.empresa.value || null" in codigo
