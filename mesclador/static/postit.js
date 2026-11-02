@@ -72,7 +72,7 @@
         rotulo.append(caixa, elemento("span", tarefa.texto));
         item.append(rotulo);
         if (tarefa.prazo) {
-          const prazo = elemento("small", `Prazo: ${tarefa.prazo}`);
+          const prazo = elemento("small", `Prazo: ${dataBR(tarefa.prazo)}`);
           prazo.className = "postit-prazo";
           if (["vencida", "vencendo"].includes(tarefa.situacao)) prazo.classList.add(tarefa.situacao);
           item.append(prazo);

@@ -13,7 +13,7 @@ O fluxo manual era: baixar as folhas em `.zip`, extrair, enviar para um site de 
 
 ## Mesclar prontuário
 
-Abra **Ferramentas → Mesclar prontuário** ou acesse `/mesclar`. A Início (`/`) mostra contagens do mês, prioridades do dia e links para a Auditoria, sem nomes de pacientes.
+Abra **Ferramentas → Mesclar prontuário** ou acesse `/mesclar`. A Início (`/`) mostra o andamento do mês num anel, uma caixa por empresa (com os contadores de atrasadas, reenviadas e sem escanear) e as Pendências, sem nomes de pacientes. Clicar na caixa de uma empresa começa a contar o tempo de Auditoria dela e abre a Auditoria já nela.
 
 ## O que a ferramenta faz
 
@@ -45,9 +45,9 @@ Quando a folha escaneada está escura ou difícil de ler, a tela **Converter em 
 - Ampliar a página com 🔍, girar e remover
 - Exporta para `Downloads/<nome>/<nome> - 01.jpg…` em 200 DPI, sem sobrescrever (se a pasta já existir, cria `<nome> (2)`), com o botão **Mostrar no Finder**
 
-## Painel da auditoria
+## Auditoria
 
-Na barra superior, **Auditoria** mostra o andamento do mês por empresa. Escolha o mês e, se quiser, filtre uma empresa; **Ler de novo** atualiza a leitura das planilhas e pastas configuradas. A tela mostra pendências, inconsistências, PDFs sem linha e a situação do scanner das fichas abertas. Nas pendências com a equipe, registre a data em **Avisei a equipe**; a nota é opcional. O prazo começa no último aviso registrado. Quando chega um arquivo após o aviso, a ficha mostra a data para conferência; se a correção for parcial, **Parcial, reenviei** registra um novo aviso. Os registros ficam em `[auditoria].pasta_registros`, fora das planilhas e pastas das empresas. Para ler scanners, instale o Google Drive para desktop, crie atalhos para as pastas compartilhadas no Meu Drive e configure a raiz e o formato de cada empresa em `[auditoria.scanners]`. O app lê apenas nomes e datas de modificação, sem abrir os arquivos.
+Na barra superior, **Auditoria** mostra o andamento do mês. Escolha o mês e a empresa na fileira do topo (**Todas** junta as empresas num só quadro); **Ler de novo** atualiza a leitura das planilhas e pastas configuradas. As pendências ficam em colunas por situação: **Falta escanear**, **Reenviado · conferir**, **Pode avisar** e **Aguardando reenvio**; com 15 ou mais, cada coluna mostra primeiro as 5 mais atrasadas e um **ver todas**. Sem linha na planilha e inconsistências ficam no rodapé. Para registrar um aviso, clique em **Avisei a equipe** no cartão e informe a data; a nota é opcional. O prazo começa no último aviso registrado. Quando a equipe reenvia um arquivo após o aviso, o cartão vai para **Reenviado · conferir** com a data; se a correção for parcial, **Parcial, reenviei** registra um novo aviso. Os registros ficam em `[auditoria].pasta_registros`, fora das planilhas e pastas das empresas. Para ler scanners, instale o Google Drive para desktop, crie atalhos para as pastas compartilhadas no Meu Drive e configure a raiz e o formato de cada empresa em `[auditoria.scanners]`. O app lê apenas nomes e datas de modificação, sem abrir os arquivos.
 
 ## Horas
 

@@ -5,47 +5,77 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block titulo %}Área de trabalho{% endblock %}</title>
 <style>
+  /* Estilo 2 (cartões): fundo azulado, cartões brancos com sombra suave e acento azul.
+     As cores de estado ficam aqui para valer igual em todas as telas, no claro e no escuro. */
   :root {
     color-scheme: light;
-    --fundo: #f1f5f4;
+    --fundo: #f2f4f9;
     --painel: #ffffff;
-    --borda: #cbd9d6;
-    --texto: #172b31;
-    --suave: #52666b;
-    --acento: #086b55;
+    --borda: #dde2ec;
+    --texto: #1d2433;
+    --suave: #5d6679;
+    --acento: #2f5bd3;
     --acento-txt: #ffffff;
-    --ok: #176b4e;
-    --erro: #9b432a;
-    --alvo: #e2f2f0;
+    --acento-fundo: #e9effd;
+    --ok: #1f8a5b;
+    --erro: #b3261e;
+    --alvo: #e9effd;
     --topo: 64px;
-    --painel-suave: #f7faf9;
-    --sombra: 0 2px 14px rgba(23, 43, 49, .055);
-    --foco: #086b55;
-    --aviso-fundo: #fff2e9;
-    --aviso-borda: #d5946c;
-    --ok-fundo: #e6f5ee;
-    --ok-borda: #80baa1;
+    --painel-suave: #f6f8fc;
+    --sombra: 0 1px 2px rgba(20, 30, 60, .05), 0 6px 22px rgba(20, 30, 60, .07);
+    --sombra-alta: 0 10px 30px rgba(20, 30, 60, .13);
+    --foco: #2f5bd3;
+    --aviso-fundo: #fff3e8;
+    --aviso-borda: #e7a37a;
+    --ok-fundo: #e5f5ec;
+    --ok-borda: #8ccdab;
+    /* situação das fichas: aprovadas, com a equipe (fluxo normal, não é erro) e por auditar */
+    --estado-aprovadas: #1f8a5b;
+    --estado-equipe: #c4553a;
+    --estado-auditar: #e0a526;
+    --estado-auditar-txt: #8a6400;
+    --estado-vazio: #dde2ec;
+    /* faixas de prazo com a equipe: até 6 dias, até 10 dias, mais de 10 */
+    --faixa-amarelo: #f2c94c;
+    --faixa-amarelo-txt: #3d2e00;
+    --faixa-laranja: #de7b2c;
+    --faixa-laranja-txt: #ffffff;
+    --faixa-vermelho: #c0392b;
+    --faixa-vermelho-txt: #ffffff;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       color-scheme: dark;
-      --fundo: #101d21;
-      --painel: #19292e;
-      --borda: #3b555a;
-      --texto: #e9f2f1;
-      --suave: #b0c4c5;
-      --acento: #83dbb9;
-      --acento-txt: #09292d;
-      --ok: #82d4aa;
-      --erro: #ffc0a3;
-      --alvo: #214446;
-      --painel-suave: #1d3136;
-      --sombra: 0 2px 16px rgba(0, 0, 0, .16);
-      --foco: #a9e8ca;
-      --aviso-fundo: #493127;
-      --aviso-borda: #bb7755;
-      --ok-fundo: #1b4035;
-      --ok-borda: #4a9b76;
+      --fundo: #11141c;
+      --painel: #1a1f2b;
+      --borda: #2e3647;
+      --texto: #e8ecf5;
+      --suave: #a6afc2;
+      --acento: #8eaaff;
+      --acento-txt: #0d1630;
+      --acento-fundo: #24305a;
+      --ok: #6fd3a0;
+      --erro: #ff9e8f;
+      --alvo: #24305a;
+      --painel-suave: #202636;
+      --sombra: 0 6px 22px rgba(0, 0, 0, .3);
+      --sombra-alta: 0 10px 30px rgba(0, 0, 0, .45);
+      --foco: #b4c6ff;
+      --aviso-fundo: #3f2d25;
+      --aviso-borda: #a8704f;
+      --ok-fundo: #183a2c;
+      --ok-borda: #3f9a6f;
+      --estado-aprovadas: #6fd3a0;
+      --estado-equipe: #f19a80;
+      --estado-auditar: #ecc25c;
+      --estado-auditar-txt: #ecc25c;
+      --estado-vazio: #2e3647;
+      --faixa-amarelo: #ecc25c;
+      --faixa-amarelo-txt: #2a1f00;
+      --faixa-laranja: #f0a066;
+      --faixa-laranja-txt: #2a1400;
+      --faixa-vermelho: #ff8a7a;
+      --faixa-vermelho-txt: #2a0805;
     }
   }
   * { box-sizing: border-box; }
@@ -67,50 +97,52 @@
     min-height: var(--topo);
     display: flex;
     align-items: center;
-    gap: 30px;
-    padding: 0 24px;
+    gap: 22px;
+    padding: 0 20px;
     background: var(--painel);
-    border-bottom: 1px solid var(--borda);
+    box-shadow: var(--sombra);
     position: sticky;
     top: 0;
     z-index: 10;
   }
   .marca { display: flex; align-items: center; gap: 12px; white-space: nowrap; min-width: 0; }
-  .marca-app { font-size: 18px; font-weight: 750; letter-spacing: -.03em; line-height: 1; }
+  .marca-app { font-size: 17px; font-weight: 800; letter-spacing: -.02em; line-height: 1; }
   .marca-divisor { width: 1px; height: 22px; background: var(--borda); flex: none; }
   .marca-local { display: inline-flex; align-items: center; gap: 7px; color: var(--suave);
                  font-size: 12px; font-weight: 600; line-height: 1.15; }
-  .marca-local img { display: block; width: 42px; height: 42px; object-fit: contain;
-                     border: 1px solid var(--borda); border-radius: 7px; background: #fff; }
+  .marca-local img { display: block; width: 40px; height: 40px; object-fit: contain;
+                     border: 1px solid var(--borda); border-radius: 10px; background: #fff; }
   .marca-local img[hidden] { display: none; }
   .marca-reserva { display: inline-flex; align-items: center; }
-  .abas { display: flex; align-items: stretch; gap: 4px; align-self: stretch; }
-  .abas a { display: flex; align-items: center; min-height: 40px; padding: 0 13px;
-            border-bottom: 3px solid transparent; color: var(--suave);
-            text-decoration: none; font-weight: 650; white-space: nowrap; }
-  .abas a:hover { color: var(--texto); background: var(--painel-suave); }
-  .abas a.ativa { color: var(--acento); border-bottom-color: var(--acento); }
-  .menu-ferramentas { position: relative; display: flex; align-items: stretch; }
-  .menu-ferramentas summary { display: flex; align-items: center; min-height: 40px; padding: 0 13px;
-    border-bottom: 3px solid transparent; color: var(--suave); font-weight: 650;
-    cursor: pointer; list-style: none; white-space: nowrap; }
+  .abas { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; min-width: 0; }
+  .abas a, .menu-ferramentas summary { display: flex; align-items: center; min-height: 36px; padding: 0 14px;
+            border-radius: 999px; color: var(--suave); font-size: 14px; font-weight: 650;
+            text-decoration: none; white-space: nowrap; }
+  .abas a:hover, .menu-ferramentas summary:hover, .menu-ferramentas[open] summary {
+            color: var(--texto); background: var(--painel-suave); }
+  .abas a.ativa, .menu-ferramentas summary.ativa { color: var(--acento); background: var(--acento-fundo); }
+  .menu-ferramentas { position: relative; display: flex; align-items: center; }
+  .menu-ferramentas summary { cursor: pointer; list-style: none; }
+  .menu-ferramentas summary::after { content: "▾"; margin-left: 6px; font-size: 11px; }
   .menu-ferramentas summary::-webkit-details-marker { display: none; }
-  .menu-ferramentas summary:hover, .menu-ferramentas[open] summary { color: var(--texto); background: var(--painel-suave); }
-  .menu-ferramentas summary.ativa { color: var(--acento); border-bottom-color: var(--acento); }
   .menu-ferramentas summary:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
-  .menu-opcoes { position: absolute; top: 100%; left: 0; min-width: 190px; padding: 5px;
-    background: var(--painel); border: 1px solid var(--borda); border-radius: 8px;
-    box-shadow: var(--sombra); z-index: 11; }
-  .menu-opcoes a { min-height: 38px; padding: 7px 10px; border: 0; border-radius: 5px; }
-  .horas-indicador { margin-left: auto; padding: 6px 12px; color: var(--acento); text-decoration: none;
-    font-size: 12px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums;
-    background: transparent; border: 1px solid var(--acento); border-radius: 6px; }
-  .horas-indicador:hover { background: var(--painel-suave); }
+  .menu-opcoes { position: absolute; top: calc(100% + 6px); left: 0; min-width: 210px; padding: 6px;
+    background: var(--painel); border: 1px solid var(--borda); border-radius: 14px;
+    box-shadow: var(--sombra-alta); z-index: 11; }
+  .menu-opcoes a { min-height: 38px; padding: 7px 12px; border-radius: 10px; }
+  .menu-opcoes a[aria-current] { color: var(--acento); background: var(--acento-fundo); }
+  .horas-indicador { margin-left: auto; display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 13px 6px 10px; color: var(--acento); text-decoration: none;
+    font-size: 13px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums;
+    background: var(--acento-fundo); border: 1px solid transparent; border-radius: 999px; }
+  .horas-indicador::before { content: ""; flex: none; width: 9px; height: 9px; border-radius: 50%;
+    background: var(--ok); box-shadow: 0 0 0 3px rgba(31, 138, 91, .22); }
+  .horas-indicador:hover { border-color: var(--acento); }
   .horas-indicador[hidden] { display: none; }
   .horas-indicador:not([hidden]) + .encerrar { margin-left: 0; }
-  .topo .encerrar { margin-left: auto; color: var(--suave); font-size: 12px;
-                    background: transparent; border: 1px solid transparent; white-space: nowrap; }
-  .topo .encerrar:hover { border-color: var(--borda); color: var(--texto); }
+  .topo .encerrar { margin-left: auto; min-height: 34px; color: var(--suave); font-size: 13px;
+                    background: transparent; border: 1px solid transparent; border-radius: 999px; white-space: nowrap; }
+  .topo .encerrar:hover { border-color: var(--borda); color: var(--texto); background: var(--painel-suave); }
   .app { display: grid; grid-template-columns: minmax(338px, 370px) minmax(0, 1fr);
          min-height: calc(100vh - var(--topo)); }
   aside { background: var(--painel); border-right: 1px solid var(--borda); padding: 24px 22px 18px;
@@ -127,7 +159,7 @@
           font-size: 12px; font-weight: 700; }
   input, select { width: 100%; min-height: 38px; padding: 8px 10px;
                   color: var(--texto); background: var(--painel);
-                  border: 1px solid var(--borda); border-radius: 7px; }
+                  border: 1px solid var(--borda); border-radius: 10px; }
   input::placeholder { color: var(--suave); opacity: .85; }
   input[type=checkbox] { width: 16px; min-height: 16px; height: 16px; accent-color: var(--acento); }
   input[type=range] { min-height: 32px; cursor: pointer; }
@@ -137,7 +169,7 @@
   .msg.erro { color: var(--erro); }
   .msg.ok { color: var(--ok); }
   hr { border: 0; border-top: 1px solid var(--borda); margin: 1px 0; width: 100%; }
-  button { min-height: 36px; padding: 7px 12px; cursor: pointer; border-radius: 7px;
+  button { min-height: 36px; padding: 7px 12px; cursor: pointer; border-radius: 10px;
            border: 1px solid var(--borda); background: var(--painel);
            color: var(--texto); font-weight: 650; }
   button:hover:not(:disabled) { background: var(--painel-suave); border-color: var(--acento); }
@@ -190,14 +222,14 @@
                 padding-top: 16px; border-top: 1px solid var(--borda);
                 color: var(--suave); font-size: 12px; }
   .assinatura strong { color: var(--texto); font-weight: 700; }
-  .postit-botao { position: fixed; right: 16px; bottom: 16px; z-index: 30;
+  .postit-botao { position: fixed; right: 16px; bottom: 16px; z-index: 30; padding: 7px 16px;
     background: var(--acento); border-color: var(--acento); color: var(--acento-txt);
-    box-shadow: var(--sombra); }
+    border-radius: 999px; box-shadow: var(--sombra-alta); }
   .postit-botao:hover:not(:disabled) { background: var(--acento); filter: brightness(.92); }
   .postit-painel { position: fixed; right: 16px; bottom: 64px; z-index: 30;
     width: 320px; max-height: min(560px, calc(100dvh - 80px)); overflow-y: auto;
     padding: 15px; background: var(--painel); color: var(--texto);
-    border: 1px solid var(--borda); border-radius: 11px; box-shadow: 0 6px 28px rgba(0, 0, 0, .18); }
+    border: 1px solid var(--borda); border-radius: 16px; box-shadow: var(--sombra-alta); }
   .postit-painel[hidden] { display: none; }
   .postit-painel h2 { margin: 0 0 10px; font-size: 17px; }
   .postit-formulario { display: grid; gap: 8px; }
@@ -217,13 +249,12 @@
     border-left: 3px solid var(--aviso-borda); padding-left: 5px; font-weight: 700; }
   .postit-vazio { margin: 0; color: var(--suave); font-size: 12px; }
   @media (max-width: 760px) {
-    .topo { flex-wrap: wrap; gap: 0 12px; padding: 9px 16px 0; }
+    .topo { flex-wrap: wrap; gap: 6px 10px; padding: 9px 16px; }
     .marca { flex: 1 1 auto; min-height: 38px; }
-    .topo .encerrar { order: 1; margin-left: 0; min-height: 32px; }
-    .horas-indicador { order: 1; margin-left: 0; }
-    .abas { order: 2; width: 100%; flex-wrap: wrap; }
-    .abas a { min-height: 40px; padding: 0 10px; font-size: 12px; }
-    .menu-ferramentas summary { padding: 0 10px; font-size: 12px; }
+    .topo .encerrar { order: 1; margin-left: 0; min-height: 32px; padding: 4px 8px; font-size: 12px; }
+    .horas-indicador { order: 1; margin-left: 0; font-size: 12px; padding: 5px 10px 5px 8px; }
+    .abas { order: 2; width: 100%; }
+    .abas a, .menu-ferramentas summary { min-height: 36px; padding: 0 11px; font-size: 13px; }
     .app { grid-template-columns: minmax(0, 1fr); }
     aside { border-right: 0; border-bottom: 1px solid var(--borda); padding: 20px 16px; }
     main { padding: 20px 16px; }
@@ -250,6 +281,19 @@
     .acoes { gap: 3px; }
     .acoes button { padding: 4px 2px; font-size: 12px; }
   }
+  /* anel de progresso do mês: aprovadas, com a equipe e por auditar sobre as fichas lançadas */
+  .anel { --d: 64px; --a: 0; --e: 0; --p: 0; width: var(--d); height: var(--d); flex: none;
+    display: grid; place-items: center; border-radius: 50%;
+    background: conic-gradient(var(--estado-aprovadas) 0 calc(var(--a) * 1%),
+      var(--estado-equipe) 0 calc((var(--a) + var(--e)) * 1%),
+      var(--estado-auditar) 0 calc((var(--a) + var(--e) + var(--p)) * 1%), var(--estado-vazio) 0); }
+  .anel b { width: calc(var(--d) - max(8px, var(--d) * .16)); height: calc(var(--d) - max(8px, var(--d) * .16));
+    display: grid; place-items: center; border-radius: 50%; background: var(--painel);
+    font-size: max(11px, calc(var(--d) * .24)); font-weight: 800; letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums; }
+  .ponto-aprovadas { background: var(--estado-aprovadas); }
+  .ponto-equipe { background: var(--estado-equipe); }
+  .ponto-auditar { background: var(--estado-auditar); }
 {% block estilos %}{% endblock %}
 </style>
 </head>
@@ -287,6 +331,37 @@
 // ================= utilitários comuns às telas =================
 const $ = id => document.getElementById(id);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+// datas na tela sempre em dd/mm/aaaa (o servidor manda aaaa-mm-dd)
+function dataBR(valor) {
+  if (valor instanceof Date) {
+    const dois = n => String(n).padStart(2, "0");
+    return `${dois(valor.getDate())}/${dois(valor.getMonth() + 1)}/${valor.getFullYear()}`;
+  }
+  const partes = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(valor ?? ""));
+  return partes ? `${partes[3]}/${partes[2]}/${partes[1]}` : String(valor ?? "");
+}
+
+// anel de progresso de uma contagem do mês (/painel/dados); anéis pequenos vão sem o número no centro
+function anelProgresso(contagem, diametro, comNumero = true) {
+  const total = contagem.lancadas || 0;
+  const parte = chave => total ? 100 * (contagem[chave] || 0) / total : 0;
+  const anel = document.createElement("div");
+  anel.className = "anel";
+  anel.style.setProperty("--d", diametro + "px");
+  anel.style.setProperty("--a", parte("concluidas"));
+  anel.style.setProperty("--e", parte("com_equipe"));
+  anel.style.setProperty("--p", parte("por_auditar"));
+  const descricao = `${contagem.concluidas || 0} aprovadas, ${contagem.com_equipe || 0} com a equipe, ` +
+    `${contagem.por_auditar || 0} por auditar, ${total} lançadas`;
+  anel.setAttribute("role", "img");
+  anel.setAttribute("aria-label", descricao);
+  anel.title = descricao;
+  const centro = document.createElement("b");   // o miolo vazado existe mesmo sem o número
+  if (comNumero) centro.textContent = Math.round(contagem.percentual_concluido || 0) + "%";
+  anel.append(centro);
+  return anel;
+}
 
 // memória leve no navegador (escolhas da tela)
 const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };

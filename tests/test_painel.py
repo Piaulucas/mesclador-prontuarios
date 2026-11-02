@@ -18,71 +18,108 @@ def test_tela_e_link_do_painel(cliente):
     resposta = cliente.get("/painel/")
     assert resposta.status_code == 200
     html = resposta.get_data(as_text=True)
+    assert "<h1>Auditoria</h1>" in html and "Painel da auditoria" not in html
     assert 'id="painelMes"' in html
     assert 'type="month"' in html
     assert 'id="painelEmpresa"' in html
+    assert 'id="painelRecarregar"' in html and "Ler de novo" in html
     assert 'href="/painel/"' in cliente.get("/").get_data(as_text=True)
     assert "textContent" in html
     assert "Avisei a equipe" in html
     assert "Parcial, reenviei" in html
     assert "if (!f.pode_avisar)" in html
     assert 'parametrosPainel.get("empresa")' in html
-    assert "e.empresa === empresaDaUrl" in html
-    assert "Equipe avisada em ${dia}/${mes}/${ano.slice(2)} · aguardando o reenvio" in html
-    assert "com a equipe`" in html and "auditoria-pendencia-dias" in html
+    assert "Equipe avisada em ${dataBR(f.ultimo_envio.data)} · aguardando o reenvio" in html
     assert "Nota do último aviso: " in html and "auditoria-nota" in html
     assert "Situação da correção" not in html
-    assert "chegou arquivo novo em" in html
     assert 'parametrosPainel.get("foco")' in html
     assert 'f.dias > 10' in html
     assert 'f.scanner === "arquivo_novo_apos_aviso"' in html
-    assert '(f.estado === "por_auditar" || f.estado === "com_equipe") && f.scanner === "falta_escanear"' in html
+    assert "no.textContent = String(texto)" in html
+    # nenhuma data em ISO na tela: leitura e avisos passam por dataBR
+    assert '"Leitura de " + dados.hoje' not in html
+    assert "leitura de ${dataBR(dadosPainel.hoje)}" in html
+    assert "Aviso registrado: ${ficha.ficha} em ${dataBR(alteracao.envio.data)}." in html
 
 
-def test_painel_organiza_as_quatro_secoes_na_ordem(cliente):
+def test_painel_lista_as_empresas_configuradas_e_escolhe_pela_url(cliente):
     html = cliente.get("/painel/").get_data(as_text=True)
-    secoes = [
-        'listaPainel(listas, "Falta escanear"',
-        'listaPainel(listas, "Pendências com a equipe"',
-        'listaPainel(listas, "Sem linha na planilha"',
-        'elemento("summary", `Inconsistências (${e.inconsistencias.length})`)',
-    ]
-    posicoes = [html.index(secao) for secao in secoes]
+    assert 'const EMPRESAS_PAINEL = ["EMPRESA A", "EMPRESA B"];' in html
+    # ?empresa= escolhe a inicial; sem ela (ou com uma desconhecida) abre "Todas"
+    assert 'empresaDaUrl && EMPRESAS_PAINEL.includes(empresaDaUrl) ? empresaDaUrl : ""' in html
+    assert '"Todas"' in html and '"Todas as empresas"' in html
+    assert 'b.setAttribute("aria-pressed", String(valor === empresaAtual))' in html
+    assert "anelProgresso(e.contagem, 34, false)" in html
+    # trocar de empresa atualiza a URL sem recarregar e não mexe no contador de horas
+    assert 'empresaAtual ? parametros.set("empresa", empresaAtual) : parametros.delete("empresa")' in html
+    assert "history.replaceState" in html
+    assert "/horas/auditoria" not in html
+
+
+def test_painel_quadro_tem_colunas_por_situacao(cliente):
+    html = cliente.get("/painel/").get_data(as_text=True)
+    colunas = ['titulo: "Falta escanear"', 'titulo: "Reenviado · conferir"',
+               'titulo: "Pode avisar"', 'titulo: "Aguardando reenvio"']
+    posicoes = [html.index(coluna) for coluna in colunas]
     assert posicoes == sorted(posicoes)
-    assert "Scanners das fichas abertas" not in html
-    assert '`${titulo} (${itens.length})`' in html
-    assert 'faltaEscanear.filter(f => f.estado === "por_auditar")' in html
-    assert '`${f.ficha} · ${f.paciente} · ${f.tipo}`' in html
-    assert '`${faltaEscanear.length} falta escanear`' in html
-    assert 'origem: "escaneado no Drive"' in html
-    assert 'origem: "PDF já mesclado"' in html
-    assert 'li.append(elemento("small", item.origem))' in html
-    assert 'listaPainel(listas, "Sem linha na planilha", semLinha' in html
-    assert 'const inconsistencias = elemento("details"' in html
-    assert 'inconsistencias.open =' not in html
-    assert 'grid-template-columns: repeat(2, minmax(0, 1fr))' in html
-    assert 'grid-template-columns: minmax(0, 1fr)' in html
-    assert 'grid-column: 1 / -1' in html
+    assert "Arquivo novo" not in html and "chegou arquivo novo" not in html
+    assert "Reenviado em ${dataBR(f.arquivo_novo_em)} · conferir" in html
+    # a coluna segue a regra do servidor: sem pode_avisar, só aguarda o reenvio
+    assert 'if (f.scanner === "arquivo_novo_apos_aviso") return "reenviado";' in html
+    assert 'if (!f.pode_avisar) return "aguardando";' in html
+    assert 'f.estado === "por_auditar" && f.scanner === "falta_escanear" && filtro(f)' in html
+    assert "Falta a equipe escanear" in html
+    # cartão compacto com os dias na cor da faixa
+    assert "auditoria-faixa-${f.faixa}" in html
+    for faixa in ("amarelo", "laranja", "vermelho"):
+        assert (f".auditoria-faixa-{faixa} {{ background: var(--faixa-{faixa}); "
+                f"color: var(--faixa-{faixa}-txt); }}") in html
 
 
-def test_painel_tem_caixas_recolhiveis_e_lembra_o_estado(cliente):
+def test_painel_resume_colunas_quando_ha_muitas_pendencias(cliente):
     html = cliente.get("/painel/").get_data(as_text=True)
-    assert 'id="painelExpandir"' in html
-    assert 'id="painelRecolher"' in html
-    assert 'id="painelAviso"' in html
-    assert "Aviso registrado" in html
-    assert "Expandir todas" in html and "Recolher todas" in html
-    assert 'elemento("details"' in html
-    assert 'elemento("summary"' in html
-    assert 'cartao.open = estadosEmpresas.has(chave)' in html
-    assert 'cartao.addEventListener("toggle"' in html
-    assert 'lembrar(chave) === "aberta"' in html
-    assert 'guardar(chave, aberto ? "aberta" : "fechada")' in html
-    assert 'resumo.append(barra' in html
-    assert 'resumo.append(selos)' in html
-    assert 'cartao.append(resumo, conteudo)' in html
-    assert 'conteudo.append(listas)' in html
-    assert 'no.textContent = String(texto)' in html
+    assert "const MUITAS_PENDENCIAS = 15, MOSTRAR_POR_COLUNA = 5;" in html
+    assert "const resumir = total >= MUITAS_PENDENCIAS;" in html
+    assert "itens.slice(0, MOSTRAR_POR_COLUNA)" in html
+    assert "`ver todas (${itens.length})`" in html
+    # mais atrasadas primeiro: sem aviso registrado, depois mais dias com a equipe
+    assert ('(("dias" in a.ficha) - ("dias" in b.ficha)) || '
+            '((b.ficha.dias || 0) - (a.ficha.dias || 0))') in html
+
+
+def test_painel_formulario_de_aviso_so_abre_no_cartao_clicado(cliente):
+    html = cliente.get("/painel/").get_data(as_text=True)
+    assert 'avisar.addEventListener("click", () => alternarFormulario(cartao, avisar, empresa, f))' in html
+    assert "let formularioAberto = null;" in html
+    assert "fecharFormulario();\n  if (mesmo) return;" in html
+    assert 'avisar.setAttribute("aria-expanded", "false")' in html
+    # nenhum formulário é montado junto com o cartão
+    cartao = html[html.index("function cartaoPendencia"):html.index("function fecharFormulario")]
+    assert 'elemento("form"' not in cartao
+    assert "{envio: {data: data.value, pedido: nota.value}}" in html
+    assert '{envio: {data: dadosPainel.hoje, pedido: "parcial"}}' in html
+    assert 'evento.key === "Escape"' in html
+
+
+def test_painel_rodape_sem_linha_e_inconsistencias(cliente):
+    html = cliente.get("/painel/").get_data(as_text=True)
+    assert 'listaRodape("Sem linha na planilha", semLinha' in html
+    assert 'listaRodape("Inconsistências", inconsistencias' in html
+    assert 'origem: "escaneado no Drive"' in html and 'origem: "PDF já mesclado"' in html
+    assert 'numero_fora_da_posicao: "número fora da posição"' in html
+    assert 'nome_pdf_diferente: "nome do PDF diferente"' in html
+    assert 'id="painelRodape" class="auditoria-rodape"' in html
+    assert "Expandir todas" not in html and 'elemento("details"' not in html
+
+
+def test_painel_mantem_recortes_e_mes_compartilhado(cliente):
+    html = cliente.get("/painel/").get_data(as_text=True)
+    for chave in ("atrasadas", "arquivos-novos", "sem-escaneamento"):
+        assert f'"{chave}"' in html
+    assert 'focoPainel ? parametros.set("foco", focoPainel) : parametros.delete("foco")' in html
+    assert 'id="painelRecortes"' in html and 'botao("", "Tudo")' in html
+    assert 'lembrar("painelMes")' in html and 'guardar("painelMes", mes)' in html
+    assert 'id="painelAviso"' in html and "Aviso registrado" in html
 
 
 def test_dados_do_mes_cruzam_planilha_e_pdfs_sem_linha(config, pasta_planilhas, tmp_path):
