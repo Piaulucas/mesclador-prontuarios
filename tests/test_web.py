@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 from html.parser import HTMLParser
 
@@ -568,3 +569,19 @@ def test_empresa_da_inicio_abre_auditoria_e_conta_tempo(cliente):
     assert "new URLSearchParams({mes: dados.mes, empresa: empresa.empresa})" in html
     # a aba Auditoria pelo menu não mexe no contador
     assert "/horas/auditoria" not in cliente.get("/painel/").get_data(as_text=True)
+
+
+def test_encerrar_pelo_botao_para_o_contador_e_reinicio_mantem(config, tmp_path):
+    from mesclador import horas
+    from mesclador.web import create_app
+    app = create_app(config, pasta_temp=tmp_path / "t4")
+    app.config["AO_ENCERRAR"] = lambda url: None
+    cliente = app.test_client()
+    assert cliente.post("/horas/auditoria", json={"empresa": "EMPRESA A"}).status_code == 200
+    # reinício por versão nova (__main__ manda POST sem corpo): continua contando
+    assert cliente.post("/encerrar", data=b"").status_code == 200
+    assert horas.listar(config, datetime.now())["ativa"]["empresa"] == "EMPRESA A"
+    # botão Encerrar da barra: para a contagem
+    assert cliente.post("/encerrar", json={"parar_horas": True}).status_code == 200
+    assert horas.listar(config, datetime.now())["ativa"] is None
+    assert "JSON.stringify({parar_horas: true})" in cliente.get("/").get_data(as_text=True)

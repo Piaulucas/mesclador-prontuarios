@@ -6,6 +6,7 @@ import shutil
 import tempfile
 import threading
 import uuid
+from datetime import datetime
 from pathlib import Path
 
 from flask import Flask, abort, jsonify, render_template, request, send_file
@@ -343,6 +344,10 @@ def create_app(config, pasta_temp=None, versao=None):
 
     @app.post("/encerrar")
     def encerrar():
+        # Botão "Encerrar": para o contador de horas que ficou ligado. O reinício por
+        # versão nova (__main__) não manda o pedido e mantém a contagem.
+        if (request.get_json(silent=True) or {}).get("parar_horas") is True:
+            horas.parar_sessao_aberta(config, datetime.now())
         # espera um pouco para a resposta chegar ao navegador antes de encerrar
         url = request.host_url.rstrip("/")   # ex.: http://127.0.0.1:5050
         threading.Timer(0.3, app.config["AO_ENCERRAR"], args=[url]).start()
