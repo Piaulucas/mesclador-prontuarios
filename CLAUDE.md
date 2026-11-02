@@ -43,7 +43,9 @@ mesclador/
   navegador.py  focar/fechar a aba no Chrome/Safari (AppleScript)
   seletor.py    seletor de pastas nativo do macOS
   templates/    base.html (barra superior + JS comum), inicio.html, index.html,
-                painel.html, converter.html
+                painel.html, converter.html; _ferramentas.css e _ampliada.html
+                (estilo e folha ampliada comuns a Mesclar e Converter)
+  static/       postit.js, ampliada.js (folha ampliada com os ajustes ao lado)
 macos/          ícone e scripts da Área de trabalho.app
 tests/          pytest
 ```

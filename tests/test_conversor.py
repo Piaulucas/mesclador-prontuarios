@@ -29,7 +29,26 @@ def exportar(cliente, ids, **extra):
 
 def test_tela_converter_abre(cliente):
     html = cliente.get("/converter").get_data(as_text=True)
-    assert "Converter em JPG" in html and "Exportar JPG" in html
+    assert "<h1>Converter em JPG</h1>" in html and "Exportar JPG" in html
+    assert "Exportar ${paginas.length} JPG" in html
+
+
+def test_converter_pede_a_pasta_so_quando_ha_paginas(cliente):
+    html = cliente.get("/converter").get_data(as_text=True)
+    # o nome da pasta fica na barra de exportação, que começa escondida e aparece com as páginas
+    assert '<div class="barra-fixa" id="barraExportar" role="region" aria-label="Exportar os JPG" hidden>' in html
+    assert html.index('id="barraExportar"') < html.index('id="nome"') < html.index('id="exportar"')
+    assert '$("barraExportar").hidden = !paginas.length;' in html
+    assert "Pasta de saída" not in html
+    assert f"const DPI = {imagens.DPI_EXPORTACAO};" in html
+
+
+def test_converter_ajustes_ficam_no_cartao_da_pagina(cliente):
+    html = cliente.get("/converter").get_data(as_text=True)
+    assert 'if (escolhida) { c.appendChild($("ajustesPagina")); }' in html
+    assert '$("reserva").appendChild($("ajustesPagina"));' in html
+    for id_ in ("brilho", "contraste", "realce", "aplicarTodas", "restaurar"):
+        assert f'id="{id_}"' in html
 
 
 def test_pdf_vira_uma_pagina_por_folha(cliente):
