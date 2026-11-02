@@ -559,3 +559,12 @@ def test_inicio_tem_seletor_de_mes_compartilhado_com_a_auditoria(cliente):
     assert 'lembrar("painelMes")' in html
     assert 'guardar("painelMes", campoMes.value)' in html
     assert 'encodeURIComponent(campoMes.value)' in html
+
+
+def test_empresa_da_inicio_abre_auditoria_e_conta_tempo(cliente):
+    html = cliente.get("/").get_data(as_text=True)
+    assert 'noInicio("a", "", "inicio-empresa inicio-link")' in html
+    assert '"/horas/auditoria"' in html
+    assert "new URLSearchParams({mes: dados.mes, empresa: empresa.empresa})" in html
+    # a aba Auditoria pelo menu não mexe no contador
+    assert "/horas/auditoria" not in cliente.get("/painel/").get_data(as_text=True)

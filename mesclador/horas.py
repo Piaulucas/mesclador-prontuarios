@@ -156,6 +156,31 @@ def criar_blueprint(config, relogio=datetime.now):
         except sqlite3.IntegrityError:
             return jsonify(erro="Tipo inválido."), 400
 
+    @bp.post("/auditoria")
+    def iniciar_auditoria():
+        """Clique na empresa da Início: conta "Auditoria" dela, sem reiniciar se já estiver contando."""
+        try:
+            empresa = _entrada(("empresa",), ("empresa",))["empresa"]
+            if not isinstance(empresa, str) or empresa not in config.empresas:
+                raise ValueError("Empresa inválida.")
+            banco = _abrir_banco(config)
+            try:
+                with banco:
+                    tipo = banco.execute("SELECT id FROM tipo_horas WHERE nome = ?",
+                                         ("Auditoria",)).fetchone()["id"]
+                    ativa = banco.execute("SELECT tipo_id, empresa FROM sessao WHERE fim IS NULL").fetchone()
+                    if ativa and ativa["tipo_id"] == tipo and ativa["empresa"] == empresa:
+                        return jsonify(ok=True, iniciada=False)
+                    agora = relogio().isoformat(timespec="seconds")
+                    banco.execute("UPDATE sessao SET fim = ? WHERE fim IS NULL", (agora,))
+                    banco.execute("""INSERT INTO sessao (tipo_id, tarefa, empresa, inicio)
+                                  VALUES (?, '', ?, ?)""", (tipo, empresa, agora))
+                return jsonify(ok=True, iniciada=True)
+            finally:
+                banco.close()
+        except ValueError as erro:
+            return jsonify(erro=str(erro)), 400
+
     @bp.post("/parar")
     def parar():
         try:
