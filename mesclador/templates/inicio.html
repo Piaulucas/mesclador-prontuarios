@@ -2,71 +2,91 @@
 {% block titulo %}Início · Área de trabalho{% endblock %}
 
 {% block estilos %}
-  .inicio { max-width: 1220px; margin: auto; padding: 30px 24px 56px; }
-  .inicio h1 { margin: 0; font-size: 28px; letter-spacing: -.03em; }
-  .inicio h2 { margin: 0 0 14px; font-size: 19px; letter-spacing: -.02em; }
+  .inicio { max-width: 1240px; margin: auto; padding: 28px 20px 70px; font-size: 15px; }
+  .inicio h1 { margin: 0; font-size: 28px; letter-spacing: -.03em; line-height: 1.2; }
+  .inicio h2 { margin: 0 0 12px; font-size: 18px; letter-spacing: -.01em; }
+  .inicio h3 { margin: 0; font-size: 16px; line-height: 1.25; min-width: 0; overflow-wrap: anywhere; }
   .inicio-secao { margin-top: 30px; }
-  .inicio-cabecalho { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
-  .inicio-mes { color: var(--suave); font-size: 13px; }
-  .inicio-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; }
-  .inicio-cartao, .inicio-empresa, .inicio-reserva { min-width: 0; padding: 17px;
-    background: var(--painel); border: 1px solid var(--borda); border-radius: 11px;
+  .inicio-cabecalho { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between;
+    gap: 10px 16px; margin-bottom: 22px; }
+  .inicio-agora { margin: 2px 0 0; color: var(--suave); font-variant-numeric: tabular-nums; }
+  .inicio-mes { font-size: 13px; font-weight: 650; color: var(--suave); }
+  .inicio-mes input { min-height: 40px; border-radius: 12px; }
+  .inicio-estado { margin: 0 0 12px; color: var(--suave); font-size: 14px; }
+  .inicio-estado:empty { display: none; }
+  .inicio-cartao { min-width: 0; padding: 20px; background: var(--painel); border-radius: 18px;
     box-shadow: var(--sombra); }
-  .inicio-cartao strong { display: block; font-size: 30px; line-height: 1.2; }
-  .inicio-cartao span { color: var(--suave); }
-  .inicio-link { display: block; color: var(--texto); text-decoration: none; }
-  .inicio-link:hover { border-color: var(--acento); background: var(--painel-suave); }
-  .inicio-link .inicio-acao { display: block; margin-top: 14px; color: var(--acento); font-weight: 700; }
-  .inicio-secao:last-of-type .inicio-cartao strong { font-size: 18px; margin-bottom: 5px; }
-  .inicio-empresas { display: grid; gap: 8px; margin-top: 12px; }
-  .inicio-empresa-cabecalho { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
-  .inicio-empresa-cabecalho strong { min-width: 0; overflow-wrap: anywhere; }
-  .inicio-empresa-cabecalho span { flex: none; color: var(--suave); }
-  .inicio-barra { display: flex; height: 8px; margin-top: 10px; border-radius: 10px;
-    overflow: hidden; background: var(--fundo); border: 1px solid var(--borda); }
-  .inicio-barra span { height: 100%; }
-  .inicio-aprovadas { background: var(--ok); }
-  .inicio-equipe { background: var(--erro); }
-  .inicio-pendentes { background: #d9a232; }
-  .inicio-legenda { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; padding: 0;
-    list-style: none; color: var(--suave); font-size: 12px; }
-  .inicio-legenda li { display: flex; align-items: center; gap: 6px; }
-  .inicio-legenda i { width: 10px; height: 10px; border-radius: 3px; }
-  .inicio-estado { margin: 4px 0 12px; color: var(--suave); font-size: 13px; }
-  @media (max-width: 600px) {
-    .inicio { padding: 22px 16px 42px; }
-    .inicio-empresa-cabecalho { flex-wrap: wrap; }
+  /* destaque do mês: anel grande com os quatro totais */
+  .inicio-heroi { display: flex; flex-wrap: wrap; align-items: center; gap: 20px 28px; }
+  .inicio-totais { flex: 1 1 360px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .inicio-totais strong { display: block; font-size: 32px; line-height: 1.1; letter-spacing: -.03em;
+    font-variant-numeric: tabular-nums; }
+  .inicio-totais span { color: var(--suave); font-size: 14px; }
+  .inicio-total-equipe strong { color: var(--estado-equipe); }
+  .inicio-total-auditar strong { color: var(--estado-auditar-txt); }
+  /* empresas: cada caixa é o botão que conta o tempo e abre a Auditoria dela */
+  .inicio-empresas { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 16px; }
+  .inicio-empresa { display: flex; flex-direction: column; gap: 14px; color: var(--texto); text-decoration: none;
+    border: 2px solid transparent; cursor: pointer; transition: transform .12s, box-shadow .12s, border-color .12s; }
+  .inicio-empresa:hover { transform: translateY(-2px); box-shadow: var(--sombra-alta); border-color: var(--acento); }
+  .inicio-empresa:active { transform: none; }
+  .inicio-empresa-topo { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .inicio-empresa-topo > div:last-child { min-width: 0; }
+  .inicio-empresa-fichas { color: var(--suave); font-size: 13px; }
+  .inicio-legenda { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; color: var(--suave); font-size: 14px; }
+  .inicio-legenda li { display: flex; align-items: center; gap: 7px; }
+  .inicio-legenda i { flex: none; width: 10px; height: 10px; border-radius: 50%; }
+  .inicio-contadores { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .inicio-contador { padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 700;
+    background: var(--painel-suave); color: var(--texto); border: 1px solid var(--borda); }
+  .inicio-contador-atrasadas { background: var(--faixa-vermelho); color: var(--faixa-vermelho-txt); border-color: transparent; }
+  .inicio-contador-reenviadas { background: var(--aviso-fundo); border-color: var(--aviso-borda); }
+  .inicio-auditar { margin-top: auto; padding: 9px 12px; border-radius: 12px; text-align: center;
+    background: var(--acento-fundo); color: var(--acento); font-size: 14px; font-weight: 700; }
+  .inicio-empresa:hover .inicio-auditar { background: var(--acento); color: var(--acento-txt); }
+  /* pendências: blocos com a cor da gravidade no topo */
+  .inicio-pendencias { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)); gap: 12px; }
+  .inicio-bloco { display: flex; flex-direction: column; gap: 2px; padding: 16px; border-radius: 16px;
+    background: var(--painel); box-shadow: var(--sombra); color: var(--texto); text-decoration: none;
+    border-top: 4px solid var(--borda); transition: transform .12s, box-shadow .12s; }
+  .inicio-bloco:hover { transform: translateY(-2px); box-shadow: var(--sombra-alta); }
+  .inicio-bloco strong { font-size: 30px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .inicio-bloco em { margin-top: auto; padding-top: 8px; color: var(--acento); font-size: 13px; font-weight: 700; font-style: normal; }
+  .inicio-bloco-vencidas { border-top-color: var(--faixa-vermelho); }
+  .inicio-bloco-vencidas strong { color: var(--estado-equipe); }
+  .inicio-bloco-vencendo { border-top-color: var(--faixa-laranja); }
+  @media (prefers-reduced-motion: reduce) {
+    .inicio-empresa, .inicio-bloco { transition: none; }
+    .inicio-empresa:hover, .inicio-bloco:hover { transform: none; }
+  }
+  @media (max-width: 760px) {
+    .inicio { padding: 20px 16px 70px; }
+    .inicio h1 { font-size: 24px; }
+    .inicio-cartao { padding: 16px; border-radius: 16px; }
+    .inicio-totais { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .inicio-totais strong { font-size: 28px; }
   }
 {% endblock %}
 
 {% block conteudo %}
 <main class="inicio">
-  <h1>Início</h1>
-  <section class="inicio-secao" aria-labelledby="inicioAndamento">
-    <div class="inicio-cabecalho">
-      <h2 id="inicioAndamento">Hoje</h2>
-      <label class="inicio-mes">Mês <input id="inicioMes" type="month" min="{{ mes_minimo }}" value="{{ mes_padrao }}"></label>
+  <div class="inicio-cabecalho">
+    <div>
+      <h1>Início</h1>
+      <p id="inicioAgora" class="inicio-agora"></p>
     </div>
-    <p id="inicioEstado" class="inicio-estado" role="status">Lendo andamento do mês…</p>
-    <div id="inicioTotais" class="inicio-grade"></div>
-    <p class="inicio-estado">Clique numa empresa para auditá-la; o tempo de Auditoria dela começa a contar.</p>
+    <label class="inicio-mes">Mês <input id="inicioMes" type="month" min="{{ mes_minimo }}" value="{{ mes_padrao }}"></label>
+  </div>
+  <p id="inicioEstado" class="inicio-estado" role="status">Lendo andamento do mês…</p>
+  <div id="inicioTotais" class="inicio-cartao inicio-heroi" hidden></div>
+  <section class="inicio-secao" aria-labelledby="inicioEmpresasTitulo">
+    <h2 id="inicioEmpresasTitulo">Empresas</h2>
     <div id="inicioEmpresas" class="inicio-empresas"></div>
-  </section>
-  <section class="inicio-secao" aria-labelledby="inicioHoje">
-    <h2 id="inicioHoje">O que fazer hoje</h2>
-    <div id="inicioAcoes" class="inicio-grade"></div>
-  </section>
-  <section class="inicio-secao" aria-labelledby="inicioFerramentas">
-    <h2 id="inicioFerramentas">Ferramentas</h2>
-    <div class="inicio-grade">
-      <a class="inicio-cartao inicio-link" href="/mesclar"><strong>Mesclar prontuário</strong><span>Montar e salvar um PDF.</span><span class="inicio-acao">Abrir ferramenta →</span></a>
-      <a class="inicio-cartao inicio-link" href="/converter"><strong>Converter em JPG</strong><span>Ajustar e exportar páginas.</span><span class="inicio-acao">Abrir ferramenta →</span></a>
-    </div>
   </section>
   <section class="inicio-secao" aria-labelledby="inicioPendenciasTitulo">
     <h2 id="inicioPendenciasTitulo">Pendências</h2>
     <p id="inicioPendenciasEstado" class="inicio-estado" role="status">Lendo pendências…</p>
-    <div id="inicioPendencias" class="inicio-grade"></div>
+    <div id="inicioPendencias" class="inicio-pendencias"></div>
   </section>
 </main>
 {% endblock %}
@@ -78,36 +98,54 @@ const campoMes = $("inicioMes");
 const mesGuardado = lembrar("painelMes");
 if (mesGuardado && /^\d{4}-(0[1-9]|1[0-2])$/.test(mesGuardado) &&
     (!campoMes.min || mesGuardado >= campoMes.min)) campoMes.value = mesGuardado;
+// data e hora atuais no formato pedido pelo usuário (dd-mm-aa hh:mm); as demais datas usam dataBR
 function dataHoraAtual() {
   const agora = new Date();
   const dois = valor => String(valor).padStart(2, "0");
   return `${dois(agora.getDate())}-${dois(agora.getMonth() + 1)}-${dois(agora.getFullYear() % 100)} ` +
     `${dois(agora.getHours())}:${dois(agora.getMinutes())}`;
 }
-$("inicioAndamento").textContent = dataHoraAtual();
+$("inicioAgora").textContent = dataHoraAtual();
 function noInicio(tag, texto, classe) {
   const no = document.createElement(tag);
   no.textContent = String(texto);
   if (classe) no.className = classe;
   return no;
 }
-function linkAuditoria(foco, mes) {
-  return "/painel/?" + new URLSearchParams({mes, foco}).toString();
+const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
+
+// contadores de ação de uma empresa, a partir das fichas do mês
+function contadoresEmpresa(empresa) {
+  const fichas = empresa.fichas || [];
+  return [
+    ["atrasadas", fichas.filter(ficha => ficha.estado === "com_equipe" && ficha.dias > 10).length,
+      n => plural(n, "atrasada", "atrasadas"), "com a equipe há mais de 10 dias"],
+    ["reenviadas", fichas.filter(ficha => ficha.scanner === "arquivo_novo_apos_aviso").length,
+      n => plural(n, "reenviada", "reenviadas"), "a equipe reenviou depois do aviso; conferir"],
+    ["sem-escanear", fichas.filter(ficha => ficha.estado === "por_auditar" && ficha.scanner === "falta_escanear").length,
+      n => `${n} sem escanear`, "por auditar sem escaneamento"]
+  ];
 }
+
 function mostrarInicio(dados) {
   const totais = $("inicioTotais");
-  totais.replaceChildren();
-  [["Aprovadas", dados.totais.concluidas], ["Com a equipe", dados.totais.com_equipe],
-    ["Por auditar", dados.totais.por_auditar], ["Total", dados.totais.lancadas]].forEach(([rotulo, valor]) => {
-    const cartao = noInicio("div", "", "inicio-cartao");
-    cartao.append(noInicio("strong", valor), noInicio("span", rotulo));
-    totais.append(cartao);
+  totais.replaceChildren(anelProgresso(dados.totais, 112));
+  const numeros = noInicio("div", "", "inicio-totais");
+  [["Aprovadas", dados.totais.concluidas, ""], ["Com a equipe", dados.totais.com_equipe, "inicio-total-equipe"],
+    ["Por auditar", dados.totais.por_auditar, "inicio-total-auditar"],
+    ["Lançadas", dados.totais.lancadas, ""]].forEach(([rotulo, valor, classe]) => {
+    const cartao = noInicio("div", "", classe);
+    cartao.append(noInicio("strong", valor), noInicio("span", rotulo.toLowerCase()));
+    numeros.append(cartao);
   });
+  totais.append(numeros);
+  totais.hidden = false;
+
   const empresas = $("inicioEmpresas");
   empresas.replaceChildren();
   dados.empresas.forEach(empresa => {
     // clicar na empresa começa a contar o tempo de Auditoria dela e abre só ela na Auditoria
-    const linha = noInicio("a", "", "inicio-empresa inicio-link");
+    const linha = noInicio("a", "", "inicio-cartao inicio-empresa");
     linha.href = "/painel/?" + new URLSearchParams({mes: dados.mes, empresa: empresa.empresa}).toString();
     linha.title = `Auditar ${empresa.empresa} e contar o tempo`;
     linha.addEventListener("click", async evento => {
@@ -118,47 +156,33 @@ function mostrarInicio(dados) {
       } catch (erro) { /* abre a Auditoria mesmo se o contador não responder */ }
       location.href = linha.href;
     });
-    const cabecalho = noInicio("div", "", "inicio-empresa-cabecalho");
-    cabecalho.append(noInicio("strong", empresa.empresa),
-      noInicio("span", Math.round(empresa.contagem.percentual_concluido) + "%"));
-    const barra = noInicio("div", "", "inicio-barra");
-    const descricao = `${empresa.contagem.concluidas} aprovadas · ${empresa.contagem.com_equipe} com a equipe · ` +
-      `${empresa.contagem.por_auditar} por auditar · ${empresa.contagem.lancadas} no total`;
-    barra.setAttribute("role", "img");
-    barra.setAttribute("aria-label", descricao);
-    barra.title = descricao;
-    [["concluidas", "inicio-aprovadas"], ["com_equipe", "inicio-equipe"],
-      ["por_auditar", "inicio-pendentes"]].forEach(([chave, classe]) => {
-      const parte = noInicio("span", "", classe);
-      parte.style.width = (empresa.contagem.lancadas ?
-        100 * empresa.contagem[chave] / empresa.contagem.lancadas : 0) + "%";
-      barra.append(parte);
-    });
+    const contagem = empresa.contagem;
+    const topo = noInicio("div", "", "inicio-empresa-topo");
+    const nome = noInicio("div", "");
+    nome.append(noInicio("h3", empresa.empresa),
+      noInicio("span", plural(contagem.lancadas, "ficha no mês", "fichas no mês"), "inicio-empresa-fichas"));
+    topo.append(anelProgresso(contagem, 72), nome);
     const legenda = noInicio("ul", "", "inicio-legenda");
-    [["concluidas", "inicio-aprovadas", "aprovadas"], ["com_equipe", "inicio-equipe", "com a equipe"],
-      ["por_auditar", "inicio-pendentes", "por auditar"]].forEach(([chave, classe, rotulo]) => {
+    [["concluidas", "ponto-aprovadas", "aprovadas"], ["com_equipe", "ponto-equipe", "com a equipe"],
+      ["por_auditar", "ponto-auditar", "por auditar"]].forEach(([chave, classe, rotulo]) => {
       const item = noInicio("li", "");
-      item.append(noInicio("i", "", classe), `${empresa.contagem[chave]} ${rotulo}`);
+      item.append(noInicio("i", "", classe), `${contagem[chave]} ${rotulo}`);
       legenda.append(item);
     });
-    linha.append(cabecalho, barra, legenda);
+    linha.append(topo, legenda);
+    // só os contadores maiores que zero
+    const contadores = noInicio("ul", "", "inicio-contadores");
+    contadoresEmpresa(empresa).forEach(([chave, quantidade, texto, explicacao]) => {
+      if (!quantidade) return;
+      const item = noInicio("li", texto(quantidade), `inicio-contador inicio-contador-${chave}`);
+      item.title = explicacao;
+      contadores.append(item);
+    });
+    if (contadores.children.length) linha.append(contadores);
+    linha.append(noInicio("span", "▶ Auditar e contar o tempo", "inicio-auditar"));
     empresas.append(linha);
   });
-  const fichas = dados.empresas.flatMap(empresa => empresa.fichas);
-  const acoes = [
-    ["Com a equipe há mais de 10 dias", fichas.filter(ficha => ficha.estado === "com_equipe" && ficha.dias > 10).length, "atrasadas"],
-    ["Arquivo novo após aviso", fichas.filter(ficha => ficha.scanner === "arquivo_novo_apos_aviso").length, "arquivos-novos"],
-    ["Por auditar sem escaneamento", fichas.filter(ficha => ficha.estado === "por_auditar" && ficha.scanner === "falta_escanear").length, "sem-escaneamento"]
-  ];
-  const area = $("inicioAcoes");
-  area.replaceChildren();
-  acoes.forEach(([rotulo, quantidade, foco]) => {
-    const cartao = noInicio("a", "", "inicio-cartao inicio-link");
-    cartao.href = linkAuditoria(foco, dados.mes);
-    cartao.append(noInicio("strong", quantidade), noInicio("span", rotulo),
-      noInicio("span", "Ver na Auditoria →", "inicio-acao"));
-    area.append(cartao);
-  });
+  if (!dados.empresas.length) empresas.append(noInicio("p", "Nenhuma empresa configurada.", "inicio-estado"));
 }
 async function lerInicio() {
   try {
@@ -166,7 +190,7 @@ async function lerInicio() {
     const dados = await resposta.json();
     if (!resposta.ok) throw new Error(dados.erro || "Não foi possível ler o mês.");
     mostrarInicio(dados);
-    $("inicioAndamento").textContent = dataHoraAtual();
+    $("inicioAgora").textContent = dataHoraAtual();
     $("inicioEstado").textContent = "";
   } catch (erro) {
     $("inicioEstado").textContent = erro.message;
@@ -185,16 +209,16 @@ async function lerPendenciasInicio() {
     if (!resposta.ok) throw new Error(dados.erro || "Não foi possível ler as pendências.");
     const area = $("inicioPendencias");
     area.replaceChildren();
-    [["Vencidas", dados.totais.vencidas], ["Vencendo", dados.totais.vencendo],
-      ["Aguardando terceiros", dados.totais.aguardando_terceiros],
-      ["NF a solicitar", dados.totais.nf_a_solicitar]].forEach(([rotulo, quantidade]) => {
-      const cartao = noInicio("a", "", "inicio-cartao inicio-link");
+    [["Vencidas", dados.totais.vencidas, "vencidas"], ["Vencendo", dados.totais.vencendo, "vencendo"],
+      ["Aguardando terceiros", dados.totais.aguardando_terceiros, ""],
+      ["NF a solicitar", dados.totais.nf_a_solicitar, ""]].forEach(([rotulo, quantidade, gravidade]) => {
+      const cartao = noInicio("a", "", "inicio-bloco" + (gravidade ? " inicio-bloco-" + gravidade : ""));
       cartao.href = "/pendencias/";
       cartao.append(noInicio("strong", quantidade), noInicio("span", rotulo),
-        noInicio("span", "Ver Pendências →", "inicio-acao"));
+        noInicio("em", "Ver Pendências →"));
       area.append(cartao);
     });
-    $("inicioPendenciasEstado").textContent = "Atualizado em " + dados.hoje + ".";
+    $("inicioPendenciasEstado").textContent = "Atualizado em " + dataBR(dados.hoje) + ".";
   } catch (erro) { $("inicioPendenciasEstado").textContent = erro.message; }
 }
 lerPendenciasInicio();
