@@ -142,8 +142,14 @@ def localizar_scanners(config, empresa, ano, mes):
             "aviso": "Mais de uma pasta de scanners do mês; usada a mais recente." if len(pastas) > 1 else None}
 
 
-def listar_scanners(local, ano, mes):
-    """Lista somente nomes e metadados; nunca abre o conteúdo escaneado."""
+def listar_scanners(local, ano, mes, ilegiveis=None):
+    """Lista somente nomes e metadados; nunca abre o conteúdo escaneado.
+
+    Uma subpasta que o sistema não consegue abrir (o Google Drive às vezes responde
+    "Resource deadlock avoided" para uma pasta que ainda está baixando) não derruba a
+    leitura da empresa: o nome dela vai para `ilegiveis`, se a lista for passada, e a
+    pasta do paciente continua contando como escaneada, com a data da própria pasta.
+    """
     pasta, formato = local["pasta"], local["formato"]
     if not pasta:
         return [], None
@@ -158,7 +164,15 @@ def listar_scanners(local, ano, mes):
                     if entrada.is_dir():
                         if formato == "pastas_por_paciente":
                             nome = planilha.nome_do_arquivo(entrada.name)
-                            modificacao = visitar(entrada.path)
+                            try:
+                                modificacao = visitar(entrada.path)
+                            except OSError:
+                                if ilegiveis is not None:
+                                    ilegiveis.append(entrada.name)
+                                try:
+                                    modificacao = datetime.fromtimestamp(entrada.stat().st_mtime)
+                                except OSError:
+                                    modificacao = None
                             if nome:
                                 nomes.append({"nome": nome, "entrada": entrada.name,
                                               "modificado": modificacao.date().isoformat() if modificacao else None})

@@ -74,9 +74,15 @@ def criar_blueprint(config):
             scanners = auditoria.localizar_scanners(config, nome, ano, mes)
             if scanners["aviso"]:
                 avisos.append(scanners["aviso"])
-            nomes_scanners, aviso_scanners = auditoria.listar_scanners(scanners, ano, mes)
+            ilegiveis = []
+            nomes_scanners, aviso_scanners = auditoria.listar_scanners(scanners, ano, mes, ilegiveis)
             if aviso_scanners:
                 avisos.append(aviso_scanners)
+            if ilegiveis:
+                avisos.append(f"O Google Drive não deixou abrir {len(ilegiveis)} pasta(s) de scanner "
+                              f"({', '.join(ilegiveis)}); elas contam como escaneadas, mas a data do "
+                              "arquivo novo pode estar desatualizada. Abra a pasta no Finder ou espere "
+                              "o Drive terminar de sincronizar e clique em Ler de novo.")
             try:
                 candidatas = planilha.listar_planilhas(base, ano, mes, somente_do_mes=True)
                 if candidatas:
