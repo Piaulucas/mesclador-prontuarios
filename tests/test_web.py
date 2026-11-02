@@ -161,25 +161,67 @@ def test_pagina_inicial(cliente):
     assert '<h1 class="painel-titulo">Mesclar prontuário</h1>' in cliente.get("/mesclar").get_data(as_text=True)
 
 
-def test_pagina_inicial_mostra_barra_acessivel_por_empresa(cliente):
+def test_pagina_inicial_mostra_anel_acessivel_por_empresa(cliente):
     html = cliente.get("/").get_data(as_text=True)
-    assert '.inicio-barra { display: flex; height: 8px;' in html
-    assert '.inicio-aprovadas { background: var(--ok); }' in html
-    assert '.inicio-equipe { background: var(--erro); }' in html
-    assert '.inicio-pendentes { background: #d9a232; }' in html
-    assert 'noInicio("span", Math.round(empresa.contagem.percentual_concluido) + "%")' in html
-    assert 'barra.setAttribute("role", "img")' in html
-    assert 'barra.setAttribute("aria-label", descricao)' in html
-    assert 'barra.title = descricao' in html
-    assert '${empresa.contagem.lancadas} no total' in html
-    assert 'parte.style.width = (empresa.contagem.lancadas ?' in html
-    assert 'linha.append(cabecalho, barra, legenda)' in html
-    assert '${empresa.contagem[chave]} ${rotulo}' in html
+    # anel de progresso comum (base.html), com as cores de estado em variáveis
+    assert "function anelProgresso(contagem, diametro, comNumero = true)" in html
+    assert 'anel.setAttribute("role", "img")' in html
+    assert 'anel.setAttribute("aria-label", descricao)' in html
+    assert "var(--estado-aprovadas) 0 calc(var(--a) * 1%)" in html
+    assert "topo.append(anelProgresso(contagem, 72), nome)" in html
+    assert "anelProgresso(dados.totais, 112)" in html
+    assert '${contagem[chave]} ${rotulo}' in html
+    assert "#d9a232" not in html and ".inicio-equipe { background: var(--erro)" not in html
     assert 'Visão do mês atual' not in html
     assert 'function dataHoraAtual()' in html
     assert 'Andamento do mês' not in html
     assert 'Dados lidos em' not in html
-    assert 'cartao.append(noInicio("strong", valor), noInicio("span", rotulo))' in html
+
+
+def test_inicio_sem_o_que_fazer_hoje_nem_ferramentas_e_pendencias_logo_apos_empresas(cliente):
+    html = cliente.get("/").get_data(as_text=True)
+    assert "O que fazer hoje" not in html and 'id="inicioAcoes"' not in html
+    assert 'id="inicioFerramentas"' not in html and "Abrir ferramenta" not in html
+    assert html.index('id="inicioEmpresas"') < html.index('id="inicioPendencias"')
+    # as ferramentas continuam no menu
+    assert 'href="/mesclar"' in html and 'href="/converter"' in html
+    assert '"Atualizado em " + dataBR(dados.hoje)' in html
+
+
+def test_inicio_mostra_contadores_da_empresa_so_quando_maiores_que_zero(cliente):
+    html = cliente.get("/").get_data(as_text=True)
+    assert 'ficha.estado === "com_equipe" && ficha.dias > 10' in html
+    assert 'ficha.scanner === "arquivo_novo_apos_aviso"' in html
+    assert 'ficha.estado === "por_auditar" && ficha.scanner === "falta_escanear"' in html
+    assert 'plural(n, "atrasada", "atrasadas")' in html
+    assert 'plural(n, "reenviada", "reenviadas")' in html
+    assert "`${n} sem escanear`" in html
+    assert "if (!quantidade) return;" in html
+    assert "if (contadores.children.length) linha.append(contadores);" in html
+    # a caixa tem cara de botão
+    assert '"▶ Auditar e contar o tempo"' in html
+    assert ".inicio-empresa:hover { transform: translateY(-2px);" in html
+
+
+def test_base_tem_cores_de_estado_claras_e_escuras(cliente):
+    html = cliente.get("/").get_data(as_text=True)
+    claro, escuro = html.split("@media (prefers-color-scheme: dark)", 1)
+    escuro = escuro[:escuro.index("  }\n  }")]
+    for variavel in ("--estado-aprovadas", "--estado-equipe", "--estado-auditar", "--faixa-amarelo",
+                     "--faixa-laranja", "--faixa-vermelho", "--faixa-vermelho-txt", "--acento-fundo"):
+        assert variavel + ":" in claro and variavel + ":" in escuro
+    # "com a equipe" tem cor própria, diferente da cor de erro
+    assert "--estado-equipe: #c4553a;" in claro and "--erro: #b3261e;" in claro
+
+
+def test_base_formata_datas_em_dd_mm_aaaa(cliente):
+    html = cliente.get("/").get_data(as_text=True)
+    assert "function dataBR(valor)" in html
+    assert "`${partes[3]}/${partes[2]}/${partes[1]}`" in html
+    pendencias = cliente.get("/pendencias/").get_data(as_text=True)
+    assert '"Atualizado em " + dataBR(dados.hoje)' in pendencias
+    assert "Data-limite: ${dataBR(item.limite)}" in pendencias
+    assert "Prazo: ${dataBR(tarefa.prazo)}" in cliente.get("/static/postit.js").get_data(as_text=True)
 
 
 @pytest.mark.parametrize("rota", ["/mesclar", "/converter"])
@@ -548,7 +590,8 @@ def test_tela_horas_usa_data_dd_mm_aa(cliente):
 
 def test_indicador_de_horas_mostra_empresa_e_tempo_em_caixa_com_borda(cliente):
     html = cliente.get("/").get_data(as_text=True)
-    assert 'border: 1px solid var(--acento)' in html
+    assert ".horas-indicador:hover { border-color: var(--acento); }" in html
+    assert "border-radius: 999px; }" in html
     assert '${horasEmpresa || "Sem empresa"} · ${tempo}' in html
     assert '● ${horasTipo}' not in html
     assert 'indicador.title = horasDescricao' in html
@@ -564,7 +607,7 @@ def test_inicio_tem_seletor_de_mes_compartilhado_com_a_auditoria(cliente):
 
 def test_empresa_da_inicio_abre_auditoria_e_conta_tempo(cliente):
     html = cliente.get("/").get_data(as_text=True)
-    assert 'noInicio("a", "", "inicio-empresa inicio-link")' in html
+    assert 'noInicio("a", "", "inicio-cartao inicio-empresa")' in html
     assert '"/horas/auditoria"' in html
     assert "new URLSearchParams({mes: dados.mes, empresa: empresa.empresa})" in html
     # a aba Auditoria pelo menu não mexe no contador

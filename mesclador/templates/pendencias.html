@@ -149,7 +149,7 @@ function prazoPendencias(item, grupo) {
   if (!item.limite) return "Sem prazo · Data-limite: não definida";
   const dias = item.dias_restantes;
   const descricao = dias < 0 ? `${-dias} dia(s) de atraso` : `${dias} dia(s) restantes`;
-  return `${descricao} · Data-limite: ${item.limite}`;
+  return `${descricao} · Data-limite: ${dataBR(item.limite)}`;
 }
 function itemPendencias(item, grupo) {
   const linha = elementoPendencias("li");
@@ -223,7 +223,7 @@ async function lerPendencias() {
     if (!resposta.ok) throw new Error(dados.erro || "Não foi possível ler as pendências.");
     mostrarPendencias(dados);
     await lerNfsSolicitadas();
-    $("pendenciasEstado").textContent = "Atualizado em " + dados.hoje + ".";
+    $("pendenciasEstado").textContent = "Atualizado em " + dataBR(dados.hoje) + ".";
   } catch (erro) {
     $("pendenciasEstado").textContent = erro.message;
     throw erro;

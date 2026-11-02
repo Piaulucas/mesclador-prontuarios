@@ -2,141 +2,189 @@
 {% block titulo %}Auditoria · Área de trabalho{% endblock %}
 
 {% block estilos %}
-  .auditoria { max-width: 1280px; margin: auto; padding: 28px 24px 60px; }
-  .auditoria h1 { margin: 0; font-size: 25px; letter-spacing: -.03em; }
+  .auditoria { max-width: 1280px; margin: auto; padding: 26px 20px 70px; font-size: 15px; }
+  .auditoria h1 { margin: 0; font-size: 28px; letter-spacing: -.03em; line-height: 1.2; }
+  .auditoria h2 { margin: 0; font-size: 20px; letter-spacing: -.01em; line-height: 1.25; overflow-wrap: anywhere; }
+  .auditoria h3 { margin: 0; font-size: 15px; }
   .auditoria p { margin: 0; }
-  .auditoria-intro { color: var(--suave); }
-  .auditoria-filtros { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; margin: 22px 0; }
-  .auditoria-filtros label { min-width: 175px; }
-  .auditoria-filtros button { min-height: 38px; }
-  .auditoria-numeros { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 24px; }
-  .auditoria-numero, .auditoria-empresa { background: var(--painel); border: 1px solid var(--borda);
-    border-radius: 11px; box-shadow: var(--sombra); }
-  .auditoria-numero { padding: 14px; }
-  .auditoria-numero strong { display: block; font-size: 26px; line-height: 1.2; }
-  .auditoria-numero span { color: var(--suave); font-size: 12px; }
-  .auditoria-empresas { display: grid; gap: 18px; }
-  .auditoria-empresa { min-width: 0; }
-  .auditoria-resumo { display: block; padding: 20px 20px 18px 42px; position: relative;
-    cursor: pointer; list-style: none; border-radius: 11px; }
-  .auditoria-resumo::-webkit-details-marker { display: none; }
-  .auditoria-resumo::before { content: "▸"; position: absolute; left: 20px; top: 22px;
-    color: var(--suave); }
-  .auditoria-empresa[open] .auditoria-resumo::before { content: "▾"; }
-  .auditoria-resumo:focus-visible { outline: 3px solid var(--acento); outline-offset: 3px; }
-  .auditoria-conteudo { padding: 0 20px 20px; border-top: 1px solid var(--borda); }
-  .auditoria-conteudo .auditoria-origem { margin-top: 14px; }
-  .auditoria-selos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-  .auditoria-selo { padding: 3px 8px; border: 1px solid var(--borda); border-radius: 20px;
-    background: var(--painel-suave); font-size: 12px; }
-  .auditoria-selo-aviso { background: var(--aviso-fundo); border-color: var(--aviso-borda); }
-  .auditoria-acoes { display: flex; flex-wrap: wrap; gap: 6px; }
-  .auditoria-acoes button { font-size: 12px; color: var(--suave); }
-  .auditoria-cabecalho { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: baseline; }
-  .auditoria-cabecalho h2 { margin: 0; min-width: 0; font-size: 19px; overflow-wrap: anywhere; }
-  .auditoria-cabecalho strong { color: var(--ok); font-size: 22px; }
-  .auditoria-origem { color: var(--suave); font-size: 12px; overflow-wrap: anywhere; }
-  .auditoria-aviso { margin-top: 10px !important; padding: 9px 11px; border-radius: 7px;
-    background: var(--aviso-fundo); border: 1px solid var(--aviso-borda); }
-  .auditoria-barra { display: flex; height: 13px; margin: 16px 0 6px; border-radius: 10px;
-    overflow: hidden; background: var(--fundo); border: 1px solid var(--borda); }
-  .auditoria-barra span { height: 100%; }
-  .auditoria-aprovadas { background: var(--ok); }
-  .auditoria-equipe { background: var(--erro); }
-  .auditoria-pendentes { background: #d9a232; }
-  .auditoria-legenda { color: var(--suave); font-size: 12px; }
-  .auditoria-listas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 20px; }
-  .auditoria-listas > section, .auditoria-listas > details { min-width: 0; }
-  .auditoria-listas > .auditoria-largura-total { grid-column: 1 / -1; }
-  .auditoria-listas h3, .auditoria-listas summary { margin: 0 0 8px; font-size: 14px; font-weight: 700; }
-  .auditoria-listas summary { cursor: pointer; width: fit-content; }
-  .auditoria-listas summary:focus-visible { outline: 3px solid var(--acento); outline-offset: 3px; }
-  .auditoria-listas ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 7px; }
-  .auditoria-listas li { padding: 9px 10px; border: 1px solid var(--borda); border-radius: 7px;
-    background: var(--painel-suave); overflow-wrap: anywhere; }
-  .auditoria-listas li small { display: block; color: var(--suave); }
-  .auditoria-vazio { color: var(--suave); }
-  .auditoria-aguardando { display: block; margin-top: 6px; font-style: italic; }
-  .auditoria-pendencia-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-  .auditoria-pendencia-nome { min-width: 0; }
-  .auditoria-pendencia-dias { flex-shrink: 0; font-size: 15px; font-weight: 700; text-align: right; }
-  .auditoria-sem-devolucao { color: var(--suave); font-size: 13px; font-weight: 600; }
-  .auditoria-nota { margin: 8px 0 2px; padding: 6px 9px; font-size: 14px; line-height: 1.4;
-    color: var(--texto); background: var(--painel); border-left: 3px solid var(--acento); border-radius: 4px; }
-  .auditoria-registro { display: grid; gap: 6px; margin-top: 9px; }
-  .auditoria-registro input { min-width: 0; width: 100%; }
-  .auditoria-registro button { width: fit-content; }
-  .auditoria-aviso { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 20;
-    max-width: calc(100vw - 32px); padding: 11px 18px; border-radius: 8px; font-weight: 650;
-    background: var(--texto); color: var(--painel); box-shadow: var(--sombra); }
-  .auditoria-aviso[hidden] { display: none; }
-  .auditoria-arquivo-novo { display: inline-block; margin-top: 5px; padding: 3px 8px;
-    border: 1px solid var(--aviso-borda); border-radius: 20px; background: var(--aviso-fundo); }
-  .auditoria-prazo-amarelo { color: #c29520; }
-  .auditoria-prazo-laranja { color: #d87930; }
-  .auditoria-prazo-vermelho { color: var(--erro); }
-  @media (max-width: 600px) {
-    .auditoria-listas { grid-template-columns: minmax(0, 1fr); }
-    .auditoria { padding: 20px 16px 40px; }
-    .auditoria-resumo { padding: 16px 14px 16px 34px; }
-    .auditoria-resumo::before { left: 14px; top: 18px; }
-    .auditoria-conteudo { padding: 0 14px 16px; }
-    .auditoria-cabecalho { align-items: center; }
+  .auditoria-cabecalho { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between;
+    gap: 10px 16px; margin-bottom: 20px; }
+  .auditoria-subtitulo { margin-top: 2px !important; color: var(--suave); }
+  .auditoria-controles { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
+  .auditoria-controles label { font-size: 13px; font-weight: 650; color: var(--suave); }
+  .auditoria-controles input { min-height: 40px; border-radius: 12px; }
+  .auditoria-leve { min-height: 40px; padding: 0 16px; border-radius: 12px; border-color: transparent;
+    background: var(--acento-fundo); color: var(--acento); font-weight: 700; }
+  .auditoria-leve:hover:not(:disabled) { background: var(--acento-fundo); border-color: var(--acento); }
+  .auditoria-cartao-base { min-width: 0; padding: 20px; background: var(--painel); border-radius: 18px; box-shadow: var(--sombra); }
+  /* fileira de empresas */
+  .auditoria-empresas { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 12px; margin: 0 -2px; }
+  .auditoria-empresa-botao { flex: none; display: flex; align-items: center; gap: 10px; min-height: 52px;
+    padding: 8px 14px 8px 8px; border-radius: 16px; border: 2px solid transparent; background: var(--painel);
+    box-shadow: var(--sombra); color: var(--texto); text-align: left; font-weight: 400; }
+  .auditoria-empresa-botao:hover:not(:disabled) { background: var(--painel); border-color: var(--borda); }
+  .auditoria-empresa-botao[aria-pressed="true"] { border-color: var(--acento); }
+  .auditoria-empresa-botao b { display: block; font-size: 14px; white-space: nowrap; }
+  .auditoria-empresa-botao small { display: block; color: var(--suave); font-size: 12px; white-space: nowrap; }
+  .auditoria-todas-icone { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+    background: var(--acento-fundo); color: var(--acento); font-weight: 800; font-size: 15px; flex: none; }
+  /* resumo da empresa escolhida */
+  .auditoria-resumo { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 24px; margin-top: 6px; }
+  .auditoria-resumo-texto { flex: 1 1 260px; min-width: 0; }
+  .auditoria-origem { margin: 2px 0 10px !important; color: var(--suave); font-size: 13px; overflow-wrap: anywhere; }
+  .auditoria-legenda { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 0; list-style: none;
+    color: var(--suave); font-size: 14px; }
+  .auditoria-legenda li { display: flex; align-items: center; gap: 6px; }
+  .auditoria-legenda i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .auditoria-kpis { display: grid; grid-template-columns: repeat(4, auto); gap: 4px 24px; }
+  .auditoria-kpis strong { display: block; font-size: 26px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .auditoria-kpis span { color: var(--suave); font-size: 13px; }
+  .auditoria-alertas { flex-basis: 100%; display: grid; gap: 6px; }
+  .auditoria-alerta { padding: 9px 12px; border-radius: 12px; background: var(--aviso-fundo);
+    border: 1px solid var(--aviso-borda); font-size: 14px; overflow-wrap: anywhere; }
+  /* recortes (?foco=) */
+  .auditoria-recortes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 16px; }
+  .auditoria-recortes > span { color: var(--suave); font-size: 13px; font-weight: 650; margin-right: 2px; }
+  .auditoria-recorte { min-height: 32px; padding: 3px 12px; border-radius: 999px; font-size: 13px;
+    background: var(--painel); color: var(--texto); }
+  .auditoria-recorte[aria-pressed="true"] { background: var(--acento); border-color: var(--acento); color: var(--acento-txt); }
+  .auditoria-recorte[aria-pressed="true"]:hover:not(:disabled) { background: var(--acento); }
+  /* quadro de colunas por situação */
+  .auditoria-quadro { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 16px; align-items: start; }
+  .auditoria-coluna { min-width: 0; display: flex; flex-direction: column; gap: 10px; padding: 14px;
+    border-radius: 18px; background: var(--painel-suave); border: 1px solid var(--borda); }
+  .auditoria-coluna h3 { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .auditoria-contagem { padding: 2px 10px; border-radius: 999px; background: var(--painel); border: 1px solid var(--borda);
+    color: var(--suave); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .auditoria-vazio { color: var(--suave); font-size: 14px; }
+  .auditoria-mais { align-self: flex-start; min-height: 32px; padding: 3px 4px; border: 0; background: transparent;
+    color: var(--acento); font-size: 13px; font-weight: 700; }
+  .auditoria-mais:hover:not(:disabled) { background: transparent; text-decoration: underline; border: 0; }
+  .auditoria-quadro-vazio { margin-top: 16px !important; padding: 28px 20px; text-align: center; color: var(--suave);
+    background: var(--painel); border-radius: 18px; box-shadow: var(--sombra); }
+  /* cartão da pendência */
+  .auditoria-cartao { min-width: 0; padding: 12px; border-radius: 14px; background: var(--painel);
+    box-shadow: var(--sombra); font-size: 14px; overflow-wrap: anywhere; }
+  .auditoria-cartao-topo { display: flex; align-items: center; gap: 12px; }
+  .auditoria-cartao-id { min-width: 0; display: grid; gap: 1px; }
+  .auditoria-cartao-id strong { font-size: 15px; }
+  .auditoria-paciente { color: var(--texto); line-height: 1.3; }
+  .auditoria-detalhe { color: var(--suave); font-size: 13px; }
+  .auditoria-tag { justify-self: start; margin-top: 2px; padding: 1px 8px; border-radius: 999px;
+    background: var(--acento-fundo); color: var(--acento); font-size: 12px; font-weight: 700; }
+  .auditoria-dias { flex: none; display: grid; place-items: center; min-width: 56px; padding: 7px 8px;
+    border-radius: 12px; font-size: 22px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums;
+    background: var(--estado-vazio); color: var(--suave); }
+  .auditoria-dias small { margin-top: 3px; font-size: 11px; font-weight: 700; }
+  .auditoria-dias-sem { font-size: 13px; }
+  .auditoria-faixa-amarelo { background: var(--faixa-amarelo); color: var(--faixa-amarelo-txt); }
+  .auditoria-faixa-laranja { background: var(--faixa-laranja); color: var(--faixa-laranja-txt); }
+  .auditoria-faixa-vermelho { background: var(--faixa-vermelho); color: var(--faixa-vermelho-txt); }
+  .auditoria-nota { margin: 10px 0 0 !important; padding: 8px 11px; border-radius: 10px; background: var(--painel-suave);
+    border-left: 3px solid var(--acento); font-size: 14px; line-height: 1.45; color: var(--texto); }
+  .auditoria-comentario { margin-top: 8px !important; color: var(--suave); font-size: 13px; }
+  .auditoria-selos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .auditoria-selo { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 650;
+    background: var(--painel-suave); color: var(--suave); border: 1px solid var(--borda); }
+  .auditoria-selo-reenvio { background: var(--aviso-fundo); color: var(--texto); border-color: var(--aviso-borda); }
+  .auditoria-aguardando { margin-top: 8px !important; color: var(--suave); font-size: 13px; font-style: italic; }
+  .auditoria-cartao-acoes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .auditoria-cartao-acoes button, .auditoria-registro button { min-height: 32px; padding: 3px 12px; font-size: 13px; }
+  .auditoria-botao-principal { background: var(--acento); border-color: var(--acento); color: var(--acento-txt); }
+  .auditoria-botao-principal:hover:not(:disabled) { background: var(--acento); filter: brightness(.93); }
+  .auditoria-registro { display: grid; gap: 8px; margin-top: 10px; padding: 10px; border-radius: 12px;
+    background: var(--painel-suave); border: 1px solid var(--borda); }
+  .auditoria-registro label { font-size: 12px; }
+  .auditoria-registro input { min-height: 34px; }
+  .auditoria-registro div { display: flex; flex-wrap: wrap; gap: 6px; }
+  /* rodapé: sem linha e inconsistências */
+  .auditoria-rodape { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 20px; align-items: start; }
+  .auditoria-rodape h2 { font-size: 17px; margin-bottom: 8px; }
+  .auditoria-linhas { list-style: none; margin: 0; padding: 0; }
+  .auditoria-linhas li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 10px;
+    padding: 9px 0; border-top: 1px solid var(--borda); font-size: 14px; overflow-wrap: anywhere; }
+  .auditoria-linhas li > span:first-child { min-width: 0; }
+  .auditoria-linhas small { color: var(--suave); font-size: 13px; }
+  .auditoria-toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 20;
+    max-width: calc(100vw - 32px); padding: 11px 18px; border-radius: 12px; font-weight: 650;
+    background: var(--texto); color: var(--painel); box-shadow: var(--sombra-alta); }
+  .auditoria-toast[hidden] { display: none; }
+  @media (max-width: 1100px) {
+    .auditoria-quadro { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 760px) {
+    .auditoria { padding: 18px 16px 70px; }
+    .auditoria h1 { font-size: 24px; }
+    .auditoria-cartao-base { padding: 16px; border-radius: 16px; }
+    .auditoria-quadro, .auditoria-rodape { grid-template-columns: minmax(0, 1fr); }
+    .auditoria-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 {% endblock %}
 
 {% block conteudo %}
 <div class="auditoria">
-  <h1>Painel da auditoria</h1>
-  <p class="auditoria-intro">Andamento das fichas do mês, lido da planilha e das pastas de prontuários e scanners.</p>
-  <p id="painelRecorte" class="auditoria-intro"></p>
-  <div class="auditoria-filtros">
-    <label>Mês <input id="painelMes" type="month" min="{{ mes_minimo }}" value="{{ mes_padrao }}"></label>
-    <label>Empresa <select id="painelEmpresa"><option value="">Todas as empresas</option>
-      {% for empresa in empresas %}<option value="{{ empresa }}">{{ empresa }}</option>{% endfor %}
-    </select></label>
-    <div class="auditoria-acoes">
-      <button id="painelRecarregar" type="button">Ler de novo</button>
-      <button id="painelExpandir" type="button">Expandir todas</button>
-      <button id="painelRecolher" type="button">Recolher todas</button>
+  <div class="auditoria-cabecalho">
+    <div>
+      <h1>Auditoria</h1>
+      <p id="painelMensagem" class="auditoria-subtitulo" role="status">Lendo planilhas…</p>
+    </div>
+    <div class="auditoria-controles">
+      <label>Mês <input id="painelMes" type="month" min="{{ mes_minimo }}" value="{{ mes_padrao }}"></label>
+      <button id="painelRecarregar" class="auditoria-leve" type="button">Ler de novo</button>
     </div>
   </div>
-  <p id="painelMensagem" class="msg" role="status"></p>
-  <div id="painelAviso" class="auditoria-aviso" role="status" aria-live="polite" hidden></div>
-  <div id="painelNumeros" class="auditoria-numeros"></div>
-  <div id="painelEmpresas" class="auditoria-empresas"></div>
+  <div id="painelEmpresa" class="auditoria-empresas" role="group" aria-label="Empresa mostrada"></div>
+  <div id="painelResumo"></div>
+  <div id="painelRecortes" class="auditoria-recortes" role="group" aria-label="Recorte"></div>
+  <div id="painelQuadro"></div>
+  <div id="painelRodape" class="auditoria-rodape"></div>
+  <div id="painelAviso" class="auditoria-toast" role="status" aria-live="polite" hidden></div>
 </div>
 {% endblock %}
 
 {% block script %}
 <script>
-const mesPainel = $("painelMes"), empresaPainel = $("painelEmpresa");
+const EMPRESAS_PAINEL = {{ empresas | tojson }};
+const mesPainel = $("painelMes");
 const parametrosPainel = new URLSearchParams(location.search);
-const focoPainel = ["atrasadas", "arquivos-novos", "sem-escaneamento"].includes(parametrosPainel.get("foco")) ? parametrosPainel.get("foco") : "";
-const rotulosFoco = {"atrasadas": "Com a equipe há mais de 10 dias", "arquivos-novos": "Arquivo novo após aviso",
-  "sem-escaneamento": "Por auditar sem escaneamento"};
-if (focoPainel) $("painelRecorte").textContent = "Recorte: " + rotulosFoco[focoPainel] + ".";
+// recortes vindos de links (?foco=): mesmas chaves de antes
+const RECORTES = {
+  "atrasadas": {rotulo: n => `${n} atrasada${n === 1 ? "" : "s"}`, explicacao: "Com a equipe há mais de 10 dias",
+    filtro: f => f.estado === "com_equipe" && f.dias > 10},
+  "arquivos-novos": {rotulo: n => `${n} reenviada${n === 1 ? "" : "s"}`, explicacao: "Reenviado · conferir",
+    filtro: f => f.scanner === "arquivo_novo_apos_aviso"},
+  "sem-escaneamento": {rotulo: n => `${n} sem escanear`, explicacao: "Por auditar sem escaneamento",
+    filtro: f => f.estado === "por_auditar" && f.scanner === "falta_escanear"}
+};
+let focoPainel = ["atrasadas", "arquivos-novos", "sem-escaneamento"].includes(parametrosPainel.get("foco")) ? parametrosPainel.get("foco") : "";
 const mesDaUrl = parametrosPainel.get("mes");
 const mesLembrado = lembrar("painelMes");
 const mesEscolhido = mesDaUrl || mesLembrado;
 if (mesEscolhido && /^\d{4}-(0[1-9]|1[0-2])$/.test(mesEscolhido) &&
     (!mesPainel.min || mesEscolhido >= mesPainel.min)) mesPainel.value = mesEscolhido;
-let dadosPainel = null;
-const estadosEmpresas = new Map();
-// vindo da Início (?empresa=): mostra só aquela empresa, já expandida
+// ?empresa= (vindo da Início) escolhe a empresa inicial; sem ele, "Todas" mostra o quadro de todas juntas
 const empresaDaUrl = parametrosPainel.get("empresa");
-if (empresaDaUrl && [...empresaPainel.options].some(opcao => opcao.value === empresaDaUrl))
-  empresaPainel.value = empresaDaUrl;
+let empresaAtual = empresaDaUrl && EMPRESAS_PAINEL.includes(empresaDaUrl) ? empresaDaUrl : "";
+let dadosPainel = null;
+let horaLeitura = "";
+const colunasAbertas = new Set();   // colunas com "ver todas" expandido, até a próxima troca de mês
+let formularioAberto = null;        // só um formulário "Avisei a equipe" aberto por vez
 
-function chaveEstadoPainel(empresa) {
-  return `painelAberta:${mesPainel.value}:${empresa}`;
-}
-
-function guardarEstadoPainel(cartao, aberto) {
-  const chave = cartao.dataset.chaveEstado;
-  estadosEmpresas.set(chave, aberto);
-  guardar(chave, aberto ? "aberta" : "fechada");
-}
+const MESES_PAINEL = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto",
+  "Setembro", "Outubro", "Novembro", "Dezembro"];
+const MUITAS_PENDENCIAS = 15, MOSTRAR_POR_COLUNA = 5;
+const MOTIVOS = {
+  sem_cor_sem_pdf: "sem cor e sem PDF", amarela_com_pdf: "amarela com PDF", vermelha_com_pdf: "vermelha com PDF",
+  sem_cor_com_comentario: "sem cor, com comentário", cor_desconhecida: "cor fora do padrão",
+  numero_fora_da_posicao: "número fora da posição", nome_pdf_diferente: "nome do PDF diferente",
+  pdf_duplicado: "PDF duplicado", registro_outro_paciente: "registro de outro paciente"
+};
+const COLUNAS = [
+  {chave: "falta", titulo: "Falta escanear", vazio: "Nada faltando escanear."},
+  {chave: "reenviado", titulo: "Reenviado · conferir", vazio: "Nenhum reenvio para conferir."},
+  {chave: "avisar", titulo: "Pode avisar", vazio: "Nada para avisar."},
+  {chave: "aguardando", titulo: "Aguardando reenvio", vazio: "Nada aguardando a equipe."}
+];
 
 function elemento(tag, texto, classe) {
   const no = document.createElement(tag);
@@ -144,198 +192,366 @@ function elemento(tag, texto, classe) {
   if (classe) no.className = classe;
   return no;
 }
+const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
 
-function textoScanner(ficha) {
-  if (ficha.scanner === "arquivo_novo_apos_aviso") {
-    const [, mes, dia] = ficha.arquivo_novo_em.split("-");
-    return `chegou arquivo novo em ${dia}/${mes}, conferir`;
-  }
-  return ficha.scanner === "falta_escanear" ? "Falta a equipe escanear" :
-    "Escaneada, aguardando auditoria";
+function atualizarUrlPainel() {
+  const parametros = new URLSearchParams(location.search);
+  parametros.set("mes", mesPainel.value);
+  empresaAtual ? parametros.set("empresa", empresaAtual) : parametros.delete("empresa");
+  focoPainel ? parametros.set("foco", focoPainel) : parametros.delete("foco");
+  history.replaceState(null, "", "?" + parametros.toString());
 }
 
-function listaPainel(pai, titulo, itens, mensagem, descrever) {
-  const secao = elemento("section");
-  secao.append(elemento("h3", `${titulo} (${itens.length})`));
-  if (!itens.length) secao.append(elemento("p", mensagem, "auditoria-vazio"));
+// situação de uma pendência com a equipe (coluna do quadro)
+function situacaoPendencia(f) {
+  if (f.scanner === "arquivo_novo_apos_aviso") return "reenviado";
+  // Prazo da equipe já está correndo: novo aviso só quando chegar arquivo novo (regra pode_avisar do servidor).
+  if (!f.pode_avisar) return "aguardando";
+  return "avisar";
+}
+
+// itens do quadro de uma ou de todas as empresas, já separados por coluna
+function montarColunas(empresas, foco = focoPainel) {
+  const colunas = {falta: [], reenviado: [], avisar: [], aguardando: []};
+  const filtro = foco ? RECORTES[foco].filtro : () => true;
+  empresas.forEach(e => {
+    e.fichas.filter(f => f.estado === "por_auditar" && f.scanner === "falta_escanear" && filtro(f))
+      .forEach(f => colunas.falta.push({empresa: e.empresa, ficha: f}));
+    e.pendencias.filter(filtro).forEach(f => colunas[situacaoPendencia(f)].push({empresa: e.empresa, ficha: f}));
+  });
+  // sem aviso registrado primeiro, depois os mais dias com a equipe (mesma ordem do servidor)
+  const atraso = (a, b) => (("dias" in a.ficha) - ("dias" in b.ficha)) || ((b.ficha.dias || 0) - (a.ficha.dias || 0));
+  ["reenviado", "avisar", "aguardando"].forEach(chave => colunas[chave].sort(atraso));
+  return colunas;
+}
+
+function empresasMostradas() {
+  if (!dadosPainel) return [];
+  return dadosPainel.empresas.filter(e => !empresaAtual || e.empresa === empresaAtual);
+}
+
+// quantos cartões a empresa tem no quadro, sem recorte (falta escanear + com a equipe)
+function montarColunasSemRecorte(e) {
+  return e.fichas.filter(f => f.estado === "por_auditar" && f.scanner === "falta_escanear").length + e.pendencias.length;
+}
+
+function mostrarEmpresas() {
+  const area = $("painelEmpresa");
+  area.replaceChildren();
+  const botao = (valor, icone, nome, detalhe) => {
+    const b = elemento("button", undefined, "auditoria-empresa-botao");
+    b.type = "button";
+    b.setAttribute("aria-pressed", String(valor === empresaAtual));
+    const texto = elemento("span");
+    texto.append(elemento("b", nome), elemento("small", detalhe));
+    b.append(icone, texto);
+    b.addEventListener("click", () => {
+      empresaAtual = valor;
+      fecharFormulario();
+      atualizarUrlPainel();
+      mostrarPainel();
+    });
+    area.append(b);
+  };
+  const todas = dadosPainel.empresas.reduce((soma, e) => soma + montarColunasSemRecorte(e), 0);
+  botao("", elemento("span", "∑", "auditoria-todas-icone"), "Todas",
+    `${Math.round(dadosPainel.totais.percentual_concluido)}% · ${plural(todas, "pendência", "pendências")}`);
+  dadosPainel.empresas.forEach(e => {
+    const quantidade = montarColunasSemRecorte(e);
+    botao(e.empresa, anelProgresso(e.contagem, 34, false), e.empresa,
+      `${Math.round(e.contagem.percentual_concluido)}% · ${plural(quantidade, "pendência", "pendências")}`);
+  });
+}
+
+function mostrarResumo(empresas, colunas) {
+  const area = $("painelResumo");
+  area.replaceChildren();
+  const unica = empresaAtual ? empresas[0] : null;
+  const contagem = unica ? unica.contagem : dadosPainel.totais;
+  const cartao = elemento("section", undefined, "auditoria-cartao-base auditoria-resumo");
+  cartao.setAttribute("aria-label", "Resumo");
+  const texto = elemento("div", undefined, "auditoria-resumo-texto");
+  texto.append(elemento("h2", unica ? unica.empresa : "Todas as empresas"),
+    elemento("p", unica ? (unica.planilha || "Sem planilha do mês") :
+      plural(dadosPainel.empresas.length, "empresa", "empresas"), "auditoria-origem"));
+  const legenda = elemento("ul", undefined, "auditoria-legenda");
+  [["concluidas", "ponto-aprovadas", "aprovadas"], ["com_equipe", "ponto-equipe", "com a equipe"],
+    ["por_auditar", "ponto-auditar", "por auditar"]].forEach(([chave, classe, rotulo]) => {
+    const item = elemento("li");
+    item.append(elemento("i", undefined, classe), `${contagem[chave] || 0} ${rotulo}`);
+    legenda.append(item);
+  });
+  texto.append(legenda);
+  const semDevolucao = empresas.reduce((soma, e) => soma + (e.contagem.sem_devolucao ??
+    e.pendencias.filter(f => !f.ultimo_envio).length), 0);
+  const pendencias = empresas.reduce((soma, e) => soma + e.pendencias.length, 0);
+  const inconsistencias = empresas.reduce((soma, e) => soma + e.inconsistencias.length, 0);
+  const semLinha = empresas.reduce((soma, e) => soma + e.pdfs_sem_linha.length + e.escaneados_sem_linha.length, 0);
+  const kpis = elemento("div", undefined, "auditoria-kpis");
+  [[colunas.falta.length, "falta escanear"],
+    [pendencias, `com a equipe${semDevolucao ? ` (${semDevolucao} sem devolução registrada)` : ""}`],
+    [inconsistencias, inconsistencias === 1 ? "inconsistência" : "inconsistências"],
+    [semLinha, "sem linha"]].forEach(([valor, rotulo]) => {
+    const item = elemento("div");
+    item.append(elemento("strong", valor), elemento("span", rotulo));
+    kpis.append(item);
+  });
+  cartao.append(anelProgresso(contagem, 96), texto, kpis);
+  // avisos de leitura (pasta não encontrada, cor fora do padrão…)
+  const alertas = elemento("div", undefined, "auditoria-alertas");
+  empresas.forEach(e => {
+    const prefixo = unica ? "" : e.empresa + ": ";
+    if (e.aviso) alertas.append(elemento("p", prefixo + e.aviso, "auditoria-alerta"));
+    if (e.contagem.cor_desconhecida) alertas.append(elemento("p",
+      prefixo + plural(e.contagem.cor_desconhecida, "ficha", "fichas") + " com cor fora do padrão.", "auditoria-alerta"));
+  });
+  if (unica && unica.contagem.lancadas && !unica.contagem.concluidas)
+    alertas.append(elemento("p", "Nenhuma ficha aprovada.", "auditoria-alerta"));
+  if (alertas.children.length) cartao.append(alertas);
+  area.append(cartao);
+}
+
+function mostrarRecortes(empresas) {
+  const area = $("painelRecortes");
+  area.replaceChildren(elemento("span", "Recorte:"));
+  const fichas = empresas.flatMap(e => e.fichas);
+  const botao = (chave, texto, titulo) => {
+    const b = elemento("button", texto, "auditoria-recorte");
+    b.type = "button";
+    if (titulo) b.title = titulo;
+    b.setAttribute("aria-pressed", String(chave === focoPainel));
+    b.addEventListener("click", () => {
+      focoPainel = chave;
+      fecharFormulario();
+      atualizarUrlPainel();
+      mostrarPainel();
+    });
+    area.append(b);
+  };
+  botao("", "Tudo");
+  Object.entries(RECORTES).forEach(([chave, recorte]) =>
+    botao(chave, recorte.rotulo(fichas.filter(recorte.filtro).length), recorte.explicacao));
+}
+
+function textoDias(f) {
+  return f.dias === 1 ? "dia" : "dias";
+}
+
+function cartaoPendencia(item, mostrarEmpresa) {
+  const {empresa, ficha: f} = item;
+  const cartao = elemento("article", undefined, "auditoria-cartao");
+  const topo = elemento("div", undefined, "auditoria-cartao-topo");
+  const id = elemento("div", undefined, "auditoria-cartao-id");
+  id.append(elemento("strong", f.ficha), elemento("span", f.paciente, "auditoria-paciente"));
+  if (f.estado === "por_auditar") {
+    id.append(elemento("span", f.tipo, "auditoria-detalhe"));
+  } else {
+    const dias = elemento("div", undefined, "auditoria-dias");
+    if (f.ultimo_envio) {
+      dias.classList.add(`auditoria-faixa-${f.faixa}`);
+      dias.append(String(f.dias), elemento("small", textoDias(f)));
+      dias.setAttribute("aria-label", `${f.dias} ${textoDias(f)} com a equipe`);
+      dias.title = `${f.dias} ${textoDias(f)} com a equipe`;
+      id.append(elemento("span", "Último aviso " + dataBR(f.ultimo_envio.data), "auditoria-detalhe"));
+    } else {
+      dias.classList.add("auditoria-dias-sem");
+      dias.append("—");
+      dias.setAttribute("aria-label", "sem aviso registrado");
+      id.append(elemento("span", "devolução não registrada", "auditoria-detalhe"));
+    }
+    topo.append(dias);
+  }
+  if (mostrarEmpresa) id.append(elemento("span", empresa, "auditoria-tag"));
+  topo.append(id);
+  cartao.append(topo);
+  if (f.ultimo_envio?.pedido) {
+    const nota = elemento("p", undefined, "auditoria-nota");
+    nota.append(elemento("strong", "Nota do último aviso: "), document.createTextNode(f.ultimo_envio.pedido));
+    cartao.append(nota);
+  }
+  if (f.comentario) cartao.append(elemento("p", f.comentario, "auditoria-comentario"));
+  const selos = elemento("div", undefined, "auditoria-selos");
+  if (f.scanner === "arquivo_novo_apos_aviso")
+    selos.append(elemento("span", `Reenviado em ${dataBR(f.arquivo_novo_em)} · conferir`, "auditoria-selo auditoria-selo-reenvio"));
+  if (f.estado === "com_equipe" && f.scanner === "falta_escanear")
+    selos.append(elemento("span", "Falta a equipe escanear", "auditoria-selo"));
+  if (selos.children.length) cartao.append(selos);
+  if (f.estado !== "com_equipe") return cartao;
+  if (!f.pode_avisar) {
+    // Prazo da equipe já está correndo: novo aviso só quando chegar arquivo novo.
+    cartao.append(elemento("p", `Equipe avisada em ${dataBR(f.ultimo_envio.data)} · aguardando o reenvio`,
+      "auditoria-aguardando"));
+    return cartao;
+  }
+  const acoes = elemento("div", undefined, "auditoria-cartao-acoes");
+  const avisar = elemento("button", "Avisei a equipe", "auditoria-botao-principal");
+  avisar.type = "button";
+  avisar.setAttribute("aria-expanded", "false");
+  avisar.addEventListener("click", () => alternarFormulario(cartao, avisar, empresa, f));
+  acoes.append(avisar);
+  if (f.scanner === "arquivo_novo_apos_aviso") {
+    const parcial = elemento("button", "Parcial, reenviei"); parcial.type = "button";
+    parcial.title = "Registra hoje um novo aviso com a nota “parcial”";
+    parcial.addEventListener("click", async () => {
+      parcial.disabled = true;
+      await registrarPainel(empresa, f, {envio: {data: dadosPainel.hoje, pedido: "parcial"}});
+      parcial.disabled = false;
+    });
+    acoes.append(parcial);
+  }
+  cartao.append(acoes);
+  return cartao;
+}
+
+function fecharFormulario() {
+  if (!formularioAberto) return;
+  formularioAberto.formulario.remove();
+  formularioAberto.botao.setAttribute("aria-expanded", "false");
+  formularioAberto = null;
+}
+
+// abre o formulário só no cartão clicado; clicar de novo (ou Cancelar/Esc) fecha
+function alternarFormulario(cartao, botao, empresa, f) {
+  const mesmo = formularioAberto && formularioAberto.botao === botao;
+  fecharFormulario();
+  if (mesmo) return;
+  const formulario = elemento("form", undefined, "auditoria-registro");
+  const rotuloData = elemento("label", "Data do aviso");
+  const data = elemento("input"); data.type = "date"; data.required = true; data.value = dadosPainel.hoje;
+  rotuloData.append(data);
+  const rotuloNota = elemento("label", "Nota (opcional)");
+  const nota = elemento("input"); nota.type = "text"; nota.placeholder = "O que a equipe precisa corrigir";
+  rotuloNota.append(nota);
+  const botoes = elemento("div");
+  const registrar = elemento("button", "Registrar aviso", "auditoria-botao-principal"); registrar.type = "submit";
+  const cancelar = elemento("button", "Cancelar"); cancelar.type = "button";
+  cancelar.addEventListener("click", () => { fecharFormulario(); botao.focus(); });
+  botoes.append(registrar, cancelar);
+  formulario.append(rotuloData, rotuloNota, botoes);
+  formulario.setAttribute("aria-label", `Aviso à equipe de ${f.ficha}`);
+  formulario.addEventListener("keydown", evento => {
+    if (evento.key === "Escape") { fecharFormulario(); botao.focus(); }
+  });
+  formulario.addEventListener("submit", async evento => {
+    evento.preventDefault();
+    registrar.disabled = true;   // evita registrar o mesmo aviso duas vezes
+    await registrarPainel(empresa, f, {envio: {data: data.value, pedido: nota.value}});
+    registrar.disabled = false;
+  });
+  cartao.append(formulario);
+  botao.setAttribute("aria-expanded", "true");
+  formularioAberto = {formulario, botao};
+  data.focus();
+}
+
+function mostrarQuadro(colunas) {
+  const area = $("painelQuadro");
+  area.replaceChildren();
+  const total = COLUNAS.reduce((soma, coluna) => soma + colunas[coluna.chave].length, 0);
+  if (!total) {
+    area.append(elemento("p", focoPainel ? "Nenhuma ficha neste recorte." : "Nenhuma pendência no momento.",
+      "auditoria-quadro-vazio"));
+    return;
+  }
+  // com muitas pendências, cada coluna mostra primeiro as 5 mais atrasadas
+  const resumir = total >= MUITAS_PENDENCIAS;
+  const quadro = elemento("div", undefined, "auditoria-quadro");
+  COLUNAS.forEach(coluna => {
+    const itens = colunas[coluna.chave];
+    const secao = elemento("section", undefined, "auditoria-coluna");
+    const titulo = elemento("h3", coluna.titulo);
+    titulo.append(elemento("span", itens.length, "auditoria-contagem"));
+    secao.append(titulo);
+    if (!itens.length) secao.append(elemento("p", coluna.vazio, "auditoria-vazio"));
+    const chaveAberta = `${empresaAtual}|${focoPainel}|${coluna.chave}`;
+    const recolhida = resumir && itens.length > MOSTRAR_POR_COLUNA && !colunasAbertas.has(chaveAberta);
+    (recolhida ? itens.slice(0, MOSTRAR_POR_COLUNA) : itens)
+      .forEach(item => secao.append(cartaoPendencia(item, !empresaAtual)));
+    if (resumir && itens.length > MOSTRAR_POR_COLUNA) {
+      const mais = elemento("button", recolhida ? `ver todas (${itens.length})` : "mostrar menos", "auditoria-mais");
+      mais.type = "button";
+      mais.addEventListener("click", () => {
+        recolhida ? colunasAbertas.add(chaveAberta) : colunasAbertas.delete(chaveAberta);
+        fecharFormulario();
+        mostrarQuadro(montarColunas(empresasMostradas()));
+      });
+      secao.append(mais);
+    }
+    quadro.append(secao);
+  });
+  area.append(quadro);
+}
+
+function listaRodape(titulo, itens, vazio, descrever) {
+  const secao = elemento("section", undefined, "auditoria-cartao-base");
+  secao.append(elemento("h2", `${titulo} (${itens.length})`));
+  if (!itens.length) secao.append(elemento("p", vazio, "auditoria-vazio"));
   else {
-    const lista = elemento("ul");
+    const lista = elemento("ul", undefined, "auditoria-linhas");
     itens.forEach(item => lista.append(descrever(item)));
     secao.append(lista);
   }
-  pai.append(secao);
   return secao;
+}
+
+function mostrarRodape(empresas) {
+  const area = $("painelRodape");
+  area.replaceChildren();
+  const prefixo = e => empresaAtual ? "" : e.empresa + " · ";
+  const semLinha = empresas.flatMap(e => [
+    ...e.escaneados_sem_linha.map(item => ({origem: "escaneado no Drive", texto: prefixo(e) + item.entrada})),
+    ...e.pdfs_sem_linha.map(item => ({origem: "PDF já mesclado", texto: `${prefixo(e)}${item.tipo} · ${item.arquivo}`}))
+  ]);
+  area.append(listaRodape("Sem linha na planilha", semLinha, "Nenhum arquivo sem linha.", item => {
+    const li = elemento("li");
+    li.append(elemento("span", item.texto), elemento("small", item.origem));
+    return li;
+  }));
+  const inconsistencias = empresas.flatMap(e => e.inconsistencias.map(i => ({empresa: e, ...i})));
+  area.append(listaRodape("Inconsistências", inconsistencias, "Nenhuma inconsistência.", i => {
+    const li = elemento("li");
+    li.append(elemento("strong", prefixo(i.empresa) + (i.ficha || (i.numero ? `${i.tipo} nº ${i.numero}` : "PDF"))),
+      elemento("small", MOTIVOS[i.motivo] || i.motivo.replaceAll("_", " ")));
+    return li;
+  }));
 }
 
 function mostrarPainel() {
   if (!dadosPainel) return;
-  const empresas = dadosPainel.empresas.filter(e => {
-    if (empresaPainel.value && e.empresa !== empresaPainel.value) return false;
-    if (focoPainel === "atrasadas") return e.pendencias.some(f => f.dias > 10);
-    if (focoPainel === "arquivos-novos") return e.pendencias.some(f => f.scanner === "arquivo_novo_apos_aviso");
-    if (focoPainel === "sem-escaneamento") return e.fichas.some(f => f.estado === "por_auditar" && f.scanner === "falta_escanear");
-    return true;
-  });
-  const totais = {lancadas: 0, por_auditar: 0, com_equipe: 0, concluidas: 0,
-    sem_devolucao: 0, falta_escanear: 0};
-  empresas.forEach(e => {
-    for (const chave of Object.keys(totais)) totais[chave] += e.contagem[chave] ??
-      (chave === "sem_devolucao" ? e.contagem.com_equipe : 0);
-  });
-  const numeros = $("painelNumeros");
-  numeros.replaceChildren();
-  const valores = [
-    ["Lançadas", totais.lancadas], ["Por auditar", totais.por_auditar],
-    [`Com a equipe (${totais.sem_devolucao} sem devolução registrada)`, totais.com_equipe],
-    ["Aprovadas", totais.concluidas],
-    ["Falta escanear", totais.falta_escanear],
-    ["Concluído", (totais.lancadas ? Math.round(100 * totais.concluidas / totais.lancadas) : 0) + "%"]
-  ];
-  valores.forEach(([rotulo, valor]) => {
-    const cartao = elemento("div", undefined, "auditoria-numero");
-    cartao.append(elemento("strong", valor), elemento("span", rotulo));
-    numeros.append(cartao);
-  });
-  const area = $("painelEmpresas");
-  area.replaceChildren();
-  if (!empresas.length) area.append(elemento("p", focoPainel ? "Nenhuma ficha neste recorte." :
-    "Nenhuma empresa configurada.", "auditoria-vazio"));
-  empresas.forEach(e => {
-    const cartao = elemento("details", undefined, "auditoria-empresa");
-    const chave = chaveEstadoPainel(e.empresa);
-    cartao.dataset.chaveEstado = chave;
-    if (e.empresa === empresaDaUrl && !estadosEmpresas.has(chave)) estadosEmpresas.set(chave, true);
-    cartao.open = estadosEmpresas.has(chave) ? estadosEmpresas.get(chave) : lembrar(chave) === "aberta";
-    cartao.addEventListener("toggle", () => guardarEstadoPainel(cartao, cartao.open));
-    const resumo = elemento("summary", undefined, "auditoria-resumo");
-    const cabecalho = elemento("div", undefined, "auditoria-cabecalho");
-    cabecalho.append(elemento("h2", e.empresa),
-      elemento("strong", Math.round(e.contagem.percentual_concluido) + "%"));
-    resumo.append(cabecalho);
-    const conteudo = elemento("div", undefined, "auditoria-conteudo");
-    conteudo.append(elemento("p", e.planilha || "Sem planilha do mês", "auditoria-origem"));
-    if (e.aviso) conteudo.append(elemento("p", e.aviso, "auditoria-aviso"));
-    if (e.contagem.cor_desconhecida) conteudo.append(elemento("p",
-      e.contagem.cor_desconhecida + " ficha(s) com cor fora do padrão.", "auditoria-aviso"));
-    if (!e.contagem.concluidas) conteudo.append(elemento("p", "Nenhuma ficha aprovada.", "auditoria-aviso"));
-    const barra = elemento("div", undefined, "auditoria-barra");
-    barra.setAttribute("role", "img");
-    barra.setAttribute("aria-label", `${e.contagem.concluidas} aprovadas, ${e.contagem.com_equipe} com a equipe, ${e.contagem.por_auditar} por auditar`);
-    [["concluidas", "auditoria-aprovadas"], ["com_equipe", "auditoria-equipe"],
-      ["por_auditar", "auditoria-pendentes"]].forEach(([chave, classe]) => {
-      const parte = elemento("span", undefined, classe);
-      parte.style.width = (e.contagem.lancadas ? 100 * e.contagem[chave] / e.contagem.lancadas : 0) + "%";
-      barra.append(parte);
-    });
-    resumo.append(barra, elemento("p",
-      `${e.contagem.concluidas} aprovadas · ${e.contagem.com_equipe} com a equipe · ${e.contagem.por_auditar} por auditar`,
-      "auditoria-legenda"));
-    const faltaEscanear = e.fichas.filter(f =>
-      (f.estado === "por_auditar" || f.estado === "com_equipe") && f.scanner === "falta_escanear");
-    const selos = elemento("div", undefined, "auditoria-selos");
-    if (faltaEscanear.length) selos.append(elemento("span",
-      `${faltaEscanear.length} falta escanear`, "auditoria-selo auditoria-selo-aviso"));
-    if (e.pendencias.length) {
-      const semDevolucao = e.contagem.sem_devolucao ?? e.pendencias.filter(f => !f.ultimo_envio).length;
-      selos.append(elemento("span", `${e.pendencias.length} pendência${e.pendencias.length === 1 ? "" : "s"}` +
-        (semDevolucao ? ` · ${semDevolucao} sem devolução` : ""), "auditoria-selo"));
-    }
-    if (e.inconsistencias.length) selos.append(elemento("span",
-      `${e.inconsistencias.length} inconsistência${e.inconsistencias.length === 1 ? "" : "s"}`, "auditoria-selo"));
-    if (e.pdfs_sem_linha.length) selos.append(elemento("span",
-      `${e.pdfs_sem_linha.length} PDF${e.pdfs_sem_linha.length === 1 ? "" : "s"} sem linha`, "auditoria-selo"));
-    if (e.escaneados_sem_linha.length) selos.append(elemento("span",
-      `${e.escaneados_sem_linha.length} escaneado(s) sem linha`, "auditoria-selo"));
-    if (e.aviso || e.contagem.cor_desconhecida) selos.append(elemento("span",
-      "Atenção", "auditoria-selo auditoria-selo-aviso"));
-    resumo.append(selos);
-    cartao.append(resumo, conteudo);
-    const listas = elemento("div", undefined, "auditoria-listas");
-    const pendencias = focoPainel === "atrasadas" ? e.pendencias.filter(f => f.dias > 10) :
-      focoPainel === "arquivos-novos" ? e.pendencias.filter(f => f.scanner === "arquivo_novo_apos_aviso") : e.pendencias;
-    listaPainel(listas, "Falta escanear", focoPainel === "sem-escaneamento" ?
-      faltaEscanear.filter(f => f.estado === "por_auditar") : faltaEscanear,
-      "Nada faltando escanear.", f => elemento("li", `${f.ficha} · ${f.paciente} · ${f.tipo}`));
-    listaPainel(listas, "Pendências com a equipe", pendencias, "Nenhuma pendência com a equipe.", f => {
-      const li = elemento("li");
-      const topo = elemento("div", undefined, "auditoria-pendencia-topo");
-      topo.append(elemento("span", `${f.ficha} · ${f.paciente}`, "auditoria-pendencia-nome"));
-      topo.append(f.ultimo_envio ?
-        elemento("span", `${f.dias} dia${f.dias === 1 ? "" : "s"} com a equipe`,
-          `auditoria-pendencia-dias auditoria-prazo-${f.faixa}`) :
-        elemento("span", "devolução não registrada", "auditoria-pendencia-dias auditoria-sem-devolucao"));
-      li.append(topo);
-      if (f.ultimo_envio?.pedido) {
-        const nota = elemento("p", undefined, "auditoria-nota");
-        nota.append(elemento("strong", "Nota do último aviso: "), document.createTextNode(f.ultimo_envio.pedido));
-        li.append(nota);
-      }
-      if (f.comentario) li.append(elemento("small", f.comentario));
-      if (f.scanner === "arquivo_novo_apos_aviso") li.append(elemento("small", textoScanner(f),
-        "auditoria-arquivo-novo"));
-      if (!f.pode_avisar) {
-        // Prazo da equipe já está correndo: novo aviso só quando chegar arquivo novo.
-        const [ano, mes, dia] = f.ultimo_envio.data.split("-");
-        li.append(elemento("small", `Equipe avisada em ${dia}/${mes}/${ano.slice(2)} · aguardando o reenvio`,
-          "auditoria-aguardando"));
-        return li;
-      }
-      const formulario = elemento("form", undefined, "auditoria-registro");
-      const data = elemento("input"); data.type = "date"; data.required = true;
-      data.value = dadosPainel.hoje; data.setAttribute("aria-label", `Data do aviso de ${f.ficha}`);
-      const nota = elemento("input"); nota.type = "text";
-      nota.placeholder = "Nota opcional"; nota.setAttribute("aria-label", `Nota opcional de ${f.ficha}`);
-      const botao = elemento("button", "Avisei a equipe"); botao.type = "submit";
-      formulario.append(data, nota, botao);
-      formulario.addEventListener("submit", async evento => {
-        evento.preventDefault();
-        botao.disabled = true;   // evita registrar o mesmo aviso duas vezes
-        await registrarPainel(e.empresa, f, {envio: {data: data.value, pedido: nota.value}});
-        botao.disabled = false;
-      });
-      li.append(formulario);
-      if (f.scanner === "arquivo_novo_apos_aviso") {
-        const parcial = elemento("button", "Parcial, reenviei"); parcial.type = "button";
-        parcial.addEventListener("click", () => registrarPainel(e.empresa, f,
-          {envio: {data: dadosPainel.hoje, pedido: "parcial"}}));
-        li.append(parcial);
-      }
-      return li;
-    });
-    const semLinha = [
-      ...e.escaneados_sem_linha.map(item => ({origem: "escaneado no Drive", texto: item.entrada})),
-      ...e.pdfs_sem_linha.map(item => ({origem: "PDF já mesclado", texto: `${item.tipo} · ${item.arquivo}`}))
-    ];
-    listaPainel(listas, "Sem linha na planilha", semLinha, "Nenhum arquivo sem linha.", item => {
-      const li = elemento("li", item.texto);
-      li.append(elemento("small", item.origem));
-      return li;
-    }).classList.add("auditoria-largura-total");
-    const inconsistencias = elemento("details", undefined, "auditoria-largura-total");
-    inconsistencias.append(elemento("summary", `Inconsistências (${e.inconsistencias.length})`));
-    if (!e.inconsistencias.length) inconsistencias.append(elemento("p", "Nenhuma inconsistência.", "auditoria-vazio"));
-    else {
-      const lista = elemento("ul");
-      e.inconsistencias.forEach(i => lista.append(
-        elemento("li", `${i.ficha || i.numero || "PDF"} · ${i.motivo.replaceAll("_", " ")}`)));
-      inconsistencias.append(lista);
-    }
-    listas.append(inconsistencias);
-    conteudo.append(listas);
-    area.append(cartao);
-  });
+  const empresas = empresasMostradas();
+  mostrarEmpresas();
+  if (!dadosPainel.empresas.length) {
+    $("painelResumo").replaceChildren(elemento("p", "Nenhuma empresa configurada.", "auditoria-quadro-vazio"));
+    return;
+  }
+  const colunas = montarColunas(empresas);
+  mostrarResumo(empresas, montarColunas(empresas, ""));
+  mostrarRecortes(empresas);
+  mostrarQuadro(colunas);
+  mostrarRodape(empresas);
+}
+
+function descreverLeitura() {
+  const [ano, mes] = mesPainel.value.split("-");
+  return `${MESES_PAINEL[Number(mes) - 1]}/${ano} · leitura de ${dataBR(dadosPainel.hoje)}` +
+    (horaLeitura ? ` às ${horaLeitura}` : "");
 }
 
 async function lerPainel() {
   const mes = mesPainel.value;
   guardar("painelMes", mes);
+  atualizarUrlPainel();
   $("painelMensagem").textContent = "Lendo planilhas…";
   try {
     const resposta = await fetch("/painel/dados?mes=" + encodeURIComponent(mes));
     const dados = await resposta.json();
     if (!resposta.ok) throw new Error(dados.erro || "Não foi possível ler o mês.");
+    if (!dadosPainel || dadosPainel.mes !== dados.mes) colunasAbertas.clear();
     dadosPainel = dados;
-    $("painelMensagem").textContent = "Leitura de " + dados.hoje + ".";
+    const agora = new Date();
+    horaLeitura = `${String(agora.getHours()).padStart(2, "0")}:${String(agora.getMinutes()).padStart(2, "0")}`;
+    $("painelMensagem").textContent = descreverLeitura();
+    formularioAberto = null;
     mostrarPainel();
   } catch (erro) {
     $("painelMensagem").textContent = erro.message;
@@ -350,10 +566,7 @@ async function registrarPainel(empresa, ficha, alteracao) {
     const dados = await resposta.json();
     if (!resposta.ok) throw new Error(dados.erro || "Não foi possível registrar.");
     await lerPainel();
-    if (alteracao.envio) {
-      const [, mes, dia] = alteracao.envio.data.split("-");
-      avisoPainel(`Aviso registrado: ${ficha.ficha} em ${dia}/${mes}.`);
-    }
+    if (alteracao.envio) avisoPainel(`Aviso registrado: ${ficha.ficha} em ${dataBR(alteracao.envio.data)}.`);
   } catch (erro) { avisoPainel(erro.message); }
 }
 let temporizadorAviso;
@@ -363,21 +576,8 @@ function avisoPainel(texto) {
   clearTimeout(temporizadorAviso);
   temporizadorAviso = setTimeout(() => { aviso.hidden = true; }, 5000);
 }
-mesPainel.addEventListener("change", lerPainel);
-empresaPainel.addEventListener("change", mostrarPainel);
+mesPainel.addEventListener("change", () => { if (mesPainel.value) lerPainel(); });
 $("painelRecarregar").addEventListener("click", lerPainel);
-$("painelExpandir").addEventListener("click", () => {
-  $("painelEmpresas").querySelectorAll("details.auditoria-empresa").forEach(cartao => {
-    cartao.open = true;
-    guardarEstadoPainel(cartao, true);
-  });
-});
-$("painelRecolher").addEventListener("click", () => {
-  $("painelEmpresas").querySelectorAll("details.auditoria-empresa").forEach(cartao => {
-    cartao.open = false;
-    guardarEstadoPainel(cartao, false);
-  });
-});
 lerPainel();
 </script>
 {% endblock %}
