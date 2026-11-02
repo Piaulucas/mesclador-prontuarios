@@ -91,7 +91,7 @@ def create_app(config, pasta_temp=None, versao=None):
 
     @app.get("/converter")
     def converter():
-        return render_template("converter.html", pagina="converter")
+        return render_template("converter.html", pagina="converter", dpi=imagens.DPI_EXPORTACAO)
 
     app.register_blueprint(conversor.criar_blueprint(temp))
     app.register_blueprint(painel.criar_blueprint(config))

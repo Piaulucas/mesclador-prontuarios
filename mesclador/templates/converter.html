@@ -2,133 +2,140 @@
 {% block titulo %}Converter em JPG · Área de trabalho{% endblock %}
 
 {% block estilos %}
-  .ajuste { display: grid; grid-template-columns: minmax(0, 1fr) 42px; gap: 8px; align-items: center; }
-  .ajuste input[type=range] { padding: 0; accent-color: var(--acento); }
-  .ajuste output { font-size: 12px; text-align: right; color: var(--texto); font-variant-numeric: tabular-nums; }
-  .check { flex-direction: row; align-items: center; gap: 8px; color: var(--texto); font-size: 12px; }
-  .nota { margin: 0; color: var(--suave); font-size: 12px; line-height: 1.5; }
-  .cartao { cursor: pointer; }
-  .cartao.selecionada { border-color: var(--acento); box-shadow: 0 0 0 2px var(--acento); }
-  .selo { position: absolute; top: 17px; right: 17px; z-index: 1; display: none;
-          background: var(--acento); color: var(--acento-txt); border-radius: 7px;
-          font-size: 12px; font-weight: 700; padding: 4px 7px; }
-  .cartao.ajustada .selo { display: block; }
-  .acoes button.ampliar { flex: 0 0 36px; }
-  .ajustes-pagina { display: flex; flex-direction: column; gap: 12px; }
-  .ajustes-pagina.desabilitado { opacity: .5; pointer-events: none; }
-  .ampliada { position: fixed; inset: 0; z-index: 20; display: none; align-items: center;
-              justify-content: center; padding: 24px; background: rgba(0, 0, 0, .82); cursor: zoom-out; }
-  .ampliada.aberta { display: flex; }
-  .ampliada img { max-width: 100%; max-height: 100%; border-radius: 4px; background: #fff; }
-  .ampliada .seta { position: absolute; top: 50%; transform: translateY(-50%); z-index: 1;
-                   width: 44px; height: 52px; padding: 0; border: 1px solid var(--borda);
-                   border-radius: 8px; background: var(--painel); color: var(--texto);
-                   font-size: 32px; line-height: 1; cursor: pointer; }
-  .ampliada .seta[hidden] { display: none; }
-  .ampliada .anterior { left: 12px; }
-  .ampliada .proximo { right: 12px; }
-  .ampliada .posicao { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
-                      max-width: calc(100% - 120px); padding: 5px 10px; border-radius: 6px;
-                      background: var(--painel); color: var(--texto); font-size: 12px;
-                      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: default; }
-  #mostrar { display: none; }
+{% include "_ferramentas.css" %}
+  .folha { cursor: pointer; }
+  .folha.selecionada { border-color: var(--acento); }
+  /* a página escolhida abre os ajustes ao lado dela, no próprio cartão */
+  .folha.selecionada.com-ajustes { grid-column: span 2; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: "mini ajustes" "nome ajustes" "acoes ajustes"; grid-template-rows: auto auto 1fr;
+    column-gap: 12px; align-content: start; }
+  .folha.com-ajustes .folha-acoes { align-self: start; }
+  .folha.com-ajustes .folha-mini { grid-area: mini; }
+  .folha.com-ajustes .folha-nome { grid-area: nome; }
+  .folha.com-ajustes .folha-acoes { grid-area: acoes; }
+  .ajustes-pagina { grid-area: ajustes; display: flex; flex-direction: column; gap: 10px; min-width: 0;
+    padding: 12px; border-radius: 14px; background: var(--acento-leve, var(--painel-suave)); cursor: default; }
+  .ajustes-pagina[hidden] { display: none; }
+  .ajustes-pagina h3 { margin: 0; font-size: 14px; }
+  .ajustes-pagina label { color: var(--texto); }
+  .ajustes-pagina .ampliada-botoes button { min-height: 32px; padding: 4px 12px; font-size: 12px; }
+  .ajustes-pagina .pilula.leve { background: var(--painel); border-color: var(--acento); }
+  .reserva { display: none; }
+
+  /* barra de exportação: só aparece quando há páginas */
+  .barra-fixa label { flex: 1 1 220px; min-width: 0; font-size: 12px; font-weight: 650; color: var(--suave); }
+  .barra-fixa label input { font-size: 14px; }
+  .destino-jpg { flex: 1 1 240px; min-width: 0; color: var(--suave); font-size: 12px; overflow-wrap: anywhere; }
+  .destino-jpg strong { color: var(--texto); font-weight: 650; }
+  #mostrar[hidden] { display: none; }
+  #msgExportar { flex: 1 1 100%; }
+  #msgExportar:empty { display: none; }
+
+  @media (max-width: 600px) {
+    .destino-jpg { display: none; }
+  }
+  @media (max-width: 460px) {
+    .folha.selecionada.com-ajustes { grid-template-columns: minmax(0, 1fr); grid-template-rows: none;
+      grid-template-areas: "mini" "nome" "ajustes" "acoes"; }
+    .folha.com-ajustes .ajustes-pagina { margin-top: 8px; }
+  }
 {% endblock %}
 
 {% block conteudo %}
-<div class="app">
-  <aside>
+<main class="ferramenta">
+  <div class="ferramenta-cabecalho">
     <div>
-      <h1 class="painel-titulo">Converter em JPG</h1>
-      <p class="painel-intro">Cada página será exportada como uma imagem.</p>
+      <h1>Converter em JPG</h1>
+      <p>Cada página vira uma imagem JPG, numa pasta nova em Downloads.</p>
     </div>
-    <section class="etapa" aria-labelledby="etapa-saida">
-      <div class="etapa-cabecalho"><span class="etapa-numero">01</span><h2 id="etapa-saida">Pasta de saída</h2></div>
-      <label>Nome da pasta em Downloads
-        <input id="nome" autocomplete="off" spellcheck="false" placeholder="ex.: MARIA SOUZA">
-      </label>
-    </section>
-    <section class="etapa" aria-labelledby="etapa-ajustes">
-      <div class="etapa-cabecalho"><span class="etapa-numero">02</span><h2 id="etapa-ajustes">Ajustes da página</h2></div>
-      <div class="ajustes-pagina" id="ajustesPagina">
-        <label>Brilho
-          <div class="ajuste"><input type="range" id="brilho" min="-100" max="100" value="0"><output id="vBrilho">0</output></div>
-        </label>
-        <label>Contraste
-          <div class="ajuste"><input type="range" id="contraste" min="-100" max="100" value="0"><output id="vContraste">0</output></div>
-        </label>
-        <label class="check"><input type="checkbox" id="realce"> Realçar escrita (tons de cinza)</label>
-        <button id="aplicarTodas" type="button">Aplicar a todas</button>
-        <button id="restaurar" type="button">Restaurar esta página</button>
-        <p class="nota">Clique numa página para ajustá-la. Os ajustes valem para a página inteira.</p>
-      </div>
-    </section>
-    <section class="etapa" aria-labelledby="etapa-exportacao">
-      <div class="etapa-cabecalho"><span class="etapa-numero">03</span><h2 id="etapa-exportacao">Exportação</h2></div>
-      <button id="exportar" class="principal" disabled>Exportar JPG</button>
-      <div id="msgExportar" class="msg" role="status"></div>
-      <button id="mostrar" type="button">Mostrar no Finder</button>
-    </section>
-    <div class="assinatura" aria-label="Piau Gestão em Saúde">
-      <span>Piau Gestão em Saúde</span>
-    </div>
-  </aside>
-  <main>
-    <div class="area-titulo"><h2>Páginas para exportação</h2><p>Selecione uma página para conferir os ajustes.</p></div>
-    <div class="zona" id="zona">
+  </div>
+
+  <div class="secao-titulo">
+    <h2>Páginas</h2>
+    <span id="resumo" class="dica">Nenhuma página</span>
+    <button id="limpar" class="pilula" type="button">Limpar tudo</button>
+  </div>
+  <div class="folhas sem-itens" id="grade">
+    <div class="soltar" id="zona">
+      <span class="soltar-mais" aria-hidden="true">+</span>
       <strong>Solte os arquivos aqui</strong>
-      <span class="zona-detalhe">PDF, .zip, pasta ou imagens · cada página vira um JPG</span>
-      <span class="zona-escolhas">Ou escolha <button class="zona-link" id="escolher" type="button">arquivos / .zip</button> · <button class="zona-link" id="escolherDir" type="button">uma pasta</button></span>
+      <span class="soltar-detalhe">PDF, .zip, pasta ou imagens · cada página vira um JPG</span>
+      <span class="soltar-escolhas">Ou escolha <button class="zona-link" id="escolher" type="button">arquivos / .zip</button> · <button class="zona-link" id="escolherDir" type="button">uma pasta</button></span>
       <input type="file" id="seletor" multiple accept=".pdf,.jpg,.jpeg,.png,.tif,.tiff,.heic,.zip" hidden>
       <input type="file" id="seletorDir" webkitdirectory hidden>
     </div>
-    <div class="barra">
-      <span id="resumo">Nenhuma página</span>
-      <button id="limpar">Limpar tudo</button>
+  </div>
+</main>
+
+<div class="reserva" id="reserva">
+  <div class="ajustes-pagina" id="ajustesPagina">
+    <h3 id="ajustesTitulo">Ajustes da página</h3>
+    <label>Brilho
+      <span class="ajuste"><input type="range" id="brilho" min="-100" max="100" value="0"><output id="vBrilho" for="brilho">0</output></span>
+    </label>
+    <label>Contraste
+      <span class="ajuste"><input type="range" id="contraste" min="-100" max="100" value="0"><output id="vContraste" for="contraste">0</output></span>
+    </label>
+    <label class="check"><input type="checkbox" id="realce"> Realçar escrita (tons de cinza)</label>
+    <div class="ampliada-botoes">
+      <button id="aplicarTodas" class="pilula leve" type="button">Aplicar a todas</button>
+      <button id="restaurar" class="pilula" type="button">Restaurar esta página</button>
     </div>
-    <div class="grade" id="grade"></div>
-  </main>
+    <p class="nota">Vale para a página inteira. 🔍 abre a página grande com os mesmos ajustes.</p>
+  </div>
 </div>
-<div class="ampliada" id="ampliada">
-  <button id="ampliadaAnterior" class="seta anterior" type="button" aria-label="Página anterior">‹</button>
-  <img id="imgAmpliada" alt="Página ampliada">
-  <button id="ampliadaProximo" class="seta proximo" type="button" aria-label="Próxima página">›</button>
-  <span id="ampliadaPosicao" class="posicao" role="status"></span>
+
+<div class="barra-fixa" id="barraExportar" role="region" aria-label="Exportar os JPG" hidden>
+  <label>Nome da pasta em Downloads
+    <input id="nome" autocomplete="off" spellcheck="false" placeholder="ex.: MARIA SOUZA">
+  </label>
+  <div class="destino-jpg" id="destinoJpg"></div>
+  <button id="mostrar" class="pilula leve" type="button" hidden>Mostrar no Finder</button>
+  <button id="exportar" class="principal" disabled>Exportar JPG</button>
+  <div id="msgExportar" class="msg" role="status"></div>
 </div>
+{% with rotulo_item="Página", nota_ajustes="Os ajustes valem para a página inteira e aparecem na prévia enquanto você mexe." %}
+{% include "_ampliada.html" %}
+{% endwith %}
 {% endblock %}
 
 {% block script %}
+<script src="{{ url_for('static', filename='ampliada.js') }}"></script>
 <script>
 let paginas = [];       // [{id, nome, giro, brilho, contraste, realce}] na ordem da exportação
 let selecionadaId = null;
-let ampliadaId = null;  // página aberta na ampliação
 let pastaExportada = "";
+const DPI = {{ dpi }};
 
-// ---------- ajustes (por página) ----------
+// ---------- ajustes (por página, ao lado da página escolhida) ----------
 const selecionada = () => paginas.find(p => p.id === selecionadaId);
 const ajustada = p => p.brilho !== 0 || p.contraste !== 0 || p.realce;
 function urlPrevia(p, tam) {
   return `/converter/previa/${p.id}?` + new URLSearchParams({ tam, brilho: p.brilho, contraste: p.contraste, realce: p.realce ? 1 : 0 });
 }
-function carregarControles() {   // mostra na lateral os valores da página selecionada
+function carregarControles() {   // mostra os valores da página selecionada
   const p = selecionada();
-  $("ajustesPagina").classList.toggle("desabilitado", !p);
-  ["brilho", "contraste", "realce", "aplicarTodas", "restaurar"].forEach(id => { $(id).disabled = !p; });
-  $("brilho").value = p ? p.brilho : 0;
-  $("contraste").value = p ? p.contraste : 0;
-  $("realce").checked = p ? p.realce : false;
-  $("vBrilho").textContent = $("brilho").value;
-  $("vContraste").textContent = $("contraste").value;
+  if (!p) return;
+  const indice = paginas.indexOf(p);
+  $("ajustesTitulo").textContent = `Ajustes da página ${indice + 1}`;
+  $("brilho").value = p.brilho;
+  $("contraste").value = p.contraste;
+  $("realce").checked = p.realce;
+  $("vBrilho").textContent = p.brilho;
+  $("vContraste").textContent = p.contraste;
 }
 function selecionar(id) {
+  if (selecionadaId === id) return;
   selecionadaId = id;
-  document.querySelectorAll(".cartao").forEach(c => c.classList.toggle("selecionada", c.dataset.id === id));
-  carregarControles();
+  desenhar();
 }
 function atualizarCartao(p) {   // só o selo e a miniatura desta página
-  const c = document.querySelector(`.cartao[data-id="${p.id}"]`);
+  const c = document.querySelector(`.folha[data-id="${p.id}"]`);
   if (!c) return;
   c.classList.toggle("ajustada", ajustada(p));
-  c.querySelector(".mini img").src = urlPrevia(p, 400);
+  c.querySelector(".folha-mini img").src = urlPrevia(p, 400);
+  if (p.id === selecionadaId) carregarControles();
+  atualizarResumo();
 }
 let timerAjuste;
 function aoAjustar() {
@@ -155,6 +162,14 @@ $("aplicarTodas").onclick = () => {
   if (!o) return;
   paginas.forEach(p => { if (p !== o) { Object.assign(p, { brilho: o.brilho, contraste: o.contraste, realce: o.realce }); atualizarCartao(p); } });
 };
+const ampliacao = criarAmpliacao({
+  lista: () => paginas,
+  url: (p, neutro) => urlPrevia(neutro ? { ...p, brilho: 0, contraste: 0, realce: false } : p, 1400),
+  titulo: (p, i, total) => `Página ${i + 1} de ${total}`,
+  detalhe: p => p.nome,
+  aoAjustar: atualizarCartao,
+  aoGirar: () => desenhar(),
+});
 
 // ---------- envio ----------
 async function enviar(lista, origem = "") {
@@ -179,59 +194,37 @@ ativarEntrada(enviar);
 temTrabalhoPendente = () => paginas.length > 0 && !pastaExportada;
 
 // ---------- páginas ----------
-function fecharAmpliacao() { ampliadaId = null; $("ampliada").classList.remove("aberta"); }
-function atualizarAmpliacao() {
-  if (!ampliadaId) return;
-  const indice = paginas.findIndex(p => p.id === ampliadaId);
-  if (indice < 0) { fecharAmpliacao(); return; }
-  const p = paginas[indice];
-  $("imgAmpliada").src = urlPrevia(p, 1400);
-  $("imgAmpliada").style.transform = `rotate(${p.giro}deg)`;
-  $("ampliadaPosicao").textContent = `${indice + 1}/${paginas.length} · ${p.nome}`;
-  $("ampliadaAnterior").hidden = indice === 0;
-  $("ampliadaProximo").hidden = indice === paginas.length - 1;
-}
-function moverAmpliacao(direcao) {
-  const indice = paginas.findIndex(p => p.id === ampliadaId);
-  if (indice < 0 || indice + direcao < 0 || indice + direcao >= paginas.length) return;
-  ampliadaId = paginas[indice + direcao].id;
-  atualizarAmpliacao();
-}
-$("ampliada").onclick = fecharAmpliacao;
-$("ampliadaAnterior").onclick = e => { e.stopPropagation(); moverAmpliacao(-1); };
-$("ampliadaProximo").onclick = e => { e.stopPropagation(); moverAmpliacao(1); };
-document.addEventListener("keydown", e => {
-  if (!$("ampliada").classList.contains("aberta")) return;
-  if (e.key === "Escape") fecharAmpliacao();
-  if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-    e.preventDefault(); e.stopPropagation();
-    moverAmpliacao(e.key === "ArrowLeft" ? -1 : 1);
-  }
-}, true);
 function desenhar() {
   const grade = $("grade");
-  grade.innerHTML = "";
-  if (!paginas.length) grade.innerHTML = '<div class="vazio">As páginas aparecem aqui, na ordem dos arquivos JPG.</div>';
+  $("reserva").appendChild($("ajustesPagina"));   // guarda os controles antes de refazer os cartões
+  grade.querySelectorAll(".folha").forEach(c => c.remove());   // a área de soltar fica
+  grade.classList.toggle("sem-itens", !paginas.length);
+  if (!selecionada()) selecionadaId = paginas.length ? paginas[0].id : null;
   paginas.forEach((p, i) => {
-    const c = document.createElement("div");
-    c.className = "cartao" + (ajustada(p) ? " ajustada" : "") + (p.id === selecionadaId ? " selecionada" : "");
+    const c = document.createElement("article");
+    const escolhida = p.id === selecionadaId;
+    c.className = "folha" + (ajustada(p) ? " ajustada" : "") + (escolhida ? " selecionada com-ajustes" : "");
     c.dataset.id = p.id;
     const deitada = p.giro % 180 !== 0 ? " deitada" : "";
     c.innerHTML = `
-      <div class="ordem">${i + 1}</div>
-      <div class="selo">ajustada</div>
-      <div class="mini${deitada}"><img data-id="${p.id}" src="${urlPrevia(p, 400)}"
+      <div class="folha-num">${String(i + 1).padStart(2, "0")}</div>
+      <div class="folha-selo">ajustada</div>
+      <div class="folha-mini${deitada}" role="button" tabindex="0" aria-label="Ajustar a página ${i + 1}"
+           title="${escolhida ? "Abrir grande" : "Ajustar esta página"}"><img data-id="${p.id}" src="${urlPrevia(p, 400)}"
            style="transform: translate(-50%, -50%) rotate(${p.giro}deg)" alt="Página ${i + 1}"></div>
-      <div class="nome" title="${esc(p.nome)}">${esc(p.nome)}</div>
-      <div class="acoes">
-        <button data-acao="ampliar" class="ampliar" title="Ampliar">🔍</button>
-        <button data-acao="girar" title="Girar 90°">↻ Girar</button>
-        <button data-acao="remover" title="Remover">✕</button>
+      <div class="folha-nome" title="${esc(p.nome)}">${esc(p.nome)}</div>
+      <div class="folha-acoes">
+        <button type="button" data-acao="ampliar" class="so-icone" title="Abrir grande e ajustar" aria-label="Abrir grande e ajustar">🔍</button>
+        <button type="button" data-acao="girar" title="Girar 90°">↻ Girar</button>
+        <button type="button" data-acao="remover" class="so-icone" title="Remover" aria-label="Remover">✕</button>
       </div>`;
-    c.onclick = e => { if (!e.target.closest("button")) selecionar(p.id); };   // botões não selecionam
-    c.querySelector('[data-acao="ampliar"]').onclick = () => {
-      ampliadaId = p.id; atualizarAmpliacao(); $("ampliada").classList.add("aberta");
-    };
+    if (escolhida) { c.appendChild($("ajustesPagina")); }
+    const mini = c.querySelector(".folha-mini");
+    const aoEscolher = () => { if (escolhida) ampliacao.abrir(p.id); else selecionar(p.id); };
+    mini.onclick = aoEscolher;
+    mini.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); aoEscolher(); } };
+    c.onclick = e => { if (!e.target.closest("button, .folha-mini, .ajustes-pagina")) selecionar(p.id); };
+    c.querySelector('[data-acao="ampliar"]').onclick = () => ampliacao.abrir(p.id);
     c.querySelector('[data-acao="girar"]').onclick = () => { p.giro = (p.giro + 90) % 360; desenhar(); };
     c.querySelector('[data-acao="remover"]').onclick = () => {
       fetch(`/converter/remover/${p.id}`, { method: "POST" });
@@ -242,14 +235,31 @@ function desenhar() {
     grade.appendChild(c);
   });
   carregarControles();
-  $("resumo").textContent = paginas.length ? `${paginas.length} página(s)` : "Nenhuma página";
+  atualizarResumo();
+  // a pasta de saída só é pedida quando já há o que exportar
+  $("barraExportar").hidden = !paginas.length;
   $("exportar").disabled = !paginas.length;
-  atualizarAmpliacao();
+  $("exportar").textContent = paginas.length ? `Exportar ${paginas.length} JPG` : "Exportar JPG";
+  mostrarDestino();
+  ampliacao.atualizar();
 }
+function atualizarResumo() {
+  const ajustadas = paginas.filter(ajustada).length;
+  $("resumo").textContent = paginas.length
+    ? `${paginas.length} página(s)` + (ajustadas ? ` · ${ajustadas} ajustada(s)` : "") + " · clique numa página para ajustar"
+    : "Nenhuma página";
+}
+function mostrarDestino() {
+  const nome = $("nome").value.trim();
+  $("destinoJpg").innerHTML = nome
+    ? `Vai para <strong>Downloads/${esc(nome)}/</strong> como “${esc(nome)} - 01.jpg”… · ${DPI} DPI · pasta nova, nada é sobrescrito`
+    : `Dê um nome à pasta. Cada página vira “NOME - 01.jpg”… · ${DPI} DPI · pasta nova, nada é sobrescrito`;
+}
+$("nome").addEventListener("input", mostrarDestino);
 $("limpar").onclick = () => {
   paginas.forEach(p => fetch(`/converter/remover/${p.id}`, { method: "POST" }));
   paginas = []; selecionadaId = null; pastaExportada = ""; $("nome").value = "";
-  $("msgExportar").textContent = ""; $("mostrar").style.display = "none";
+  $("msgExportar").textContent = ""; $("mostrar").hidden = true;
   desenhar();
 };
 
@@ -267,7 +277,7 @@ $("exportar").onclick = async () => {
   pastaExportada = resp.pasta;
   $("msgExportar").textContent = `${resp.quantidade} JPG(s) em Downloads/${resp.nome_pasta}`;
   $("msgExportar").className = "msg ok";
-  $("mostrar").style.display = "block";
+  $("mostrar").hidden = false;
 };
 $("mostrar").onclick = async () => {
   const r = await fetch("/converter/mostrar", { method: "POST", headers: { "Content-Type": "application/json" },

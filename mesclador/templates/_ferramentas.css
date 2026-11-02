@@ -1,0 +1,140 @@
+  /* ===== Ferramentas (Mesclar e Converter), estilo 2 · cartões. Só usa as variáveis de base.html. ===== */
+  /* --acento-fundo vem do estilo 2 em base.html; sem ele, o tom é calculado a partir do acento */
+  body { --raio: 18px; --raio-campo: 12px;
+    --acento-leve: var(--acento-fundo, color-mix(in srgb, var(--acento) 13%, var(--painel))); }
+  .ferramenta { display: block; width: 100%; max-width: 1320px; margin: 0 auto;
+    padding: 22px 24px 132px; font-size: 15px; }
+  .ferramenta-cabecalho { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between;
+    gap: 6px 16px; margin-bottom: 16px; }
+  .ferramenta-cabecalho h1 { margin: 0; font-size: 26px; line-height: 1.15; letter-spacing: -.03em; }
+  .ferramenta-cabecalho p { margin: 4px 0 0; color: var(--suave); }
+  .ferramenta label { font-size: 13px; font-weight: 650; color: var(--suave); }
+  .ferramenta input, .ferramenta select, .barra-fixa input { min-height: 40px; border-radius: var(--raio-campo); }
+  .ferramenta input[type=range], .ampliada input[type=range] { min-height: 28px; padding: 0; border: 0;
+    background: transparent; accent-color: var(--acento); }
+  .pilula { min-height: 36px; padding: 6px 16px; border-radius: 999px; font-size: 13px; font-weight: 700;
+    white-space: nowrap; }
+  .pilula.leve { background: var(--acento-leve, var(--painel-suave)); color: var(--acento); border-color: transparent; }
+  .pilula.leve:hover:not(:disabled) { background: var(--acento-leve, var(--painel-suave)); border-color: var(--acento); }
+  .ficha-cartao { min-width: 0; padding: 16px 18px; background: var(--painel); border: 1px solid var(--borda);
+    border-radius: var(--raio); box-shadow: var(--sombra); }
+  .rotulo-etapa { display: block; color: var(--acento); font-size: 12px; font-weight: 800;
+    letter-spacing: .06em; text-transform: uppercase; margin: 0; }
+  .secao-titulo { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin: 24px 0 12px; }
+  .secao-titulo h2 { margin: 0; font-size: 18px; letter-spacing: -.01em; }
+  .secao-titulo .dica { flex: 1 1 260px; min-width: 0; color: var(--suave); font-size: 13px; }
+  .secao-titulo .pilula { margin-left: auto; align-self: center; }
+
+  /* área de soltar: primeiro cartão da grade */
+  .folhas { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 16px; align-items: start; }
+  .soltar { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    min-height: 268px; padding: 18px 14px; text-align: center; color: var(--suave);
+    border: 2px dashed var(--borda); border-radius: var(--raio); background: var(--painel); }
+  .soltar.ativa { border-color: var(--acento); background: var(--alvo); color: var(--texto); }
+  .soltar .soltar-mais { color: var(--acento); font-size: 40px; font-weight: 300; line-height: 1; }
+  .soltar strong { color: var(--texto); font-size: 15px; }
+  .soltar .soltar-detalhe { font-size: 13px; }
+  .soltar .soltar-escolhas { font-size: 13px; }
+  .soltar .zona-link { min-height: 32px; padding: 3px 4px; border: 0; background: transparent; color: var(--acento);
+    text-decoration: underline; text-underline-offset: 2px; font-size: 13px; font-weight: 700; }
+  .soltar .zona-link:hover:not(:disabled) { border: 0; background: var(--alvo); }
+  .folhas.sem-itens .soltar { grid-column: 1 / -1; min-height: 220px; }
+
+  /* cartão de folha/página */
+  .folha { position: relative; min-width: 0; padding: 10px; user-select: none; background: var(--painel);
+    border: 2px solid transparent; border-radius: var(--raio); box-shadow: var(--sombra);
+    outline-color: var(--foco); }
+  .folha:hover { border-color: var(--borda); }
+  .folha:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+  .folha-num { position: absolute; top: 16px; left: 16px; z-index: 1; display: grid; place-items: center;
+    min-width: 30px; height: 30px; padding: 0 7px; border-radius: 10px; background: var(--acento);
+    color: var(--acento-txt); font-size: 14px; font-weight: 800; }
+  .folha-selo { position: absolute; top: 16px; right: 16px; z-index: 1; display: none; padding: 3px 8px;
+    border-radius: 8px; background: var(--texto); color: var(--painel); font-size: 11px; font-weight: 700; }
+  .folha.ajustada .folha-selo { display: block; }
+  .folha-mini { position: relative; display: block; width: 100%; height: 210px; padding: 0; overflow: hidden;
+    cursor: zoom-in; border: 1px solid var(--borda); border-radius: 12px; background: var(--painel-suave); }
+  .folha-mini:hover:not(:disabled) { background: var(--painel-suave); }
+  .folha-mini img { position: absolute; top: 50%; left: 50%; max-width: 100%; max-height: 100%;
+    transition: transform .15s; pointer-events: none; }
+  .folha-mini.deitada img { max-width: 208px; max-height: 160px; }
+  .folha-nome { margin-top: 9px; font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis; }
+  .folha-info { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-height: 22px;
+    color: var(--suave); font-size: 13px; }
+  .etiqueta-documento { display: inline-flex; padding: 1px 9px; border-radius: 999px; background: var(--painel-suave);
+    border: 1px solid var(--borda); color: var(--suave); font-size: 12px; font-weight: 650; }
+  .folha-acoes { display: flex; gap: 6px; margin-top: 8px; }
+  .folha-acoes button { flex: 1 1 0; min-width: 0; min-height: 34px; padding: 4px 6px; border-radius: 10px;
+    font-size: 13px; white-space: nowrap; }
+  .folha-acoes button.so-icone { flex: 0 0 38px; }
+
+  /* barra fixa no rodapé: a ação principal sempre à vista (deixa livre o canto do botão Tarefas) */
+  .barra-fixa { position: fixed; left: 16px; right: 150px; bottom: 12px; z-index: 15; max-width: 1180px;
+    margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 12px 14px 12px 18px;
+    background: var(--painel); border: 1px solid var(--borda); border-radius: var(--raio);
+    box-shadow: 0 6px 26px rgba(0, 0, 0, .14); }
+  .barra-fixa[hidden] { display: none; }
+  .barra-fixa .principal { width: auto; min-height: 44px; padding: 10px 20px; border-radius: 999px; white-space: nowrap; }
+  .barra-fixa .msg:empty { display: none; }
+
+  /* folha ampliada com os ajustes ao lado */
+  .ampliada { position: fixed; inset: 0; z-index: 40; display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; padding: 16px; background: rgba(0, 0, 0, .82); }
+  .ampliada[hidden] { display: none; }
+  .ampliada-folha { position: relative; min-width: 0; min-height: 0; overflow: hidden; cursor: zoom-out; }
+  .ampliada-folha img { position: absolute; top: 50%; left: 50%; border-radius: 4px; background: #fff;
+    transform: translate(-50%, -50%); cursor: default; }
+  .ampliada-folha img.oculta, .ampliada-folha img:not([src]) { visibility: hidden; }
+  .ampliada-carregando { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 1;
+    padding: 4px 12px; border-radius: 999px; background: var(--painel); color: var(--suave); font-size: 12px; }
+  .ampliada-carregando[hidden] { display: none; }
+  .ampliada .seta { position: absolute; top: 50%; transform: translateY(-50%); z-index: 1; width: 44px; height: 52px;
+    padding: 0; border: 1px solid var(--borda); border-radius: 12px; background: var(--painel); color: var(--texto);
+    font-size: 32px; line-height: 1; }
+  .ampliada .seta[hidden] { display: none; }
+  .ampliada .anterior { left: 8px; }
+  .ampliada .proximo { right: 8px; }
+  .ampliada .posicao { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+    max-width: calc(100% - 120px); padding: 5px 12px; border-radius: 999px; background: var(--painel);
+    color: var(--texto); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: default; }
+  .ampliada-painel { display: flex; flex-direction: column; gap: 14px; min-width: 0; padding: 20px; overflow-y: auto;
+    background: var(--painel); color: var(--texto); border-radius: var(--raio, 18px); align-self: start;
+    max-height: 100%; }
+  .ampliada-cabecalho { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .ampliada-cabecalho h2 { margin: 0; font-size: 18px; }
+  .ampliada-nome { margin: -8px 0 0; color: var(--suave); font-size: 13px; overflow-wrap: anywhere; }
+  .ampliada label { font-size: 13px; font-weight: 650; color: var(--suave); }
+  .ajuste { display: grid; grid-template-columns: minmax(0, 1fr) 42px; gap: 8px; align-items: center; }
+  .ajuste output { font-size: 13px; text-align: right; color: var(--texto); font-variant-numeric: tabular-nums; }
+  .check { flex-direction: row; align-items: center; gap: 8px; color: var(--texto) !important; }
+  .ampliada-botoes { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ampliada-botoes button { flex: 1 1 auto; }
+  .nota { margin: 0; color: var(--suave); font-size: 12px; line-height: 1.5; }
+
+  @media (max-width: 760px) {
+    .ferramenta { padding: 18px 16px 150px; }
+    .ferramenta-cabecalho h1 { font-size: 24px; }
+    .ficha-cartao { padding: 16px; border-radius: 16px; }
+    .ampliada { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(240px, 1fr) auto;
+      gap: 10px; padding: 10px; }
+    .ampliada-painel { align-self: stretch; max-height: 46vh; padding: 14px; gap: 10px; }
+  }
+  @media (max-width: 600px) {
+    .barra-fixa { left: 8px; right: 8px; bottom: 48px; gap: 6px 10px; padding: 10px 12px; }
+    .barra-fixa .principal { min-height: 40px; }
+    .barra-fixa .principal { flex: 1 1 100%; }
+  }
+  @media (max-width: 460px) {
+    .folhas { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .folhas .soltar { grid-column: 1 / -1; min-height: 150px; }
+    .folha { padding: 7px; }
+    .folha-num, .folha-selo { top: 12px; }
+    .folha-num { left: 12px; }
+    .folha-selo { right: 12px; }
+    .folha-mini { height: 180px; }
+    .folha-mini.deitada img { max-width: 170px; max-height: 135px; }
+    .folha-acoes { gap: 4px; }
+    .folha-acoes button { padding: 4px 2px; font-size: 12px; }
+    .folha-acoes button.so-icone { flex-basis: 32px; }
+  }

@@ -1,0 +1,32 @@
+{# Folha ampliada com os ajustes ao lado. Usada por Mesclar e Converter (variáveis: rotulo_item, nota_ajustes). #}
+<div class="ampliada" id="ampliada" role="dialog" aria-modal="true" aria-labelledby="ampliadaTitulo" hidden>
+  <div class="ampliada-folha" id="ampliadaFolha">
+    <img id="imgBase" alt="" aria-hidden="true">
+    <img id="imgAmpliada" alt="{{ rotulo_item }} ampliada">
+    <span class="ampliada-carregando" id="ampliadaCarregando" hidden>Atualizando a prévia…</span>
+    <button id="ampliadaAnterior" class="seta anterior" type="button" aria-label="{{ rotulo_item }} anterior">‹</button>
+    <button id="ampliadaProximo" class="seta proximo" type="button" aria-label="Próxima {{ rotulo_item|lower }}">›</button>
+    <span id="ampliadaPosicao" class="posicao" role="status"></span>
+  </div>
+  <div class="ampliada-painel">
+    <div class="ampliada-cabecalho">
+      <h2 id="ampliadaTitulo">{{ rotulo_item }}</h2>
+      <button id="ampliadaFechar" class="pilula" type="button" title="Fechar (Esc)">✕ Fechar</button>
+    </div>
+    <p id="ampliadaNome" class="ampliada-nome"></p>
+    <label>Brilho
+      <span class="ajuste"><input type="range" id="ampBrilho" min="-100" max="100" value="0"><output id="ampVBrilho" for="ampBrilho">0</output></span>
+    </label>
+    <label>Contraste
+      <span class="ajuste"><input type="range" id="ampContraste" min="-100" max="100" value="0"><output id="ampVContraste" for="ampContraste">0</output></span>
+    </label>
+    <label class="check"><input type="checkbox" id="ampRealce"> Realçar escrita (tons de cinza)</label>
+    <div class="ampliada-botoes">
+      <button id="ampGirar" class="pilula" type="button">↻ Girar 90°</button>
+      <button id="ampAplicarTodas" class="pilula leve" type="button">Aplicar a todas</button>
+      <button id="ampRestaurar" class="pilula" type="button">Restaurar esta página</button>
+    </div>
+    <p class="nota">{{ nota_ajustes }}</p>
+    <p class="nota">← e → trocam de {{ rotulo_item|lower }} · Esc fecha.</p>
+  </div>
+</div>

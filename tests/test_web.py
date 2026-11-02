@@ -158,7 +158,7 @@ def test_pagina_inicial(cliente):
     assert "/painel/dados?mes=" in html
     assert "ficha.paciente" not in html and "empresa.fichas" in html
     assert "Área de trabalho" in html
-    assert '<h1 class="painel-titulo">Mesclar prontuário</h1>' in cliente.get("/mesclar").get_data(as_text=True)
+    assert '<h1>Mesclar prontuário</h1>' in cliente.get("/mesclar").get_data(as_text=True)
 
 
 def test_pagina_inicial_mostra_barra_acessivel_por_empresa(cliente):
@@ -203,6 +203,77 @@ def test_ampliacao_tem_setas_e_indicador_nas_duas_telas(cliente, rota):
     assert elementos.por_id["ampliadaPosicao"][0] == "span"
     assert elementos.por_id["ampliada"][0] == "div"
     assert elementos.por_id["imgAmpliada"][0] == "img"
+
+
+class Ancestrais(HTMLParser):
+    """Guarda, para cada id, a tag, os atributos e os ids dos elementos que o contêm."""
+    VAZIAS = {"input", "img", "br", "meta", "link", "hr", "source"}
+
+    def __init__(self):
+        super().__init__()
+        self.pilha, self.por_id = [], {}
+
+    def handle_starttag(self, tag, attrs):
+        atributos = dict(attrs)
+        if "id" in atributos:
+            self.por_id[atributos["id"]] = (tag, atributos, [i for _, i in self.pilha if i])
+        if tag not in self.VAZIAS:
+            self.pilha.append((tag, atributos.get("id")))
+
+    def handle_endtag(self, tag):
+        while self.pilha:
+            if self.pilha.pop()[0] == tag:
+                break
+
+
+def elementos_da_tela(cliente, rota):
+    leitor = Ancestrais()
+    leitor.feed(cliente.get(rota).get_data(as_text=True))
+    return leitor.por_id
+
+
+@pytest.mark.parametrize("rota", ["/mesclar", "/converter"])
+def test_ajustes_ficam_ao_lado_da_folha_ampliada(cliente, rota):
+    elementos = elementos_da_tela(cliente, rota)
+    for id_ in ("ampBrilho", "ampContraste", "ampRealce", "ampGirar", "ampAplicarTodas", "ampRestaurar",
+                "ampliadaFechar", "imgAmpliada", "imgBase"):
+        assert "ampliada" in elementos[id_][2], id_
+    assert elementos["ampliada"][1].get("role") == "dialog" and "hidden" in elementos["ampliada"][1]
+    pagina = cliente.get(rota).get_data(as_text=True)
+    assert 'src="/static/ampliada.js"' in pagina and "criarAmpliacao({" in pagina
+    assert "Restaurar esta página" in pagina and "Realçar escrita (tons de cinza)" in pagina
+
+
+def test_mesclar_grade_limpa_e_salvar_sempre_a_vista(cliente):
+    elementos = elementos_da_tela(cliente, "/mesclar")
+    pagina = cliente.get("/mesclar").get_data(as_text=True)
+    # nenhum controle de ajuste fora da folha ampliada
+    assert not {"ajustesPagina", "brilho", "contraste", "realce"} & set(elementos)
+    # a área de soltar é o primeiro cartão da grade
+    assert "grade" in elementos["zona"][2]
+    for id_ in ("escolher", "escolherDir", "seletor", "seletorDir"):
+        assert "zona" in elementos[id_][2]
+    # salvar e o caminho final ficam na barra fixa do rodapé
+    for id_ in ("salvar", "previa", "msgSalvar", "faltando"):
+        assert "barraSalvar" in elementos[id_][2], id_
+    assert "Mesclar e salvar (⌘ Enter)" in pagina and ".barra-fixa { position: fixed;" in pagina
+    # a ordem inteira numa linha de fichas
+    assert elementos["ordemLista"][0] == "ol" and "function desenharOrdem()" in pagina
+    for titulo in ("1 · Faturamento", "2 · Remoção", "3 · Destino"):
+        assert titulo in pagina
+    for acao in ("ampliar", "girar", "remover"):
+        assert f'data-acao="{acao}"' in pagina
+
+
+def test_folha_ampliada_tem_script_estatico(cliente):
+    resposta = cliente.get("/static/ampliada.js")
+    assert resposta.status_code == 200
+    codigo = resposta.get_data(as_text=True)
+    resposta.close()
+    for trecho in ("function criarAmpliacao(opcoes)", 'el("ampBrilho")', 'el("ampAplicarTodas")',
+                   "opcoes.aoGirar(it)", "opcoes.aoAjustar(it)", 'e.key === "Escape"',
+                   'matches("input[type=range]")', "brightness(", "grayscale(1)"):
+        assert trecho in codigo, trecho
 
 
 def test_telas_abrem_com_e_sem_logo_local(cliente):

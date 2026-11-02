@@ -1,94 +1,99 @@
 {% extends "base.html" %}
 {% block titulo %}Mesclar prontuário · Área de trabalho{% endblock %}
 {% block estilos %}
+{% include "_ferramentas.css" %}
+  /* ficha da remoção: três cartões lado a lado */
+  .ficha { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .ficha-cartao { display: flex; flex-direction: column; gap: 8px; }
+  .duas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+  .duas.numero { grid-template-columns: minmax(0, 1.4fr) minmax(90px, 1fr); }
   .pasta { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
-  .pasta input { min-width: 0; font-size: 12px; }
-  .linha { display: grid; grid-template-columns: minmax(0, 1fr) minmax(105px, .7fr); gap: 8px; }
+  .pasta input { min-width: 0; font-size: 13px; }
+  .pasta button { min-height: 40px; border-radius: var(--raio-campo); }
+  #planilha { text-overflow: ellipsis; }
   .escolhas { display: flex; flex-wrap: wrap; gap: 6px; }
-  .escolhas button { min-height: 34px; font-size: 12px; text-align: left; }
-  .previa { padding: 10px; background: var(--painel-suave); border: 1px solid var(--borda);
-            border-radius: 7px; font-family: ui-monospace, Menlo, monospace;
-            font-size: 12px; font-weight: 500; word-break: break-all; }
-  .previa:empty::before { content: "O caminho aparecerá aqui"; color: var(--suave); }
-  #msgConferencia:not(:empty) { padding: 11px 12px; border: 1px solid var(--borda);
-                                border-radius: 8px; font-weight: 700; }
-  #msgConferencia.erro { color: var(--erro); background: var(--aviso-fundo);
-                         border-color: var(--aviso-borda); }
-  #msgConferencia.ok { color: var(--ok); background: var(--ok-fundo);
-                       border-color: var(--ok-borda); }
-  .cartao { cursor: pointer; }
-  .cartao.selecionada { border-color: var(--acento); box-shadow: 0 0 0 2px var(--acento); }
-  .selo { position: absolute; top: 17px; right: 17px; z-index: 1; display: none;
-          background: var(--acento); color: var(--acento-txt); border-radius: 7px;
-          font-size: 12px; font-weight: 700; padding: 4px 7px; }
-  .cartao.ajustada .selo { display: block; }
-  .etiqueta-documento { display: inline-block; margin-left: 6px; padding: 2px 6px;
-                        border: 1px solid var(--borda); border-radius: 5px;
-                        background: var(--painel-suave); color: var(--suave);
-                        font-size: 11px; font-weight: 600; }
-  .acoes button.ampliar { flex: 0 0 36px; }
-  .ajustes-pagina { display: none; flex-wrap: wrap; align-items: end; gap: 12px 20px;
-                    padding: 15px; background: var(--painel); border: 1px solid var(--borda);
-                    border-radius: 10px; box-shadow: var(--sombra); }
-  .ajustes-pagina.visivel { display: flex; }
-  .ajustes-pagina.desabilitado .controles { opacity: .5; pointer-events: none; }
-  .ajustes-pagina .controles { display: contents; }
-  .ajustes-pagina label { min-width: 150px; flex: 1 1 150px; max-width: 240px; }
-  .ajuste { display: grid; grid-template-columns: minmax(0, 1fr) 42px; gap: 8px; align-items: center; }
-  .ajuste input[type=range] { padding: 0; accent-color: var(--acento); }
-  .ajuste output { font-size: 12px; text-align: right; color: var(--texto); font-variant-numeric: tabular-nums; }
-  .check { flex-direction: row; align-items: center; gap: 8px; color: var(--texto);
-           font-size: 12px; flex: 0 0 auto !important; }
-  .nota { margin: 0; color: var(--suave); font-size: 12px; flex: 1 1 100%; }
-  .ampliada { position: fixed; inset: 0; z-index: 20; display: none; align-items: center;
-              justify-content: center; padding: 24px; background: rgba(0, 0, 0, .82); cursor: zoom-out; }
-  .ampliada.aberta { display: flex; }
-  .ampliada img { max-width: 100%; max-height: 100%; border-radius: 4px; background: #fff; }
-  .ampliada .seta { position: absolute; top: 50%; transform: translateY(-50%); z-index: 1;
-                   width: 44px; height: 52px; padding: 0; border: 1px solid var(--borda);
-                   border-radius: 8px; background: var(--painel); color: var(--texto);
-                   font-size: 32px; line-height: 1; cursor: pointer; }
-  .ampliada .seta[hidden] { display: none; }
-  .ampliada .anterior { left: 12px; }
-  .ampliada .proximo { right: 12px; }
-  .ampliada .posicao { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
-                      max-width: calc(100% - 120px); padding: 5px 10px; border-radius: 6px;
-                      background: var(--painel); color: var(--texto); font-size: 12px;
-                      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: default; }
-  .cartao.arrastando { opacity: .35; }
-  .cartao.alvo-antes { box-shadow: -5px 0 0 var(--acento); }
-  .cartao.alvo-depois { box-shadow: 5px 0 0 var(--acento); }
-  .historico { font-size: 12px; display: flex; flex-direction: column; gap: 5px; }
-  .historico:empty::before { content: "Os arquivos salvos nesta sessão aparecerão aqui."; color: var(--suave); }
-  .historico a { display: flex; align-items: center; min-height: 32px;
-                 color: var(--acento); word-break: break-all; }
+  .escolhas button { min-height: 34px; border-radius: 10px; font-size: 13px; text-align: left;
+                     white-space: normal; overflow-wrap: anywhere; }
+  #msgConferencia:not(:empty) { padding: 9px 12px; border: 1px solid var(--borda); border-radius: 12px;
+                                font-weight: 700; overflow-wrap: anywhere; }
+  #msgConferencia.erro { color: var(--erro); background: var(--aviso-fundo); border-color: var(--aviso-borda); }
+  #msgConferencia.ok { color: var(--ok); background: var(--ok-fundo); border-color: var(--ok-borda); }
+  .ficha .msg { overflow-wrap: anywhere; }
+
+  /* ordem do PDF inteira numa linha de fichas */
+  .ordem-lista { display: flex; flex-wrap: wrap; gap: 6px; margin: -2px 0 14px; padding: 0; list-style: none; }
+  .ordem-lista:empty { display: none; }
+  .ordem-lista button { display: inline-flex; align-items: center; gap: 6px; max-width: 220px; min-height: 30px;
+    padding: 3px 11px 3px 4px; border-radius: 999px; font-size: 12px; font-weight: 650; }
+  .ordem-lista b { display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 5px;
+    border-radius: 999px; background: var(--acento); color: var(--acento-txt); font-size: 12px; }
+  .ordem-lista span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ordem-lista .girada span::after { content: " ↻"; color: var(--suave); }
+
+  .folha { cursor: grab; }
+  .folha.arrastando { opacity: .35; }
+  .folha.alvo-antes { box-shadow: -6px 0 0 var(--acento); }
+  .folha.alvo-depois { box-shadow: 6px 0 0 var(--acento); }
+
+  /* barra de salvar */
+  .barra-destino { display: flex; flex-direction: column; gap: 2px; flex: 1 1 300px; min-width: 0; }
+  .barra-destino .rotulo { color: var(--suave); font-size: 12px; font-weight: 650; }
+  .previa { font-family: ui-monospace, Menlo, monospace; font-size: 13px; font-weight: 600;
+            overflow-wrap: anywhere; }
+  .previa:empty::before { content: "O caminho aparecerá aqui"; color: var(--suave); font-weight: 500; }
+  #faltando { color: var(--suave); font-size: 12px; }
+  #faltando:empty { display: none; }
+  #msgSalvar { flex: 0 1 auto; }
+  @media (max-width: 600px) { .previa { font-size: 12px; } }
+
+  .historico { display: flex; flex-wrap: wrap; gap: 8px; }
+  .historico:empty::before { content: "Os arquivos salvos nesta sessão aparecerão aqui."; color: var(--suave);
+                             font-size: 13px; }
+  .historico a { display: inline-flex; align-items: center; min-height: 32px; padding: 4px 12px;
+                 border-radius: 999px; background: var(--painel); border: 1px solid var(--borda);
+                 color: var(--acento); font-size: 13px; font-weight: 650; text-decoration: none;
+                 overflow-wrap: anywhere; }
+  .historico a:hover { border-color: var(--acento); }
+
+  @media (max-width: 1080px) {
+    .ficha { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .ficha .destino { grid-column: 1 / -1; }
+  }
+  @media (max-width: 760px) {
+    .ficha { grid-template-columns: minmax(0, 1fr); }
+  }
 {% endblock %}
 
 {% block conteudo %}
-<div class="app">
-  <aside>
+<main class="ferramenta">
+  <div class="ferramenta-cabecalho">
     <div>
-      <h1 class="painel-titulo">Mesclar prontuário</h1>
-      <p class="painel-intro">Confira os dados e salve o PDF.</p>
+      <h1>Mesclar prontuário</h1>
+      <p>Solte as folhas, confira os dados e salve o PDF.</p>
     </div>
-    <section class="etapa" aria-labelledby="etapa-faturamento">
-      <div class="etapa-cabecalho"><span class="etapa-numero">01</span><h2 id="etapa-faturamento">Faturamento</h2></div>
-      <label>Empresa
-        <select id="empresa">
-          {% for e in empresas %}<option>{{ e }}</option>{% endfor %}
-        </select>
-      </label>
-      <label>Mês de faturamento
-        <input type="month" id="mes" value="{{ mes_padrao }}"{% if mes_minimo %} min="{{ mes_minimo }}"{% endif %}>
-      </label>
+  </div>
+
+  <div class="ficha">
+    <section class="ficha-cartao" aria-labelledby="etapa-faturamento">
+      <h2 class="rotulo-etapa" id="etapa-faturamento">1 · Faturamento</h2>
+      <div class="duas">
+        <label>Empresa
+          <select id="empresa">
+            {% for e in empresas %}<option>{{ e }}</option>{% endfor %}
+          </select>
+        </label>
+        <label>Mês de faturamento
+          <input type="month" id="mes" value="{{ mes_padrao }}"{% if mes_minimo %} min="{{ mes_minimo }}"{% endif %}>
+        </label>
+      </div>
       <label>Planilha de faturamento
         <select id="planilha"><option value="">— sem planilha (digitar nome) —</option></select>
       </label>
       <div id="msgPlanilha" class="msg" role="status"></div>
     </section>
-    <section class="etapa" aria-labelledby="etapa-identificacao">
-      <div class="etapa-cabecalho"><span class="etapa-numero">02</span><h2 id="etapa-identificacao">Identificação da remoção</h2></div>
-      <div class="linha">
+    <section class="ficha-cartao" aria-labelledby="etapa-identificacao">
+      <h2 class="rotulo-etapa" id="etapa-identificacao">2 · Remoção</h2>
+      <div class="duas numero">
         <label>Tipo
           <select id="tipo">{% for t in tipos %}<option>{{ t }}</option>{% endfor %}</select>
         </label>
@@ -99,69 +104,61 @@
       <div id="msgConferencia" class="msg" role="status"></div>
       <div id="escolhas" class="escolhas"></div>
     </section>
-    <section class="etapa" aria-labelledby="etapa-destino">
-      <div class="etapa-cabecalho"><span class="etapa-numero">03</span><h2 id="etapa-destino">Destino do PDF</h2></div>
+    <section class="ficha-cartao destino" aria-labelledby="etapa-destino">
+      <h2 class="rotulo-etapa" id="etapa-destino">3 · Destino</h2>
       <label>Pasta principal
-        <div class="pasta">
+        <span class="pasta">
           <input id="pasta" placeholder="/Users/…/OUTUBRO" autocomplete="off" spellcheck="false">
           <button id="escolherPasta" type="button">Escolher…</button>
-        </div>
+        </span>
       </label>
-      <label>Será salvo como <div id="previa" class="previa"></div></label>
       <div id="msgPrevia" class="msg" role="status"></div>
-      <button id="salvar" class="principal" disabled>Mesclar e salvar (⌘ Enter)</button>
-      <div id="msgSalvar" class="msg" role="status"></div>
+      <p class="nota">O nome do arquivo sai do Nº e do nome do paciente. Se já existir, o app pergunta antes de substituir.</p>
     </section>
-    <section class="etapa" aria-labelledby="etapa-historico">
-      <div class="etapa-cabecalho"><h2 id="etapa-historico">Salvos nesta sessão</h2></div>
-      <div class="historico" id="historico"></div>
-    </section>
-    <div class="assinatura" aria-label="Piau Gestão em Saúde">
-      <span>Piau Gestão em Saúde</span>
-    </div>
-  </aside>
-  <main>
-    <div class="area-titulo"><h2>Folhas do prontuário</h2><p>Arraste os cartões para conferir e mudar a ordem.</p></div>
-    <div class="zona" id="zona">
+  </div>
+
+  <div class="secao-titulo">
+    <h2>Folhas</h2>
+    <span id="resumo" class="dica">Nenhum arquivo</span>
+    <button id="limpar" class="pilula" type="button">Limpar tudo</button>
+  </div>
+  <ol class="ordem-lista" id="ordemLista" aria-label="Ordem das folhas no PDF"></ol>
+  <div class="folhas sem-itens" id="grade">
+    <div class="soltar" id="zona">
+      <span class="soltar-mais" aria-hidden="true">+</span>
       <strong>Solte o prontuário aqui</strong>
-      <span class="zona-detalhe">.zip, pasta ou arquivos PDF e imagem</span>
-      <span class="zona-escolhas">Ou escolha <button class="zona-link" id="escolher" type="button">arquivos / .zip</button> · <button class="zona-link" id="escolherDir" type="button">uma pasta</button></span>
+      <span class="soltar-detalhe">.zip, pasta ou arquivos PDF e imagem</span>
+      <span class="soltar-escolhas">Ou escolha <button class="zona-link" id="escolher" type="button">arquivos / .zip</button> · <button class="zona-link" id="escolherDir" type="button">uma pasta</button></span>
       <input type="file" id="seletor" multiple accept=".pdf,.jpg,.jpeg,.png,.tif,.tiff,.heic,.zip" hidden>
       <input type="file" id="seletorDir" webkitdirectory hidden>
     </div>
-    <div class="barra">
-      <span id="resumo">Nenhum arquivo</span>
-      <button id="limpar">Limpar tudo</button>
-    </div>
-    <div class="ajustes-pagina" id="ajustesPagina">
-      <label>Brilho
-        <div class="ajuste"><input type="range" id="brilho" min="-100" max="100" value="0"><output id="vBrilho">0</output></div>
-      </label>
-      <label>Contraste
-        <div class="ajuste"><input type="range" id="contraste" min="-100" max="100" value="0"><output id="vContraste">0</output></div>
-      </label>
-      <label class="check"><input type="checkbox" id="realce"> Realçar escrita (tons de cinza)</label>
-      <button id="aplicarTodas" type="button">Aplicar a todas</button>
-      <button id="restaurar" type="button">Restaurar esta página</button>
-      <p class="nota">Clique num arquivo para ajustá-lo. Os ajustes valem para a página inteira; PDFs com ajuste viram imagem.</p>
-    </div>
-    <div class="grade" id="grade"></div>
-  </main>
+  </div>
+
+  <div class="secao-titulo">
+    <h2 id="etapa-historico">Salvos nesta sessão</h2>
+  </div>
+  <div class="historico" id="historico" aria-labelledby="etapa-historico"></div>
+</main>
+
+<div class="barra-fixa" id="barraSalvar" role="region" aria-label="Salvar o PDF">
+  <div class="barra-destino">
+    <span class="rotulo">Será salvo como</span>
+    <code id="previa" class="previa"></code>
+    <span id="faltando"></span>
+  </div>
+  <div id="msgSalvar" class="msg" role="status"></div>
+  <button id="salvar" class="principal" disabled>Mesclar e salvar (⌘ Enter)</button>
 </div>
-<div class="ampliada" id="ampliada">
-  <button id="ampliadaAnterior" class="seta anterior" type="button" aria-label="Arquivo anterior">‹</button>
-  <img id="imgAmpliada" alt="Arquivo ampliado">
-  <button id="ampliadaProximo" class="seta proximo" type="button" aria-label="Próximo arquivo">›</button>
-  <span id="ampliadaPosicao" class="posicao" role="status"></span>
-</div>
+{% with rotulo_item="Folha", nota_ajustes="Os ajustes valem para a página inteira e aparecem na prévia enquanto você mexe. Folhas de PDF com ajuste viram imagem no PDF final." %}
+{% include "_ampliada.html" %}
+{% endwith %}
 {% endblock %}
 
 {% block script %}
+<script src="{{ url_for('static', filename='ampliada.js') }}"></script>
 <script>
 let itens = [];          // [{id, nome, paginas, giro, brilho, contraste, realce}] na ordem da tela
-let selecionadaId = null; // cartão cujos ajustes aparecem na barra
 let arrastandoId = null; // cartão sendo reordenado
-let ampliadaId = null;   // arquivo aberto na ampliação
 let origemAtual = "";    // de onde vieram os arquivos (zip/pasta), mostrado no resumo
 let origemNome = "";     // nome do zip/pasta usado para conferir com a planilha
 let origemPendenteArquivo = ""; // só vale após a planilha encontrar uma remoção
@@ -196,123 +193,61 @@ async function enviar(lista, origem = "") {
 ativarEntrada(enviar);
 temTrabalhoPendente = () => itens.length > 0;
 
-// ---------- ajustes (por arquivo) ----------
-const selecionado = () => itens.find(x => x.id === selecionadaId);
+// ---------- ajustes (por folha, na folha ampliada) ----------
 const ajustado = it => it.brilho !== 0 || it.contraste !== 0 || it.realce;
+const ETIQUETAS = { formulario: "Formulário", bdv: "BDV", fdr: "FDR" };
 function urlMiniatura(it, tam) {   // sem ajuste nem tamanho, é a miniatura de sempre
   if (!ajustado(it) && !tam) return `/miniatura/${it.id}`;
   const q = { brilho: it.brilho, contraste: it.contraste, realce: it.realce ? 1 : 0 };
   if (tam) q.tam = tam;
   return `/miniatura/${it.id}?` + new URLSearchParams(q);
 }
-function carregarControles() {   // mostra na barra os valores do arquivo selecionado
-  const it = selecionado();
-  $("ajustesPagina").classList.toggle("visivel", itens.length > 0);
-  $("ajustesPagina").classList.toggle("desabilitado", !it);
-  ["brilho", "contraste", "realce", "aplicarTodas", "restaurar"].forEach(id => { $(id).disabled = !it; });
-  $("brilho").value = it ? it.brilho : 0;
-  $("contraste").value = it ? it.contraste : 0;
-  $("realce").checked = it ? it.realce : false;
-  $("vBrilho").textContent = $("brilho").value;
-  $("vContraste").textContent = $("contraste").value;
-}
-function selecionar(id) {
-  selecionadaId = id;
-  document.querySelectorAll(".cartao").forEach(c => c.classList.toggle("selecionada", c.dataset.id === id));
-  carregarControles();
-}
 function atualizarCartao(it) {   // só o selo e a miniatura deste cartão
-  const c = document.querySelector(`.cartao[data-id="${it.id}"]`);
+  const c = document.querySelector(`.folha[data-id="${it.id}"]`);
   if (!c) return;
   c.classList.toggle("ajustada", ajustado(it));
-  c.querySelector(".mini img").src = urlMiniatura(it);
+  c.querySelector(".folha-mini img").src = urlMiniatura(it);
 }
-let timerAjuste;
-function aoAjustar() {
-  const it = selecionado();
-  if (!it) return;
-  it.brilho = +$("brilho").value;
-  it.contraste = +$("contraste").value;
-  it.realce = $("realce").checked;
-  $("vBrilho").textContent = it.brilho;
-  $("vContraste").textContent = it.contraste;
-  clearTimeout(timerAjuste);
-  timerAjuste = setTimeout(() => atualizarCartao(it), 200);   // espera parar de arrastar para não pedir miniatura a cada pixel
-}
-["brilho", "contraste"].forEach(id => $(id).addEventListener("input", aoAjustar));
-$("realce").addEventListener("change", aoAjustar);
-$("restaurar").onclick = () => {
-  const it = selecionado();
-  if (!it) return;
-  Object.assign(it, { brilho: 0, contraste: 0, realce: false });
-  carregarControles(); atualizarCartao(it);
-};
-$("aplicarTodas").onclick = () => {
-  const o = selecionado();
-  if (!o) return;
-  itens.forEach(it => { if (it !== o) { Object.assign(it, { brilho: o.brilho, contraste: o.contraste, realce: o.realce }); atualizarCartao(it); } });
-};
-function fecharAmpliacao() { ampliadaId = null; $("ampliada").classList.remove("aberta"); }
-function atualizarAmpliacao() {
-  if (!ampliadaId) return;
-  const indice = itens.findIndex(it => it.id === ampliadaId);
-  if (indice < 0) { fecharAmpliacao(); return; }
-  const it = itens[indice];
-  $("imgAmpliada").src = urlMiniatura(it, 1400);
-  $("imgAmpliada").style.transform = `rotate(${it.giro}deg)`;
-  $("ampliadaPosicao").textContent = `${indice + 1}/${itens.length} · ${it.nome}`;
-  $("ampliadaAnterior").hidden = indice === 0;
-  $("ampliadaProximo").hidden = indice === itens.length - 1;
-}
-function moverAmpliacao(direcao) {
-  const indice = itens.findIndex(it => it.id === ampliadaId);
-  if (indice < 0 || indice + direcao < 0 || indice + direcao >= itens.length) return;
-  ampliadaId = itens[indice + direcao].id;
-  atualizarAmpliacao();
-}
-$("ampliada").onclick = fecharAmpliacao;
-$("ampliadaAnterior").onclick = e => { e.stopPropagation(); moverAmpliacao(-1); };
-$("ampliadaProximo").onclick = e => { e.stopPropagation(); moverAmpliacao(1); };
-document.addEventListener("keydown", e => {
-  if (!$("ampliada").classList.contains("aberta")) return;
-  if (e.key === "Escape") fecharAmpliacao();
-  if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-    e.preventDefault(); e.stopPropagation();
-    moverAmpliacao(e.key === "ArrowLeft" ? -1 : 1);
-  }
-}, true);
+const ampliacao = criarAmpliacao({
+  lista: () => itens,
+  url: (it, neutro) => urlMiniatura(neutro ? { ...it, brilho: 0, contraste: 0, realce: false } : it, 1400),
+  titulo: (it, i, total) => `Folha ${i + 1} de ${total}`,
+  detalhe: it => it.nome + (ETIQUETAS[it.documento] ? ` · ${ETIQUETAS[it.documento]}` : ""),
+  aoAjustar: atualizarCartao,
+  aoGirar: () => desenhar(),
+});
 
 // ---------- grade de cartões ----------
 function desenhar() {
   const grade = $("grade");
-  grade.innerHTML = "";
-  if (!itens.length) grade.innerHTML = '<div class="vazio">Os arquivos aparecem aqui, na ordem em que serão mesclados.</div>';
+  grade.querySelectorAll(".folha").forEach(c => c.remove());   // a área de soltar fica
+  grade.classList.toggle("sem-itens", !itens.length);
   itens.forEach((it, i) => {
-    const c = document.createElement("div");
-    c.className = "cartao" + (ajustado(it) ? " ajustada" : "") + (it.id === selecionadaId ? " selecionada" : "");
+    const c = document.createElement("article");
+    c.className = "folha" + (ajustado(it) ? " ajustada" : "");
     c.draggable = true; c.dataset.id = it.id;
     const deitada = it.giro % 180 !== 0 ? " deitada" : "";
-    const etiqueta = { formulario: "Formulário", bdv: "BDV", fdr: "FDR" }[it.documento];
+    const etiqueta = ETIQUETAS[it.documento];
     c.innerHTML = `
-      <div class="ordem">${i + 1}</div>
-      <div class="selo">ajustada</div>
-      <div class="mini${deitada}"><img src="${urlMiniatura(it)}" style="transform: translate(-50%, -50%) rotate(${it.giro}deg)"></div>
-      <div class="nome" title="${esc(it.nome)}">${esc(it.nome)}</div>
-      <div class="info">${it.paginas} página${it.paginas > 1 ? "s" : ""}${etiqueta ? ` <span class="etiqueta-documento">${etiqueta}</span>` : ""}</div>
-      <div class="acoes">
-        <button data-acao="ampliar" class="ampliar" title="Ampliar com os ajustes">🔍</button>
-        <button data-acao="girar" title="Girar 90°">↻ Girar</button>
-        <button data-acao="remover" title="Remover">✕</button>
+      <div class="folha-num">${i + 1}</div>
+      <div class="folha-selo">ajustada</div>
+      <div class="folha-mini${deitada}" role="button" tabindex="0" title="Abrir grande para conferir e ajustar"
+           aria-label="Abrir a folha ${i + 1} grande para conferir e ajustar"><img alt="" src="${urlMiniatura(it)}" style="transform: translate(-50%, -50%) rotate(${it.giro}deg)"></div>
+      <div class="folha-nome" title="${esc(it.nome)}">${esc(it.nome)}</div>
+      <div class="folha-info">${it.paginas} página${it.paginas > 1 ? "s" : ""}${etiqueta ? ` <span class="etiqueta-documento">${etiqueta}</span>` : ""}</div>
+      <div class="folha-acoes">
+        <button type="button" data-acao="ampliar" class="so-icone" title="Abrir grande e ajustar" aria-label="Abrir grande e ajustar">🔍</button>
+        <button type="button" data-acao="girar" title="Girar 90°">↻ Girar</button>
+        <button type="button" data-acao="remover" class="so-icone" title="Remover" aria-label="Remover">✕</button>
       </div>`;
-    c.onclick = e => { if (!e.target.closest("button")) selecionar(it.id); };   // botões não selecionam; arrastar não dispara clique
-    c.querySelector('[data-acao="ampliar"]').onclick = () => {
-      ampliadaId = it.id; atualizarAmpliacao(); $("ampliada").classList.add("aberta");
-    };
+    const abrir = () => ampliacao.abrir(it.id);
+    c.querySelector(".folha-mini").onclick = abrir;   // arrastar não dispara clique
+    c.querySelector(".folha-mini").onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrir(); } };
+    c.querySelector('[data-acao="ampliar"]').onclick = abrir;
     c.querySelector('[data-acao="girar"]').onclick = () => { it.giro = (it.giro + 90) % 360; desenhar(); };
     c.querySelector('[data-acao="remover"]').onclick = () => {
       fetch(`/remover/${it.id}`, { method: "POST" });
       itens = itens.filter(x => x.id !== it.id);
-      if (selecionadaId === it.id) selecionadaId = null;
       desenhar();
     };
     // reordenar arrastando
@@ -339,6 +274,7 @@ function desenhar() {
     });
     grade.appendChild(c);
   });
+  desenharOrdem();
   const pags = itens.reduce((s, x) => s + x.paginas, 0);
   const reconhecidos = itens.filter(x => x.documento).length;
   const semNome = itens.length - reconhecidos;
@@ -346,14 +282,31 @@ function desenhar() {
   $("resumo").textContent = itens.length
     ? `${itens.length} arquivo(s) · ${pags} página(s)` + (origemAtual ? ` · ${origemAtual}` : "")
       + (reconhecidos && semNome ? ` · ${reconhecidos} reconhecido(s) pelo nome, ${semNome} sem nome reconhecido ficaram no fim ou junto do anterior` : "")
+      + " · arraste os cartões para mudar a ordem"
     : "Nenhum arquivo";
-  carregarControles();
   validar();
-  atualizarAmpliacao();
+  ampliacao.atualizar();
+}
+// a ordem inteira do PDF numa linha: cada ficha abre a folha grande
+function desenharOrdem() {
+  const lista = $("ordemLista");
+  lista.innerHTML = "";
+  if (itens.length < 2) return;
+  itens.forEach((it, i) => {
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.type = "button";
+    b.title = it.nome;
+    if (it.giro) b.classList.add("girada");
+    b.innerHTML = `<b>${i + 1}</b><span>${esc(ETIQUETAS[it.documento] || it.nome)}</span>`;
+    b.onclick = () => ampliacao.abrir(it.id);
+    li.appendChild(b);
+    lista.appendChild(li);
+  });
 }
 $("limpar").onclick = () => {
   itens.forEach(it => fetch(`/remover/${it.id}`, { method: "POST" }));
-  itens = []; selecionadaId = null; desenhar();
+  itens = []; desenhar();
 };
 
 // ---------- planilha e busca do Nº ----------
@@ -472,8 +425,15 @@ function previa() {
   validar();
 }
 function validar() {
-  $("salvar").disabled = !(itens.length && $("numero").value.trim() && $("nome").value.trim() && $("pasta").value.trim());
+  const falta = [];
+  if (!itens.length) falta.push("as folhas");
+  if (!$("numero").value.trim()) falta.push("o Nº da remoção");
+  if (!$("nome").value.trim()) falta.push("o nome do paciente");
+  if (!$("pasta").value.trim()) falta.push("a pasta principal");
+  $("salvar").disabled = falta.length > 0;
+  $("faltando").textContent = falta.length ? `${falta.length > 1 ? "Faltam" : "Falta"} ${juntarLista(falta)}.` : "";
 }
+const juntarLista = partes => partes.length > 1 ? `${partes.slice(0, -1).join(", ")} e ${partes.at(-1)}` : partes[0];
 
 // ---------- pasta principal (lembrada por empresa + mês) ----------
 const chavePasta = () => `pasta:${$("empresa").value}:${$("mes").value}`;
@@ -515,7 +475,7 @@ async function salvar(sobrescrever = false) {
   $("historico").prepend(link);
 
   // pronto para o próximo prontuário
-  itens = []; selecionadaId = null; $("numero").value = ""; $("nome").value = "";
+  itens = []; $("numero").value = ""; $("nome").value = "";
   $("escolhas").innerHTML = ""; $("msgBusca").textContent = "";
   desenhar(); previa(); $("numero").focus();
 }

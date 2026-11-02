@@ -20,8 +20,10 @@ Abra **Ferramentas → Mesclar prontuário** ou acesse `/mesclar`. A Início (`/
 - Arrastar o **.zip baixado**, a **pasta** extraída ou os arquivos soltos; as folhas entram em ordem natural (`pag2` antes de `pag10`) e o lixo do macOS (`__MACOSX`, `.DS_Store`) é ignorado
 - Reconhecer Formulário, BDV e FDR pelo nome do arquivo e sugerir a ordem da SESAB; a ordem final é sempre do usuário
 - Reordenar arrastando os cartões, girar folhas escaneadas de lado, remover folhas; PDFs com várias páginas são separados em um cartão por página
-- Na ampliação das duas telas, navegar entre as folhas pelas setas do teclado ou da tela, com posição e nome do arquivo
-- Ajustar brilho, contraste e realce por folha na própria tela de mesclar; só as folhas ajustadas viram imagem no PDF final, as demais entram sem alteração
+- Ver a ordem inteira do PDF numa linha de fichas numeradas acima das folhas; clicar numa ficha abre a folha grande
+- Abrir a folha grande (clique na miniatura ou 🔍): os ajustes ficam ao lado dela (brilho, contraste, realçar escrita, girar, **Aplicar a todas** e **Restaurar esta página**) e a prévia grande mostra o efeito enquanto você mexe; setas do teclado ou da tela trocam de folha e Esc fecha
+- Só as folhas ajustadas viram imagem no PDF final, as demais entram sem alteração
+- O botão **Mesclar e salvar** fica numa barra fixa no rodapé, com o caminho final e o que ainda falta preencher
 - Escolher o tipo configurado e digitar o Nº da remoção → o nome vem da aba certa da planilha `.xlsx` (a numeração recomeça em cada aba)
 - Os tipos ADULTO-PED COVID e NEONATAL COVID aparecem quando configurados em `config.toml` (veja `config.example.toml`).
 - Quando o .zip ou a pasta tem o nome do paciente, sugerir tipo, Nº e nome a partir da planilha; se houver mais de uma remoção com esse nome, você escolhe a correta
@@ -41,8 +43,9 @@ _Dados fictícios._
 Quando a folha escaneada está escura ou difícil de ler, a tela **Converter em JPG** transforma as páginas em imagens ajustáveis. O uso típico: converter, ajustar a legibilidade e voltar pela tela de mesclar para montar o PDF.
 
 - Aceita **PDF**, **.zip**, **pasta** ou imagens; cada página vira um cartão
-- Ajustes **por página** (brilho, contraste e realçar escrita), com prévia no cartão; **Aplicar a todas** copia os ajustes da página selecionada para as demais e **Restaurar esta página** desfaz os ajustes dela
-- Ampliar a página com 🔍, girar e remover
+- Ajustes **por página** (brilho, contraste e realçar escrita) ao lado da página escolhida, no próprio cartão; **Aplicar a todas** copia os ajustes da página selecionada para as demais e **Restaurar esta página** desfaz os ajustes dela
+- Ampliar a página com 🔍 (com os mesmos ajustes ao lado da prévia grande), girar e remover
+- O nome da pasta de saída só é pedido quando já há páginas, na barra de exportação do rodapé
 - Exporta para `Downloads/<nome>/<nome> - 01.jpg…` em 200 DPI, sem sobrescrever (se a pasta já existir, cria `<nome> (2)`), com o botão **Mostrar no Finder**
 
 ## Painel da auditoria
@@ -138,6 +141,8 @@ mesclador/
     inicio.html     Início: contagens e links para a Auditoria
     index.html      tela de mesclar (/mesclar)
     converter.html  tela Converter em JPG
+    _ferramentas.css, _ampliada.html  estilo e folha ampliada comuns às duas telas
+  static/ampliada.js  folha ampliada com os ajustes ao lado (Mesclar e Converter)
     painel.html     Auditoria
 macos/          ícone e scripts da Área de trabalho.app
 tests/          testes com dados fictícios
