@@ -92,7 +92,7 @@ O painel de tarefas fica no canto de todas as telas. Dá para arrastá-lo pelo t
 
 O ▶ numa tarefa conta o tempo dela: a sessão de horas guarda a tarefa, e o tempo aparece somado no painel. Concluir a tarefa que está sendo contada encerra a sessão; se ela tinha interrompido outra atividade, o contador volta para essa atividade.
 
-O botão “↗ Por cima” abre `/tarefas/janela`, uma janela pequena que não navega. No Chrome, o botão “Manter por cima” dessa janela usa a Document Picture-in-Picture API: as tarefas ficam por cima do Preview, da planilha e do Drive. Sem essa API, por exemplo no Safari, a janela pequena continua funcionando ao lado. As abas se atualizam entre si por `BroadcastChannel`.
+No Chrome, “↗ Por cima” abre diretamente as tarefas numa janela Picture-in-Picture, visível sobre o Preview, a planilha e o Drive. Ela fecha se a aba que a abriu for fechada ou navegar; para mantê-la enquanto troca de telas no app, abra `/tarefas/janela` e clique em “Manter por cima” ali. Sem essa API, por exemplo no Safari, “↗ Por cima” abre uma janela pequena comum. As abas se atualizam entre si por `BroadcastChannel`. Enquanto o contador roda, o tempo também aparece no título da aba do Chrome.
 
 ## Decisões de projeto
 

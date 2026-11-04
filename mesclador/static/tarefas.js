@@ -197,19 +197,23 @@
   painel.addEventListener("keydown", evento => { if (evento.key === "Escape" && !naJanela) minimizar(true); });
 
   // ---------- janela própria e janela por cima ----------
-  // A janela por cima (Document PiP) fecha se a aba que a abriu navegar; por isso ela sai
-  // da aba /tarefas/janela, que nunca navega. Da aba do app, "↗ Por cima" abre essa aba pequena.
-  botaoPorCima.addEventListener("click", () => {
+  // O Chrome abre a janela por cima no próprio clique. Ela dura enquanto esta aba existir;
+  // /tarefas/janela continua disponível como origem estável durante a navegação no app.
+  function abrirJanelaComum() {
     const janela = window.open("/tarefas/janela", "tarefas", "popup,width=360,height=660");
     if (janela) { janela.focus(); minimizar(true, false); }
     else avisar("O navegador bloqueou a janela. Abra /tarefas/janela numa aba.");
+  }
+  botaoPorCima.addEventListener("click", () => {
+    if (temPip) abrirPip();
+    else abrirJanelaComum();
   });
   if (naJanela) {
     painel.hidden = false;
     botaoManter.hidden = !temPip;
     if (!temPip) avisar("Este navegador não mantém janelas por cima. Deixe esta janela ao lado do prontuário.");
   }
-  botaoManter.addEventListener("click", async () => {
+  async function abrirPip() {
     if (!temPip || janelaPip) return;
     try {
       janelaPip = await documentPictureInPicture.requestWindow({width: 340, height: 600});
@@ -226,10 +230,11 @@
     janelaPip.addEventListener("pagehide", () => {
       document.body.append(painel);
       if (marcador) marcador.hidden = true;
-      botaoManter.hidden = false;
+      botaoManter.hidden = !naJanela;
       janelaPip = null;
     });
-  });
+  }
+  botaoManter.addEventListener("click", abrirPip);
   const trazer = q("tarefasTrazer");
   if (trazer) trazer.addEventListener("click", () => { if (janelaPip) janelaPip.close(); });
 
