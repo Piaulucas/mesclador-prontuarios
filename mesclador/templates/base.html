@@ -476,16 +476,19 @@ let temTrabalhoPendente = () => false;
 
 // ---------- sessão de horas em andamento ----------
 let horasInicio = null, horasEmpresa = "", horasDescricao = "";
+const tituloOriginal = document.title;
 function atualizarIndicadorHoras() {
   const indicador = $("horasIndicador");
-  if (!indicador) return;   // a janela de tarefas não tem a barra superior
-  indicador.hidden = !horasInicio;
-  if (!horasInicio) return;
+  if (indicador) indicador.hidden = !horasInicio;
+  if (!horasInicio) { document.title = tituloOriginal; return; }
   const segundos = Math.max(0, Math.floor((Date.now() - horasInicio) / 1000));
   const dois = valor => String(valor).padStart(2, "0");
   const tempo = `${dois(Math.floor(segundos / 3600))}:${dois(Math.floor(segundos / 60) % 60)}:${dois(segundos % 60)}`;
-  indicador.textContent = `${horasEmpresa || "Sem empresa"} · ${tempo}`;
-  indicador.title = horasDescricao;
+  document.title = `${tempo} · ${tituloOriginal}`;
+  if (indicador) {
+    indicador.textContent = `${horasEmpresa || "Sem empresa"} · ${tempo}`;
+    indicador.title = horasDescricao;
+  }
 }
 async function carregarIndicadorHoras() {
   try {

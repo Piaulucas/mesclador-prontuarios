@@ -1,6 +1,6 @@
 """Painel de tarefas (flutuante e janela por cima) com tarefas e sessões fictícias."""
 
-from datetime import datetime
+from datetime import date, datetime
 
 from flask import Flask
 
@@ -29,6 +29,9 @@ def test_painel_substitui_o_botao_antigo_em_todas_as_telas(cliente):
                    'window.open("/tarefas/janela", "tarefas"', '"pagehide"', "setPointerCapture",
                    '"tarefasMinimizado"', '"tarefasPosicao"', '"Sem empresa"', 'new Event("horasAlteradas")'):
         assert trecho in codigo, trecho
+    assert 'if (temPip) abrirPip();' in codigo
+    assert 'else abrirJanelaComum();' in codigo
+    assert 'botaoManter.addEventListener("click", abrirPip)' in codigo
     assert "https://" not in codigo
 
 
@@ -42,7 +45,7 @@ def test_janela_de_tarefas_nao_tem_barra_nem_painel_duplicado(cliente):
     assert 'id="tarefasManter"' in html and 'id="tarefasMarcador"' in html
     assert "<title>Tarefas · Área de trabalho</title>" in html
     # o script comum não quebra sem a barra superior
-    assert 'if (!indicador) return;' in html and 'if ($("encerrar"))' in html
+    assert 'if (indicador) indicador.hidden = !horasInicio;' in html and 'if ($("encerrar"))' in html
 
 
 def test_tempo_por_tarefa_e_dados_do_painel(config):
@@ -70,24 +73,25 @@ def test_tempo_por_tarefa_e_dados_do_painel(config):
 
 
 def test_concluir_tarefa_contada_volta_para_a_atividade_anterior(config):
-    instante = [datetime(2026, 11, 2, 9)]
+    hoje = date.today()
+    instante = [datetime(hoje.year, hoje.month, hoje.day, 9)]
     cliente = _app(config, instante)
     tarefa = cliente.post("/pendencias/tarefa", json={"empresa": "EMPRESA A", "texto": "Pedir FDR fictícia"}).get_json()["id"]
     assert cliente.post("/horas/auditoria", json={"empresa": "EMPRESA B"}).status_code == 200
-    instante[0] = datetime(2026, 11, 2, 9, 20)
+    instante[0] = datetime(hoje.year, hoje.month, hoje.day, 9, 20)
     cliente.post("/horas/iniciar", json={"tarefa_id": tarefa})
-    instante[0] = datetime(2026, 11, 2, 9, 35)
+    instante[0] = datetime(hoje.year, hoje.month, hoje.day, 9, 35)
     resposta = cliente.post(f"/pendencias/tarefa/{tarefa}", json={"concluida": True}).get_json()
     assert resposta["contador"] == "voltou"
     ativa = cliente.get("/horas/dados").get_json()["ativa"]
     assert (ativa["tipo"], ativa["empresa"], ativa["tarefa_id"], ativa["inicio"]) == (
-        "Auditoria", "EMPRESA B", None, "2026-11-02T09:35:00")
+        "Auditoria", "EMPRESA B", None, hoje.isoformat() + "T09:35:00")
     dados = cliente.get("/pendencias/tarefas").get_json()
     assert dados["tarefas"] == [] and dados["concluidas_hoje"][0]["segundos"] == 900
     # sem atividade anterior: o contador para
     outra = cliente.post("/pendencias/tarefa", json={"texto": "Tarefa geral"}).get_json()["id"]
     cliente.post("/horas/parar", json={})
-    instante[0] = datetime(2026, 11, 2, 10)
+    instante[0] = datetime(hoje.year, hoje.month, hoje.day, 10)
     cliente.post("/horas/iniciar", json={"tarefa_id": outra})
     assert cliente.post(f"/pendencias/tarefa/{outra}", json={"concluida": True}).get_json()["contador"] == "parado"
     assert cliente.get("/horas/dados").get_json()["ativa"] is None

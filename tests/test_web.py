@@ -646,6 +646,8 @@ def test_horas_aparece_na_navegacao_e_na_pagina(cliente):
         assert 'id="horasIndicador"' in html
         assert 'fetch("/horas/dados")' in html
         assert 'setInterval(atualizarIndicadorHoras, 1000)' in html
+        assert 'document.title = `${tempo} · ${tituloOriginal}`;' in html
+        assert 'if (!horasInicio) { document.title = tituloOriginal; return; }' in html
     pagina = cliente.get("/horas/").get_data(as_text=True)
     for identificador in ("horasTipo", "horasNovoTipo", "horasTarefa", "horasEmpresa",
                           "horasIniciar", "horasParar", "horasRelogio", "horasTotais", "horasSessoes"):
